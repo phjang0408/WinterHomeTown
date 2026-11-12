@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>겨울 동네 장식 소품</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: 왼쪽 소품 목록, 오른쪽 3D 진열장, 아래 정보 카드 */
+  --ink:#2b3f55; --ink-soft:#5d7088; --teal:#2f7f8c; --brick:#b5594a;
+  --snow:#f3f7fa; --line:#cdd9e3; --panel:rgba(243,247,250,.94);
+  --display:"Jua","Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --body:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:#dde7ee;color:var(--ink);font-family:var(--body);display:grid;grid-template-columns:270px 1fr;overflow:hidden}
+aside{background:var(--panel);border-right:1px solid var(--line);padding:20px 16px;overflow:auto}
+h1{font-family:var(--display);font-weight:400;font-size:26px;margin:0;text-wrap:balance}
+.sub{color:var(--ink-soft);font-size:14px;margin:4px 0 18px;line-height:1.5}
+h2{font-family:var(--display);font-weight:400;font-size:15px;color:var(--ink-soft);margin:18px 0 8px}
+.list{display:flex;flex-direction:column;gap:6px}
+.item{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;font:inherit;color:inherit;
+  background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 12px;cursor:pointer}
+.item:hover{border-color:var(--teal)}
+.item[aria-current="true"]{background:var(--teal);color:#fff;border-color:var(--teal)}
+.badge{font-size:11px;border-radius:999px;padding:2px 7px;background:#f4e3c6;color:var(--brick);white-space:nowrap}
+.item[aria-current="true"] .badge{background:rgba(255,255,255,.22);color:#fff}
+button:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+main{position:relative;min-width:0}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+canvas:active{cursor:grabbing}
+.card{position:absolute;left:16px;bottom:16px;width:min(460px,calc(100% - 32px));background:var(--panel);border:1px solid var(--line);
+  border-radius:14px;padding:14px 16px;box-shadow:0 6px 20px rgba(43,63,85,.12)}
+.card h3{font-family:var(--display);font-weight:400;font-size:22px;margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.fold{flex:none;display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:13px;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;min-height:34px}
+.fold:hover{border-color:var(--teal)}
+.fold svg{width:12px;height:12px;transition:transform .2s}
+.card[data-open="false"] .fold svg{transform:rotate(180deg)}
+.card-body{margin-top:4px}
+.card[data-open="false"]{width:auto;max-width:calc(100% - 32px);padding:8px 8px 8px 16px}
+.card[data-open="false"] .card-body{display:none}
+.card[data-open="false"] h3{font-size:17px}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.meta span{font-size:12px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-variant-numeric:tabular-nums}
+.code{display:flex;gap:8px;align-items:stretch}
+code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;font-size:13px;background:#26333f;color:#e8eef3;border-radius:8px;padding:9px 11px;font-family:ui-monospace,Menlo,Consolas,monospace}
+.copy{font:inherit;font-size:13px;border:0;border-radius:8px;background:var(--teal);color:#fff;padding:0 14px;cursor:pointer}
+.hint{position:absolute;right:16px;top:16px;font-size:13px;color:var(--ink-soft);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 12px}
+@media (max-width:720px){
+  body{grid-template-columns:1fr;grid-template-rows:1fr auto}
+  aside{grid-row:2;border-right:0;border-top:1px solid var(--line);padding:10px 12px;max-height:38vh}
+  h1{font-size:20px} .sub{display:none}
+  .card{bottom:10px;left:10px;width:calc(100% - 20px)} .card[data-open="false"]{max-width:calc(100% - 20px)} .hint{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<aside>
+  <h1>겨울 동네 장식 소품</h1>
+  <p class="sub">맵에 놓을 수 있는 건물과 소품 모음입니다. 고르면 그쪽으로 카메라가 이동합니다.</p>
+  <h2>새 방식 소품 (곡선·PBR 재질)</h2>
+  <div class="list" id="list-pbr"></div>
+  <h2>건물</h2>
+  <div class="list" id="list-bld"></div>
+  <h2>새로 만든 장식</h2>
+  <div class="list" id="list-new"></div>
+  <h2>이미 쓰고 있는 소품</h2>
+  <div class="list" id="list-old"></div>
+</aside>
+<main>
+  <canvas id="view" tabindex="0" aria-label="소품 3D 미리보기"></canvas>
+  <div class="hint">끌어서 돌리기 · 휠로 확대</div>
+  <section class="card" id="card" data-open="true">
+    <div class="card-head">
+      <h3 id="name" aria-live="polite"></h3>
+      <button class="fold" id="fold" type="button" aria-expanded="true" aria-controls="card-body">
+        <span id="fold-label">접기</span>
+        <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 4.5 6 8.5 10 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="card-body" id="card-body">
+      <div class="meta" id="meta"></div>
+      <div class="code"><code id="code"></code><button class="copy" id="copy">복사</button></div>
+    </div>
+  </section>
+</main>
+<script type="module">
+import * as THREE from './src/lib/three.js';
+import { propNames, getProp, buildProp } from './src/props/registry.js';
+import { pillSprite } from './src/core/gfx.js';
+import { setupRenderer, makeLights, makeEnvironment } from './src/core/look.js';
+
+await import('./src/props/basic.js');
+const oldNames = new Set(propNames());
+await import('./src/props/parkBench.js');
+await import('./src/props/decor.js');
+await import('./src/props/cars.js');
+await import('./src/props/aptSite.js');
+await import('./src/props/aptYard.js');
+const decorNames = new Set(propNames());
+await import('./src/props/buildings.js');
+await import('./src/props/aptTower.js');
+await import('./src/props/aptCenter.js');
+const names = propNames(), isNew = n => !oldNames.has(n), isBld = n => !decorNames.has(n);
+
+const canvas = document.getElementById('view');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+setupRenderer(renderer);
+// 게임과 같은 맑은 겨울 낮 조명
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xbcdaf2); scene.fog = new THREE.Fog(0xbcdaf2, 220, 520);
+const camera = new THREE.PerspectiveCamera(45, 1, .1, 500);
+const L = makeLights(), sun = L.sun; scene.add(L.hemi, L.amb); sun.castShadow = true;
+scene.environment = makeEnvironment(renderer, new THREE.Vector3(-42, 47, 45)); sun.shadow.mapSize.set(4096, 4096);
+Object.assign(sun.shadow.camera, {left:-95, right:95, top:95, bottom:-95, near:1, far:260}); sun.shadow.bias = -.0006; sun.shadow.normalBias = .1;
+scene.add(sun, sun.target);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshLambertMaterial({color:0xf1f5f8})); floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+
+// 진열: 새 장식을 앞쪽에, 기존 소품을 뒤쪽에 둔다.
+// 건물은 크기가 커서 맨 뒤쪽 줄에 따로 세운다.
+const small = [...names.filter(n => isNew(n) && !isBld(n)), ...names.filter(n => !isNew(n))], COLS = 5, GAP = 15, items = [];
+const order = [...names.filter(isBld), ...small];
+let bldX = 0;
+order.forEach(n => {
+  const def = getProp(n), obj = buildProp(n, n === 'car' ? {color:0xd9695c} : {}), i = small.indexOf(n), col = i % COLS, row = Math.floor(i / COLS);
+  const fp = new THREE.Box3().setFromObject(obj).getSize(new THREE.Vector3()), big = isBld(n), padR = big ? Math.max(fp.x, fp.z) / 2 + 3 : Math.min(7, Math.max(4.2, Math.max(fp.x, fp.z) / 2 + 1));
+  const x = big ? bldX + padR : (col - (COLS - 1) / 2) * GAP, z = big ? -padR - 12 : row * GAP;
+  if (big) bldX += padR * 2 + 4;
+  obj.position.set(x, 0, z); if (!obj.userData.info) obj.traverse(m => { if (m.isMesh) { m.castShadow = true; m.receiveShadow = true; } }); scene.add(obj);
+  const pad = new THREE.Mesh(new THREE.CircleGeometry(padR, 56), new THREE.MeshLambertMaterial({color:isNew(n) ? 0xe6eef3 : 0xeceff2})); pad.rotation.x = -Math.PI / 2; pad.position.set(x, .01, z); pad.receiveShadow = true; scene.add(pad);
+  const box = new THREE.Box3().setFromObject(obj), size = box.getSize(new THREE.Vector3());
+  const tag = pillSprite(def.label, isNew(n) ? 'rgba(47,127,140,.92)' : 'rgba(255,255,255,.92)', isNew(n) ? '#fff' : '#2b3f55', .7); tag.position.set(x, size.y + 1, z); scene.add(tag);
+  items.push({n, def, obj, x, z, size, tag});
+});
+
+// 목록
+const sel = {i:0};
+items.forEach((it, i) => {
+  const b = document.createElement('button'); b.className = 'item'; b.textContent = it.def.label;
+  if (it.def.update) { const s = document.createElement('span'); s.className = 'badge'; s.textContent = '움직임'; b.append(s); }
+  b.onclick = () => select(i); it.btn = b;
+  document.getElementById(it.def.isNewStyle ? 'list-pbr' : isBld(it.n) ? 'list-bld' : isNew(it.n) ? 'list-new' : 'list-old').append(b);
+});
+
+// 카메라
+const cam = {yaw:.6, pitch:.42, dist:12, tx:0, ty:1, tz:0, idle:0}, goal = {dist:12, tx:0, ty:1, tz:0};
+function select(i){
+  sel.i = i; const it = items[i];
+  items.forEach((x, k) => { x.btn.setAttribute('aria-current', k === i ? 'true' : 'false'); x.tag.visible = k !== i; });
+  goal.tx = it.x; goal.tz = it.z; goal.ty = Math.max(.2, it.size.y * (isBld(it.n) ? .45 : .25)); goal.dist = Math.max(6.5, Math.max(it.size.x, it.size.y, it.size.z) * (isBld(it.n) ? 1.75 : 2.3) + 2.5);
+  document.getElementById('name').textContent = it.def.label;
+  const meta = document.getElementById('meta'); meta.textContent = '';
+  [it.def.category || '기타', '폭 ' + it.size.x.toFixed(1) + ' · 깊이 ' + it.size.z.toFixed(1) + ' · 높이 ' + it.size.y.toFixed(1),
+   it.def.colliders ? '충돌 영역 ' + it.def.colliders.length + '개' : isBld(it.n) ? '충돌 자동 등록' : '충돌 없음', it.def.update ? '애니메이션 있음' : '정지', it.def.isNewStyle ? '아파트단지에 배치됨' : isBld(it.n) ? '맵에 배치됨' : isNew(it.n) ? '새로 만든 소품' : '게임에서 사용 중']
+    .concat(it.obj.userData.info ? ['삼각형 ' + it.obj.userData.info.tris.toLocaleString() + '개', '그리기 ' + it.obj.userData.info.draws + '회 · 재질 ' + it.obj.userData.info.materials + '개'] : [])
+    .forEach(t => { const s = document.createElement('span'); s.textContent = t; meta.append(s); });
+  document.getElementById('code').textContent = it.def.usage || "W.place('" + it.n + "', {x: 300, z: 140, rot: 0});";
+}
+// 설명 카드 접기/펼치기. 좁은 화면(휴대폰)에서는 접힌 채로 시작하고, 고른 상태는 이 브라우저에 기억한다.
+const card = document.getElementById('card'), fold = document.getElementById('fold');
+function setOpen(open){
+  card.dataset.open = open ? 'true' : 'false'; fold.setAttribute('aria-expanded', open ? 'true' : 'false');
+  document.getElementById('fold-label').textContent = open ? '접기' : '자세히';
+  try { localStorage.setItem('gallery-card-open', open ? '1' : '0'); } catch (err) {}
+}
+let saved = null; try { saved = localStorage.getItem('gallery-card-open'); } catch (err) {}
+setOpen(saved === null ? !matchMedia('(max-width:720px)').matches : saved === '1');
+fold.onclick = () => setOpen(card.dataset.open !== 'true');
+document.getElementById('copy').onclick = async e => {
+  const t = document.getElementById('code').textContent, btn = e.currentTarget;
+  try { await navigator.clipboard.writeText(t); btn.textContent = '복사됨'; } catch (err) { const r = document.createRange(); r.selectNodeContents(document.getElementById('code')); getSelection().removeAllRanges(); getSelection().addRange(r); btn.textContent = '선택됨'; }
+  setTimeout(() => { btn.textContent = '복사'; }, 1400);
+};
+let drag = null, pinch = 0; const ptr = new Map();
+canvas.addEventListener('pointerdown', e => { ptr.set(e.pointerId, {x:e.clientX, y:e.clientY}); try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+  if (ptr.size === 2) { const a = [...ptr.values()]; pinch = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); } cam.idle = 0; });
+canvas.addEventListener('pointermove', e => { const p = ptr.get(e.pointerId); if (!p) return; const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY; cam.idle = 0;
+  if (ptr.size === 2 && pinch) { const a = [...ptr.values()], d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); goal.dist = Math.min(160, Math.max(3, goal.dist * pinch / d)); pinch = d; return; }
+  cam.yaw -= dx * .007; cam.pitch = Math.min(1.3, Math.max(.05, cam.pitch + dy * .005)); });
+const up = e => { ptr.delete(e.pointerId); if (ptr.size < 2) pinch = 0; };
+canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+canvas.addEventListener('wheel', e => { goal.dist = Math.min(160, Math.max(3, goal.dist * (e.deltaY > 0 ? 1.1 : .9))); cam.idle = 0; e.preventDefault(); }, {passive:false});
+canvas.addEventListener('keydown', e => { if (e.key === 'ArrowRight') select((sel.i + 1) % items.length); if (e.key === 'ArrowLeft') select((sel.i + items.length - 1) % items.length); });
+
+function resize(){ const r = canvas.getBoundingClientRect(); renderer.setSize(r.width, r.height, false); camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(canvas); resize();
+const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let last = performance.now();
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt = Math.min(.05, (now - last) / 1000); last = now; cam.idle += dt;
+  if (cam.idle > 3 && !still) cam.yaw += dt * .25;
+  const k = Math.min(1, dt * 4); ['tx','ty','tz','dist'].forEach(p => { cam[p] += (goal[p] - cam[p]) * k; });
+  const cp = Math.cos(cam.pitch);
+  camera.position.set(cam.tx + Math.sin(cam.yaw) * cp * cam.dist, cam.ty + Math.sin(cam.pitch) * cam.dist, cam.tz + Math.cos(cam.yaw) * cp * cam.dist);
+  camera.lookAt(cam.tx, cam.ty, cam.tz);
+  sun.target.position.set(cam.tx, 0, cam.tz); sun.position.set(cam.tx - 84, 94, cam.tz + 90);
+  items.forEach(it => { if (it.def.update) it.def.update(it.obj, dt, now); });
+  renderer.render(scene, camera);
+}
+select(Math.max(0, items.findIndex(it => it.def.isNewStyle))); requestAnimationFrame(frame);
+window.__galleryReady = true;
+</script>
+</body>
+</html>
