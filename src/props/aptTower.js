@@ -115,9 +115,8 @@ function chunk(S, G, F, R, o){
   const x0 = o.x0 ?? -HX, x1 = o.x1 ?? HX, z0 = -HZ, z1 = HZ, H = F * FH, hx0 = o.neg ? x0 + .5 : x0, hx1 = o.pos ? x1 - .5 : x1;
   const pick = a => a[Math.floor(R() * a.length)], glass = () => { const k = R(); return k < .04 ? LIT : k < .3 ? pick(CURTAIN) : pick(GLASS); };
   box(S, x0, 0, z0, x1, 2 * FH, z1, C.base); box(S, x0, 2 * FH, z0, x1, H, z1, C.wall);
-  // 앞: 유리로 막은 베란다와 화단
+  // 앞: 유리로 막은 베란다 (덤불 조경은 따로 만든 소품으로 놓는다)
   balconyRun(S, G, F, R, x0, x1, z1, {endA:true, endB:true});
-  box(S, hx0, 0, z1 + 1.3, hx1, .7, z1 + 2.4, C.hedge); box(S, hx0 - (o.neg ? .1 : 0), .7, z1 + 1.2, hx1 + (o.pos ? .1 : 0), .92, z1 + 2.5, C.snow);
 
   // 뒤: 창 두 개씩, 가스 배관, 계단실 탑
   const TOP = H + 3.6;
@@ -141,8 +140,8 @@ function chunk(S, G, F, R, o){
   box(S, -.04, TOP + 1.9, z0 + .6, .04, TOP + 4.2, z0 + .68, C.dark);
   // 드러난 측벽의 세로 창 줄
   [[x0, -1, o.neg], [x1, 1, o.pos]].forEach(([sx, s, open]) => { if (!open) return;
-    for (let f = 0; f < F; f++) { const y = f * FH + 1.05; box(G, Math.min(sx, sx + s * .05), y, z1 - 1.9, Math.max(sx, sx + s * .05), y + 1.25, z1 - .8, glass());
-      box(S, Math.min(sx, sx + s * .12), y - .1, z1 - 1.98, Math.max(sx, sx + s * .12), y, z1 - .72, C.trim); } });
+    for (let f = 0; f < F; f++) { const y = f * FH + 1.05; box(G, Math.min(sx, sx + s * .1), y, z1 - 1.9, Math.max(sx, sx + s * .1), y + 1.25, z1 - .8, glass());
+      box(S, Math.min(sx, sx + s * .17), y - .1, z1 - 1.98, Math.max(sx, sx + s * .17), y, z1 - .72, C.trim); } });
 }
 // 'ㄱ'자 모서리 세대: 정사각 몸통(DEPTH×DEPTH). 중심 (cx, cz), 바깥면은 북(-z)·동(+x).
 // 베란다를 북쪽과 동쪽에 둘러 붙이고, 바깥 모서리에서 두 줄이 겹치지 않게 북쪽 줄이 모서리 칸을 맡는다.
@@ -153,9 +152,6 @@ function corner(S, G, F, R, cx, cz, base){
   box(S, x0, 0, z0, x1, 2 * FH, z1, C.base); box(S, x0, 2 * FH, z0, x1, H, z1, C.wall);
   put(Math.PI, () => balconyRun(S, G, F, R, -h - .55, h, h, {endA:true, endB:true}));        // 북쪽 줄: 바깥 모서리 칸까지
   put(Math.PI / 2, () => balconyRun(S, G, F, R, -h, h, h, {endA:true, endB:true}));         // 동쪽 줄
-  // 화단: 날개 화단과 같은 줄에 ㄱ자로 이어 붙인다 (북쪽 줄이 모서리를 맡는다)
-  box(S, x0, 0, z0 - 2.4, x1 + 2.4, .7, z0 - 1.3, C.hedge); box(S, x0, .7, z0 - 2.5, x1 + 2.5, .92, z0 - 1.2, C.snow);
-  box(S, x1 + 1.3, 0, z0 - 1.3, x1 + 2.4, .7, z1, C.hedge); box(S, x1 + 1.2, .7, z0 - 1.2, x1 + 2.5, .92, z1, C.snow);
   box(S, x0, H, z0, x1, H + .32, z1, C.snow);
 }
 
@@ -179,9 +175,10 @@ export function buildAptTower(o = {}){
     // 측벽 그림과 현관 표지는 덩어리 그룹에 따로 붙인다
     const cg = new THREE.Group(); cg.rotation.y = p.rot; cg.position.set(XF.tx, 0, XF.tz); inner.add(cg);
     [[p.x0 ?? -HX, -1, p.neg], [p.x1 ?? HX, 1, p.pos]].forEach(([sx, s, open]) => { if (!open) return;
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(DEPTH - .02, H - .02), stdMat(sideTex(H, F, num))); m.rotation.y = s * Math.PI / 2; m.position.set(sx + s * .03, H / 2, 0); cg.add(m); });
+      const mat = stdMat(sideTex(H, F, num)); mat.polygonOffset = true; mat.polygonOffsetFactor = -1; mat.polygonOffsetUnits = -4;   // 벽면과 겹쳐 깜빡이지 않게 (측벽 그림은 벽에서 4cm, 창은 10cm 튀어나온다)
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(DEPTH - .02, H - .02), mat); m.rotation.y = s * Math.PI / 2; m.position.set(sx + s * .04, H / 2, 0); cg.add(m); });
     const P = q => xp([q[0], 0, q[1]]);
-    const a = P([p.x0 ?? -HX, -HZ]), b = P([p.x1 ?? HX, HZ + 2.5]); colliders.push(addRect(a[0], a[2], b[0], b[2]));
+    const a = P([p.x0 ?? -HX, -HZ]), b = P([p.x1 ?? HX, HZ + .7]); colliders.push(addRect(a[0], a[2], b[0], b[2]));
     const ca = P([-CORE_W / 2, -HZ - CORE_D]), cb = P([CORE_W / 2, -HZ]); colliders.push(addRect(ca[0], ca[2], cb[0], cb[2]));
     // 현관: 덩어리 뒤(계단실 벽)에 180도 돌려 붙인다. E좌표 → 동 좌표 변환을 기억해 두고 충돌·높이에 쓴다.
     const ent = buildEntrance({side:p.side, num, units:UNITS[i]}); ent.rotation.y = Math.PI; ent.position.set(0, 0, -HZ - CORE_D); cg.add(ent);
@@ -193,7 +190,7 @@ export function buildAptTower(o = {}){
     const fa = P([p.x0 ?? -HX, -HZ]), fb = P([p.x1 ?? HX, HZ]); footprints.push(addRect(fa[0], fa[2], fb[0], fb[2]));
   });
   if (shape === 'L') { XF = {c:1, s:0, tx:ox, tz:oz}; corner(S, G, F, R, CC, 0, XF);
-    const h = DEPTH / 2; colliders.push(addRect(CC - h + ox, -h - 2.5 + oz, CC + h + 2.5 + ox, h + oz)); footprints.push(addRect(CC - h + ox, -h + oz, CC + h + ox, h + oz)); }
+    const h = DEPTH / 2; colliders.push(addRect(CC - h + ox, -h - .7 + oz, CC + h + .7 + ox, h + oz)); footprints.push(addRect(CC - h + ox, -h + oz, CC + h + ox, h + oz)); }
   XF = {c:1, s:0, tx:0, tz:0};
 
   const wallMat = new THREE.MeshStandardMaterial({name:'apt-wall', vertexColors:true, roughness:.94, metalness:0, envMapIntensity:LOOK.envIntensity});

@@ -12,7 +12,7 @@ export function initSnow(){
     for (let i = 0; i < L.n; i++) { pos[i * 3] = (Math.random() - .5) * L.box; pos[i * 3 + 1] = Math.random() * 50; pos[i * 3 + 2] = (Math.random() - .5) * L.box; }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     const pts = new THREE.Points(g, new THREE.PointsMaterial({map:tex, color:0xffffff, size:L.size, transparent:true, opacity:L.op, depthWrite:false, fog:false}));
-    pts.frustumCulled = false; scene.add(pts); layers.push({pts, fall:L.fall});
+    pts.frustumCulled = false; if (!location.search.includes('nosnow')) scene.add(pts); layers.push({pts, fall:L.fall});
   });
 }
 export function updateSnow(dt, now, center){

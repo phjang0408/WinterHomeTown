@@ -1,9 +1,9 @@
 // 앉을 수 있는 곳: 벤치, 그네
 import * as THREE from '../lib/three.js';
-import { M, box, mesh } from '../core/gfx.js';
 import { root } from '../core/engine.js';
 import { PI } from '../core/util.js';
-import { ST } from '../config.js';
+import { ST, UNIT } from '../config.js';
+import { buildProp } from '../props/registry.js';
 import { W } from '../world/world.js';
 import { spotLabel } from '../world/builders.js';
 import { me } from '../entities/player.js';
@@ -26,13 +26,9 @@ const swingAngle = (i, now) => Math.sin(now / 1000 * 2.3 + i * 1.7) * .55;
 defineActivity({
   id:'swing', st:ST.SWING,
   setup(){
-    const wood = M(0xa8674f);
-    box(SW.cx - 3.2, SW.z - .1, SW.cx + 3.2, SW.z + .1, .16, wood, SW.top);
-    [SW.cx - 3.1, SW.cx + 3.1].forEach(x => [-.9, .9].forEach(dz => { mesh(new THREE.CylinderGeometry(.09,.09,SW.top,8), wood, x, SW.top / 2, SW.z + dz); W.circle(x, SW.z + dz, .12); }));
-    SW.seats.forEach(sx => { const p = new THREE.Group(); p.position.set(sx, SW.top, SW.z);
-      [-.3, .3].forEach(dx => mesh(new THREE.CylinderGeometry(.025,.025,SW.L,6), M(0x6b7684), dx, -SW.L / 2, 0, p));
-      box(-.42,-.2,.42,.2,.08,M(0x3f8a97),-SW.L - .04,p); root.add(p); pivots.push(p); });
-    spotLabel('그네', SW.cx, 4.7, SW.z);
+    W.place('swingSet', {x:SW.cx, z:SW.z});                      // 틀 (props/aptStreet.js). 앉는 판은 흔들리도록 축마다 따로 매단다
+    SW.seats.forEach(sx => { const p = new THREE.Group(); p.position.set(sx, SW.top - .1 * UNIT, SW.z); p.add(buildProp('swingSeat')); root.add(p); pivots.push(p); });
+    spotLabel('그네', SW.cx, 4.4, SW.z);
     SIT.set(ST.SWING, {arm:-.45, y:.06});
     POSES.set(ST.SWING, (w, ch, now) => {
       const i = w === me ? me.seat : (Math.abs(w.x - SW.seats[0]) < Math.abs(w.x - SW.seats[1]) ? 0 : 1), th = swingAngle(i, now);

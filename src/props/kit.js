@@ -1,6 +1,6 @@
 // 소품 파일들이 같이 쓰는 조립 도우미.
 import * as THREE from '../lib/three.js';
-import { triCount } from '../core/meshkit.js';
+import { triCount, uvMeters } from '../core/meshkit.js';
 import { UNIT } from '../config.js';
 
 // 재질별로 모은 부품(Parts)을 메쉬로 만들어 UNIT 배율 그룹에 담는다. order: [[키, 재질, 그림자를 드리울지], ...]
@@ -28,3 +28,9 @@ export function grain(g, axis){
   g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); return g;
 }
 export function mulberry(seed){ let t = seed >>> 0; return () => { t = (t + 0x6D2B79F5) >>> 0; let r = Math.imul(t ^ (t >>> 15), t | 1); r ^= r + Math.imul(r ^ (r >>> 7), r | 61); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; }; }
+// 옆모습 윤곽([x, y] 목록)을 z0~z1로 밀어낸 기둥 (박공벽, 지붕, 눈 이불). bevel > 0 이면 모서리를 굴린다.
+export function prism(pts, z0, z1, bevel = 0){
+  const sh = new THREE.Shape(pts.map(p => new THREE.Vector2(p[0], p[1])));
+  const g = new THREE.ExtrudeGeometry(sh, {depth:z1 - z0 - 2 * bevel, bevelEnabled:bevel > 0, bevelThickness:bevel, bevelSize:bevel, bevelSegments:2});
+  g.translate(0, 0, z0 + bevel); return uvMeters(g);
+}

@@ -5,7 +5,7 @@ import { defineProp } from './registry.js';
 import { smokeUpdate } from './basic.js';
 import { M, glow, box, mesh, canvasTex, prismGeo } from '../core/gfx.js';
 import { PI, TAU, rr } from '../core/util.js';
-import { FONT_D } from '../config.js';
+import { FONT_D, FONT_B } from '../config.js';
 
 const SNOW = 0xf8fbfd;
 const lam = map => new THREE.MeshLambertMaterial({map});
@@ -29,11 +29,11 @@ defineProp('busStop', {
     // 노선도 패널
     box(-.9,-.71,.9,-.69,1.3,lam(canvasTex(180, 130, (c, W, H) => {
       c.fillStyle = '#f6f8fa'; c.fillRect(0, 0, W, H); c.fillStyle = '#3f8a97'; c.fillRect(0, 0, W, 26);
-      c.fillStyle = '#fff'; c.font = '17px ' + FONT_D; c.textAlign = 'center'; c.fillText('마을버스 노선', W / 2, 19);
+      c.fillStyle = '#fff'; c.font = '800 17px ' + FONT_B; c.textAlign = 'center'; c.fillText('마을버스 노선', W / 2, 19);
       c.strokeStyle = '#b5594a'; c.lineWidth = 5; c.beginPath(); c.moveTo(20, 60); c.lineTo(160, 60); c.lineTo(160, 108); c.lineTo(20, 108); c.closePath(); c.stroke();
       ['폐역','상가','학교','강변'].forEach((t, i) => { const x = [20,160,160,20][i], y = [60,60,108,108][i];
         c.fillStyle = '#fff'; c.beginPath(); c.arc(x, y, 7, 0, TAU); c.fill(); c.strokeStyle = '#34465c'; c.lineWidth = 2; c.stroke();
-        c.fillStyle = '#34465c'; c.font = '13px ' + FONT_D; c.fillText(t, x + (i === 1 || i === 2 ? -22 : 22), y + 4); });
+        c.fillStyle = '#34465c'; c.font = '800 13px ' + FONT_B; c.fillText(t, x + (i === 1 || i === 2 ? -22 : 22), y + 4); });
     })),.75,g);
     // 의자
     box(-1.8,-.6,1.8,-.15,.1,M(0xb79d82),.48,g); [-1.5,1.5].forEach(x => box(x - .05,-.5,x + .05,-.25,.48,M(0x6b7684),0,g));
@@ -55,7 +55,7 @@ defineProp('vending', {
       c.fillStyle = '#d9695c'; c.fillRect(0, 0, W, H); c.fillStyle = '#eef3f6'; rr(c, 10, 10, 70, 110, 6); c.fill();
       const cans = ['#3f6fa8','#e2a84b','#7fae8a','#c48bb0','#d9695c','#5a6b7d'];
       for (let r = 0; r < 3; r++) for (let q = 0; q < 4; q++) { c.fillStyle = cans[(r * 4 + q) % 6]; rr(c, 15 + q * 16, 18 + r * 34, 11, 24, 3); c.fill(); }
-      c.fillStyle = '#34465c'; c.fillRect(10, 140, 70, 26); c.fillStyle = '#f7e2a6'; c.font = '16px ' + FONT_D; c.textAlign = 'center'; c.fillText('따뜻한 음료', 45, 158);
+      c.fillStyle = '#34465c'; c.fillRect(10, 140, 70, 26); c.fillStyle = '#f7e2a6'; c.font = '800 16px ' + FONT_B; c.textAlign = 'center'; c.fillText('따뜻한 음료', 45, 158);
       c.fillStyle = '#2b3f55'; c.fillRect(88, 30, 22, 30); c.fillRect(88, 150, 22, 14);
     }));
     box(-.6,-.4,.6,.4,1.95,[body,body,body,body,front,body],0,g);
@@ -84,8 +84,8 @@ defineProp('mailbox', {
 });
 
 // 4. 공중전화 부스
-defineProp('phoneBooth', {
-  label:'공중전화', category:'거리', colliders:[{r:[-.65,-.65,.65,.65]}], minimap:'#3f6fa8', mmSize:1, blocksCamera:true,
+defineProp('phoneBoothOld', {
+  label:'공중전화 (예전)', category:'거리', colliders:[{r:[-.65,-.65,.65,.65]}], minimap:'#3f6fa8', mmSize:1, blocksCamera:true,
   build(){
     const g = new THREE.Group(), frame = M(0x3f6fa8), glass = new THREE.MeshLambertMaterial({color:0xd5e6ef, transparent:true, opacity:.5});
     [[-.6,-.6],[.6,-.6],[-.6,.6],[.6,.6]].forEach(p => box(p[0] - .05, p[1] - .05, p[0] + .05, p[1] + .05, 2.3, frame, 0, g));

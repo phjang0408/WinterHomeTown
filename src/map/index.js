@@ -1,7 +1,7 @@
 // 맵 조립. 구역을 늘릴 때는 zones 폴더에 파일을 만들고 ZONES 배열에 넣는다.
 import { buildTerrain } from './terrain.js';
 import { buildScenery } from './scenery.js';
-import { buildRailway, buildStreets, buildRiverside } from './base.js';
+import { buildRailway, buildStreets, buildRiverside, finishBase } from './base.js';
 import apartments from './zones/apartments.js';
 import park from './zones/park.js';
 import school from './zones/school.js';
@@ -15,4 +15,5 @@ export function buildMap(){
   buildStreets();
   buildRiverside();
   ZONES.forEach(z => z.build());
+  finishBase();                       // 바닥판 · 가로수 · 가로등을 재질별로 한 번에 그린다
 }

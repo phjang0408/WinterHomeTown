@@ -1,4 +1,4 @@
-// 차량: 승용차(세단), SUV, 1톤 트럭, 택배 탑차.
+// 차량: 승용차(세단), SUV, 경차, 1톤 트럭, 택배 탑차. 번호판은 2000년대 초반의 초록 두 줄 번호판.
 // 몸통은 앞뒤로 늘어선 단면 고리(둥근 모서리)를 이어 만든다(loft). 바퀴 자리는 고리 아랫변을 반원으로 들어 올려 실제로 파낸다.
 // 그리기 5회: 도장(차체) · 광택(유리·등·휠) · 무광(타이어·그릴·고무) · 눈 · 번호판 그림. 미터 단위, 앞이 +z.
 // 색은 o.color. 여러 대를 한꺼번에 놓을 때(W.placeMany)는 차체 메쉬(userData.tint)에 인스턴스 색이 곱해진다.
@@ -7,18 +7,20 @@ import { defineProp } from './registry.js';
 import { canvasTex } from '../core/gfx.js';
 import { box, loft, tube, lathe, fillet, xf, bakeAO, triCount, Parts, blob } from '../core/meshkit.js';
 import { carPaintMaterial, glassMaterial, matteMaterial, snowMaterial, decalMaterial } from '../core/texkit.js';
+import { quad, quadZ } from './kit.js';
 import { UNIT, FONT_D } from '../config.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z), K = 3;
-const C = {glass:0x1d2730, tire:0x1d1f22, dark:0x14171a, trim:0x2b2f34, rim:0xc3c9ce, head:0xeef3f6, tail:0xb5261f, amber:0xe59a2b, plate:0xf3f3ef, chrome:0xd9dee2};
+const RED = 0xc6281f;
+export const C = {glass:0x1d2730, tire:0x1d1f22, dark:0x14171a, trim:0x2b2f34, rim:0xc3c9ce, head:0xeef3f6, tail:0xb5261f, amber:0xe59a2b, plate:0xf3f3ef, chrome:0xd9dee2, hub:0xb4bac0, spoke:0xa3aab1};
 
 // [z, 값] 점들을 지나는 매끄러운 옆모습 곡선 → z로 값을 찾는 함수
-function prof(points){
+export function prof(points){
   const pts = new THREE.CatmullRomCurve3(points.map(([z, v]) => V(0, v, z)), false, 'centripetal').getPoints(200);
   return z => { if (z <= pts[0].z) return pts[0].y; for (let i = 1; i < pts.length; i++) if (z <= pts[i].z) { const a = pts[i - 1], b = pts[i]; return a.y + (b.y - a.y) * (z - a.z) / Math.max(1e-6, b.z - a.z); } return pts[pts.length - 1].y; };
 }
 // 아래 몸통 단면: 위 모서리 rt, 아래 모서리 rb, 윗면은 가운데가 crown만큼 볼록. 점 20개 (윗면: 7~11번)
-function ring(z, hw, yb, yt, rt, rb, crown){
+export function ring(z, hw, yb, yt, rt, rb, crown){
   const pts = [], arc = (cx, cy, r, a0) => { for (let i = 0; i <= K; i++) { const a = a0 + i / K * Math.PI / 2; pts.push(V(cx + Math.cos(a) * r, cy + Math.sin(a) * r, z)); } };
   rt = Math.min(rt, (yt - yb) * .45, hw * .45); rb = Math.min(rb, (yt - yb) * .45);
   arc(hw - rb, yb + rb, rb, -Math.PI / 2); arc(hw - rt, yt - rt, rt, 0);
@@ -33,33 +35,38 @@ function ghRing(z, hb, y0, yr, inset, rc, crown){
   for (let i = 0; i <= K; i++) { const a = Math.PI / 2 + i / K * Math.PI / 2; pts.push(V(-ht + rc + Math.cos(a) * rc, yr - rc + Math.sin(a) * rc, z)); }
   pts.push(V(-hb, y0, z)); return pts;
 }
-const steps = (a, b, d) => { const n = Math.max(1, Math.round((b - a) / d)); return Array.from({length:n + 1}, (_, i) => a + (b - a) * i / n); };
+export const steps = (a, b, d) => { const n = Math.max(1, Math.round((b - a) / d)); return Array.from({length:n + 1}, (_, i) => a + (b - a) * i / n); };
 // 두 점을 잇는 납작한 기둥 (창 사이 기둥)
 function strut(a, b, w, t){ const g = new THREE.BoxGeometry(t, a.distanceTo(b), w); g.rotateZ(Math.atan2(-(b.x - a.x), b.y - a.y)); g.translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2); return g; }
 
 // 바퀴 하나 (바깥면이 +x). 타이어는 무광, 휠은 광택.
-function wheel(P, x, y, z, R, w, sideSign){
+export function wheel(P, x, y, z, R, w, sideSign){
   const place = g => { g.rotateZ(-Math.PI / 2); if (sideSign < 0) g.rotateY(Math.PI); g.translate(x, y, z); return g; };
   P.add('mat', place(lathe([[R - .085, -w / 2], [R - .02, -w / 2], [R, -w / 2 + .028], [R, w / 2 - .028], [R - .02, w / 2], [R - .085, w / 2], [R - .095, w / 2 - .03]], 16)), C.tire);
   P.add('gls', place(lathe([[0, w / 2 - .012], [.05, w / 2 - .012], [.07, w / 2 - .03], [R - .13, w / 2 - .05], [R - .1, w / 2 - .028], [R - .09, w / 2 - .01]], 14)), C.rim);
-  for (let i = 0; i < 5; i++) { const g = new THREE.RingGeometry(.085, R - .135, 3, 1, i * Math.PI * .4 + .12, Math.PI * .4 - .34); g.rotateX(-Math.PI / 2); g.translate(0, w / 2 - .034, 0); P.add('mat', place(g), C.dark); }
+  P.add('gls', place(new THREE.CylinderGeometry(R - .088, R - .088, w - .024, 18)), C.hub);                                       // 휠 속을 옅은 회색으로 채운다 (안쪽에서도 뚫려 보이지 않게)
+  for (let i = 0; i < 5; i++) { const g = new THREE.RingGeometry(.085, R - .135, 3, 1, i * Math.PI * .4 + .12, Math.PI * .4 - .34); g.rotateX(-Math.PI / 2); g.translate(0, w / 2 - .034, 0); P.add('gls', place(g), C.spoke); }
+  P.add('gls', place(xf(new THREE.CylinderGeometry(.05, .055, .02, 12), {y:w / 2 - .006})), C.spoke);                             // 가운데 캡
 }
-// 번호판 그림 (앞뒤 같은 번호)
-const plates = new Map();
-function plateMat(text, yellow, extra){
-  const key = text + yellow + (extra ? extra.key : ''); if (plates.has(key)) return plates.get(key);
-  const t = canvasTex(1024, 512, (g, W, H) => {
-    g.clearRect(0, 0, W, H); g.fillStyle = yellow ? '#f1c02e' : '#f6f6f2'; g.fillRect(0, 0, 512, 110); g.strokeStyle = '#1b1d20'; g.lineWidth = 6; g.strokeRect(5, 5, 502, 100);
-    g.fillStyle = '#16181b'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '700 78px ' + FONT_D; g.fillText(text, 256, 60);
+// 번호판: 2000년대 초반의 초록 바탕 흰 글씨 두 줄 번호판 (335×170mm). 그림은 캔버스 왼쪽 위 384×192 칸에 그린다.
+const plates = new Map(), PLW = .336, PLH = .168;
+function plateMat(lines, extra){
+  const key = lines.join('|') + (extra ? extra.key : ''); if (plates.has(key)) return plates.get(key);
+  const t = canvasTex(extra ? 1024 : 512, extra ? 1024 : 256, (g, W, H) => {
+    g.clearRect(0, 0, W, H);
+    const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+    g.fillStyle = '#e4ebe5'; rr(0, 0, 384, 192, 18); g.fill(); g.fillStyle = '#1f6a45'; rr(7, 7, 370, 178, 13); g.fill();
+    g.fillStyle = '#f3f6f1'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '62px ' + FONT_D; g.fillText(lines[0], 192, 50); g.font = '96px ' + FONT_D; g.fillText(lines[1], 192, 128);
+    [[28, 26], [356, 26]].forEach(([x, y]) => { g.fillStyle = '#c9d2cc'; g.beginPath(); g.arc(x, y, 7, 0, 7); g.fill(); });
     if (extra) extra.draw(g, W, H);
   });
   const m = decalMaterial(t, {rough:.55, alpha:true}); plates.set(key, m); return m;
 }
-function plateQuads(D, zf, zr, y, hw = .26){
-  const q = (z, back) => { const g = new THREE.BufferGeometry(), s = back ? -1 : 1;
-    g.setAttribute('position', new THREE.Float32BufferAttribute([-hw * s, y, z, hw * s, y, z, hw * s, y + .112, z, -hw * s, y + .112, z], 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute([0,0,s, 0,0,s, 0,0,s, 0,0,s], 3));
-    g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 1 - 110 / 512, .5, 1 - 110 / 512, .5, 1, 0, 1], 2)); g.setIndex([0, 1, 2, 0, 2, 3]); return g; };
-  D.add('d', q(zf, false)); D.add('d', q(zr, true));
+// 번호판 한 장: 받침판과 그림 판. back이면 뒤를 본다. big은 그림이 1024 캔버스에 있을 때(탑차).
+function plate(P, D, z, y, back, big){
+  const s = back ? -1 : 1, hw = PLW / 2, uv = big ? [0, 1 - 192 / 1024, 384 / 1024, 1] : [0, .25, .75, 1];
+  P.add('gls', box(-hw - .012, y - .012, back ? z - .004 : z - .03, hw + .012, y + PLH + .012, back ? z + .03 : z + .004, .008), 0x1f5f3f);
+  D.add('d', quadZ(-hw, y, hw, y + PLH, z + s * .0055, uv, back));
 }
 // 조립: 재질별로 합치고, 정보·크기를 붙인다
 function finish(P, D, decal, o, size){
@@ -74,7 +81,7 @@ function finish(P, D, decal, o, size){
   return g;
 }
 // 눈 이불: 윗면 점들(가로로 5개)을 따라 도톰하게 덮는다
-function blanket(rows, thick, seed){
+export function blanket(rows, thick, seed){
   const m = rows.length, rings = rows.map((r, i) => { const u = i / (m - 1), k = Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, u))), .45) * (.82 + .18 * Math.sin(r[0].z * 9 + seed));
     const low = r.map(p => p.clone().setY(p.y + .004)), up = r.map((p, j) => V(p.x * .96, p.y + .012 + thick * k * (j === 0 || j === r.length - 1 ? .45 : 1), p.z)); return low.concat(up.reverse()); });
   return loft(rings);
@@ -105,12 +112,27 @@ function passenger(S, o){
   // 앞: 전조등, 그릴, 아래 흡기구, 안개등 / 뒤: 후미등, 반사판
   const fz = z1, fw = hw(z1 - .12), fy = top(z1 - .03) + .02, ry = top(z0 + .12), rw = hw(z0 + .12);
   [-1, 1].forEach(s => { P.add('gls', box(s * (fw - .22) - .2, fy - .16, fz - .24, s * (fw - .22) + .2, fy - .04, fz + .014, .04), C.head); P.add('gls', box(s * (fw - .06) - .05, fy - .17, fz - .36, s * (fw - .06) + .05, fy - .05, fz - .16, .03), C.amber);
+    if (S.hatch) return;
     P.add('gls', box(s * (rw - .19) - .21, ry - .2, z0 + .0, s * (rw - .19) + .21, ry - .05, z0 + .2, .04), C.tail); P.add('gls', box(s * (rw - .3) - .1, bot(z0 + .1) + .05, z0 - .004, s * (rw - .3) + .1, bot(z0 + .1) + .09, z0 + .05), 0x8f1f1a); });
   P.add('mat', box(-fw + .42, fy - .2, fz - .1, fw - .42, fy - .07, fz + .006, .02), C.dark); P.add('gls', box(-fw + .44, fy - .145, fz - .05, fw - .44, fy - .125, fz + .012), C.chrome);
   P.add('mat', box(-fw + .2, bot(fz - .1) + .03, fz - .14, fw - .2, bot(fz - .1) + .16, fz + .004, .03), C.trim);
-  P.add('mat', box(-rw + .15, bot(z0 + .1) + .02, z0 - .004, rw - .15, bot(z0 + .1) + .14, z0 + .14, .03), C.trim);
-  P.add('gls', box(-.28, fy - .34, fz - .02, .28, fy - .2, fz + .008, .008), C.plate); P.add('gls', box(-.28, ry - .4, z0 - .008, .28, ry - .26, z0 + .02, .008), C.plate);
-  plateQuads(D, fz + .0095, z0 - .0095, fy - .326); const rear = D.m.d[1], rp = rear.getAttribute('position'); for (let i = 0; i < 4; i++) rp.setY(i, rp.getY(i) - (fy - .326) + (ry - .386));
+  if (!S.hatch) P.add('mat', box(-rw + .15, bot(z0 + .1) + .02, z0 - .004, rw - .15, bot(z0 + .1) + .14, z0 + .14, .03), C.trim);
+  plate(P, D, fz + .006, fy - .37, false);
+  if (S.hatch) {
+    // 경차 뒷모습: 뒤 유리 아래 모서리에 세로로 선 후미등(빨강 + 주황 + 둥근 후진등), 뒷문 선, 범퍼의 검은 띠, 띠 아래 번호판, 보조 제동등, 뒤 와이퍼
+    const by = bot(z0) + .02, zr = z0 - .012, lx = hw(z0) - .075;
+    [-1, 1].forEach(s => { const x = s * lx;
+      P.add('gls', box(x - .1, ry - .2, zr, x + .1, ry + .0, z0 + .14, .04), C.tail); P.add('gls', box(x - .1, ry - .31, zr, x + .1, ry - .19, z0 + .14, .035), C.amber);
+      P.add('gls', xf(new THREE.CylinderGeometry(.034, .034, .02, 12), {rx:Math.PI / 2, x:x - s * .02, y:ry - .262, z:zr - .002}), 0xeef1f3);
+      P.add('mat', box(s * (lx - .125) - .003, by + .27, z0 - .006, s * (lx - .125) + .003, ry + .0, z0 + .012), C.dark); });
+    P.add('mat', box(-lx + .125, by + .267, z0 - .006, lx - .125, by + .273, z0 + .012), C.dark);
+    P.add('mat', box(-hw(z0) + .03, by + .19, z0 - .016, hw(z0) - .03, by + .25, z0 + .1, .022), C.trim);
+    P.add('mat', box(-.21, by + .004, z0 - .008, .21, by + .182, z0 + .03, .012), C.dark); plate(P, D, z0 - .012, by + .01, true);
+    P.add('mat', box(-.07, ry - .1, z0 - .014, .07, ry - .07, z0 + .01, .008), C.dark);                                      // 뒷문 손잡이
+    const gy = y => g0 + (y - roof(g0)) / Math.max(.05, roof(g0 + .12) - roof(g0)) * .12 - .016;                             // 뒤 유리 겉면의 z
+    P.add('gls', box(-.11, ry + .07, gy(ry + .085) - .008, .11, ry + .1, gy(ry + .085) + .02, .008), C.tail);
+    P.add('mat', tube([V(.03, ry + .06, gy(ry + .06)), V(.34, ry + .17, gy(ry + .17))], .009, {radial:5}), C.dark); P.add('mat', xf(new THREE.CylinderGeometry(.022, .022, .02, 8), {rx:Math.PI / 2, x:.03, y:ry + .055, z:gy(ry + .055)}), C.dark);
+  } else plate(P, D, z0 - (S.suv ? .136 : .006), ry - .43, true);
   if (S.suv) { [-1, 1].forEach(s => P.add('gls', tube(fillet([V(s * .62, rmax - .01, S.roofRange[0] + .35), V(s * .62, rmax + .045, S.roofRange[0] + .45), V(s * .62, rmax + .045, S.roofRange[1] - .5), V(s * .62, rmax - .01, S.roofRange[1] - .4)], .04, 3), .016, {radial:6}), C.chrome));
     P.add('mat', box(-.5, .62, z0 - .13, .5, .98, z0 + .02, .06), C.trim); }                                    // 지붕 레일, 뒤 범퍼 가드
   else P.add('pnt', xf(lathe([[0, 0], [.035, 0], [.02, .05], [0, .06]], 8), {x:0, y:rmax + .01, z:S.roofRange[0] + .25, rx:-.5}), 0xffffff);   // 지붕 안테나
@@ -123,19 +145,26 @@ function passenger(S, o){
   if (o.snow !== 0) { const th = o.snow === undefined ? 1 : o.snow;
     P.add('snw', blanket(rz.slice(1, -1).map(r => r.slice(3, 8)), .065 * th, seed));
     P.add('snw', blanket(body.filter(r => r[0].z > g1 + .1 && r[0].z < z1 - .3).map(r => r.slice(7, 12)), .04 * th, seed + 3));
-    if (!S.suv) P.add('snw', blanket(body.filter(r => r[0].z > z0 + .12 && r[0].z < g0 - .04).map(r => r.slice(7, 12)), .04 * th, seed + 5)); }
-  return finish(P, D, plateMat(S.plates[seed % S.plates.length], false), o, [hm * 2, rmax, z1 - z0]);
+    if (!S.suv && !S.hatch) P.add('snw', blanket(body.filter(r => r[0].z > z0 + .12 && r[0].z < g0 - .04).map(r => r.slice(7, 12)), .04 * th, seed + 5)); }
+  return finish(P, D, plateMat(S.plates[seed % S.plates.length]), o, [hm * 2, rmax, z1 - z0]);
 }
 const SEDAN = {R:.325, w:.215, axles:[-1.34, 1.4], rt:.07, crown:.012, tumble:.16, rc:.09, roofRange:[-1.16, .52], pillars:[-.22], seams:[1.02, -.22, -1.18], handles:[.0, -1.0], mirror:.98,
   hw:[[-2.34, .74], [-2.2, .85], [-1.8, .9], [0, .91], [1.7, .9], [2.15, .86], [2.34, .76]],
   top:[[-2.34, .78], [-2.25, .9], [-1.9, .955], [-1.2, .965], [0, .96], [.95, .955], [1.6, .9], [2.1, .8], [2.3, .72], [2.34, .68]],
   bot:[[-2.34, .36], [-2.15, .26], [-1.8, .21], [1.8, .21], [2.15, .25], [2.34, .33]],
-  roof:[[-1.9, .93], [-1.2, 1.385], [-.5, 1.445], [.2, 1.435], [.55, 1.39], [1.3, .93]], plates:['12가 3456', '48나 7102', '305다 2984']};
+  roof:[[-1.9, .93], [-1.2, 1.385], [-.5, 1.445], [.2, 1.435], [.55, 1.39], [1.3, .93]], plates:[['서울 52', '가 3456'], ['경기 41', '나 7102'], ['서울 30', '다 2984']]};
 const SUV = {suv:true, R:.365, w:.235, axles:[-1.32, 1.38], rt:.08, crown:.014, tumble:.15, rc:.1, roofRange:[-2.02, .42], pillars:[-.2, -1.25], seams:[1.0, -.2, -1.25], handles:[.02, -.98], mirror:.96,
   hw:[[-2.31, .8], [-2.2, .9], [-1.8, .935], [0, .94], [1.7, .935], [2.15, .9], [2.31, .8]],
   top:[[-2.31, .95], [-2.25, 1.07], [-1.9, 1.1], [0, 1.09], [1.0, 1.08], [1.6, 1.04], [2.1, .96], [2.28, .86], [2.31, .8]],
   bot:[[-2.31, .42], [-2.1, .3], [-1.8, .25], [1.8, .25], [2.1, .3], [2.31, .4]],
-  roof:[[-2.26, 1.08], [-2.1, 1.6], [-1.5, 1.69], [0, 1.7], [.45, 1.66], [1.25, 1.07]], plates:['77라 5120', '163마 8845']};
+  roof:[[-2.26, 1.08], [-2.1, 1.6], [-1.5, 1.69], [0, 1.7], [.45, 1.66], [1.25, 1.07]], plates:[['서울 55', '라 5120'], ['인천 31', '마 8845']]};
+
+// 경차: 짧고 키가 큰 5도어 해치백 (특정 차종을 본뜨지 않은 모양)
+const MINI = {hatch:true, R:.27, w:.165, axles:[-1.17, 1.18], rt:.06, crown:.01, tumble:.12, rc:.08, roofRange:[-1.5, .3], pillars:[-.2, -1.08], seams:[.84, -.2, -1.08], handles:[.0, -.86], mirror:.8,
+  hw:[[-1.75, .62], [-1.62, .72], [-1.3, .75], [0, .755], [1.2, .75], [1.6, .71], [1.75, .62]],
+  top:[[-1.75, .84], [-1.69, .93], [-1.4, .96], [0, .95], [.75, .94], [1.2, .9], [1.55, .8], [1.72, .7], [1.75, .66]],
+  bot:[[-1.75, .31], [-1.6, .27], [-1.3, .22], [1.3, .22], [1.6, .26], [1.75, .34]],
+  roof:[[-1.72, .95], [-1.6, 1.4], [-1.1, 1.47], [0, 1.48], [.35, 1.45], [1.02, .93]], plates:[['서울 52', '마 1024'], ['경기 43', '거 5810'], ['서울 31', '너 7733']]};
 
 // ── 1톤 트럭 · 택배 탑차 (운전석이 앞바퀴 위에 있는 캡오버) ──
 const CAB = {R:.3, w:.2, z0:.82, z1:2.5, hwv:.86, hw:prof([[.82, .86], [2.2, .86], [2.42, .82], [2.5, .77]]), top:prof([[.82, 1.16], [2.3, 1.15], [2.45, 1.11], [2.5, 1.06]]), bot:prof([[.82, .45], [2.3, .45], [2.5, .5]]),
@@ -157,8 +186,8 @@ function cabover(o, kind){
     P.add('mat', tube(fillet([V(s * (hm - .02), 1.25, 2.2), V(s * (hm + .16), 1.3, 2.3), V(s * (hm + .16), 1.5, 2.3)], .04, 3), .012, {radial:5}), C.dark); P.add('mat', box(s * (hm + .16) - .06, 1.36, 2.27, s * (hm + .16) + .06, 1.62, 2.32, .02), C.dark);   // 큰 사이드미러
     P.add('gls', box(s * .6 - .17, .8, 2.4, s * .6 + .17, .95, 2.51, .03), C.head); P.add('gls', box(s * .8 - .05, .82, 2.36, s * .8 + .06, .94, 2.47, .02), C.amber);
     P.add('gls', box(s * .7 - .1, .5, -2.61, s * .7 + .1, .6, -2.57, .01), C.tail); P.add('mat', box(s * .78 - .12, .25, -1.92, s * .78 + .12, .56, -1.9), C.trim); });
-  P.add('mat', box(-.4, .8, 2.44, .4, .96, 2.506, .02), C.dark); P.add('mat', box(-hm + .03, .42, 2.3, hm - .03, .62, 2.53, .04), 0x4a4f55); P.add('gls', box(-.28, .46, 2.52, .28, .6, 2.538, .008), C.plate);
-  P.add('gls', box(-.28, .44, -2.63, .28, .58, -2.6, .008), C.plate); plateQuads(D, 2.5395, -2.6315, .474); const rp = D.m.d[1].getAttribute('position'); for (let i = 0; i < 4; i++) rp.setY(i, rp.getY(i) - .02);
+  P.add('mat', box(-.4, .8, 2.44, .4, .96, 2.506, .02), C.dark); P.add('mat', box(-hm + .03, .42, 2.3, hm - .03, .62, 2.53, .04), kind === 'truck' ? 0x4a4f55 : 0xb5261f);
+  plate(P, D, 2.536, .44, false, kind !== 'truck'); plate(P, D, -2.626, .42, true, kind !== 'truck');
   const wz = 2.36; [[-.66, -.06], [.04, .64]].forEach(([a, b]) => P.add('mat', tube([V(a, S.roof(wz) + .03, wz), V(b, S.roof(wz - .03) + .03, wz - .03)], .009, {radial:5}), C.dark));
   // 차대, 바퀴 (뒤는 복륜)
   P.add('mat', box(-.42, .4, -2.56, .42, .62, 1.0), C.dark); P.add('mat', box(-hm + .26, .47, .85, hm - .26, 1.1, 2.4), C.dark);
@@ -176,7 +205,8 @@ function cabover(o, kind){
   } else {
     // 탑: 흰 상자, 모서리 알루미늄 띠, 뒤 문 두 짝과 잠금 막대, 옆 문, 아래 보호대
     const bx = .9, by0 = .68, by1 = 2.58, bz0 = -2.6, bz1 = .74;
-    P.add('pnt', box(-bx, by0, bz0, bx, by1, bz1, .03), 0xffffff);
+    P.add('pnt', box(-bx, by0, bz0, bx, by1, bz1, .03), RED);
+    [-1, 1].forEach(s => P.add('pnt', box(s * (hm + .002) - .004, .7, .9, s * (hm + .002) + .004, .84, 2.16, .003), RED));   // 운전석 문 아래 빨간 띠
     [[-bx, by0], [bx, by0], [-bx, by1], [bx, by1]].forEach(([x, y]) => P.add('gls', box(x - .022, y - .022, bz0 - .004, x + .022, y + .022, bz1 + .004), C.chrome));
     [bz0, bz1].forEach(z => { [-bx, bx].forEach(x => P.add('gls', box(x - .022, by0, z - .022, x + .022, by1, z + .022), C.chrome)); [by0, by1].forEach(y => P.add('gls', box(-bx, y - .022, z - .022, bx, y + .022, z + .022), C.chrome)); });
     P.add('mat', box(-.004, by0 + .05, bz0 - .012, .004, by1 - .05, bz0), C.dark);
@@ -188,17 +218,17 @@ function cabover(o, kind){
       P.add('gls', box(s * .55 - .3, by0 - .0, bz0 - .012, s * .55 + .3, by0 + .05, bz0), s > 0 ? C.tail : 0xe2b93a); });
     P.add('mat', box(-.7, .3, bz0 - .02, .7, .36, bz0 + .04), C.trim); [-.5, .5].forEach(x => P.add('mat', box(x - .02, .36, bz0, x + .02, .68, bz0 + .04), C.trim));
     if (o.snow !== 0) P.add('snw', box(-bx + .04, by1 - .03, bz0 + .05, bx - .04, by1 + .1, bz1 - .05, .06));
-    // 옆면 그림 (지어낸 상호 '눈꽃택배')
-    const q = s => { const g = new THREE.BufferGeometry(), x = s * (bx + .004), a = s > 0 ? .55 : -2.4, b = s > 0 ? -2.4 : .55;
-      g.setAttribute('position', new THREE.Float32BufferAttribute([x, 1.05, a, x, 1.05, b, x, 2.25, b, x, 2.25, a], 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute([s,0,0, s,0,0, s,0,0, s,0,0], 3));
-      g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 400 / 512, 0, 400 / 512], 2)); g.setIndex([0, 1, 2, 0, 2, 3]); return g; };
+    // 옆면 그림 (지어낸 상호 '눈꽃택배'). 캔버스 아래 절반(1024×512)을 3.2m × 1.6m 판에 붙인다.
+    const q = s => { const x = s * (bx + .004), a = s > 0 ? .65 : -2.55, b = s > 0 ? -2.55 : .65; return quad([x, .82, a], [x, .82, b], [x, 2.42, b], [x, 2.42, a], [0, 0, 1, .5]); };
     D.add('d', q(1)); D.add('d', q(-1));
   }
   [-1, 1].forEach(s => { if (o.snow !== 0) P.add('snw', blanket(rz.slice(1, -1).map(r => r.slice(3, 8)), .06, seed + s)); });
-  const truck = kind === 'truck', logo = truck ? null : {key:'logo', draw(g){ g.fillStyle = '#2f8f8a'; g.fillRect(0, 300, 1024, 46); g.fillStyle = '#e9a23b'; g.fillRect(0, 352, 1024, 12);
-    g.strokeStyle = '#2f8f8a'; g.lineWidth = 12; g.lineCap = 'round'; for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; g.beginPath(); g.moveTo(170, 200); g.lineTo(170 + Math.cos(a) * 62, 200 + Math.sin(a) * 62); g.stroke(); }
-    g.fillStyle = '#1f5f6b'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.font = '700 132px ' + FONT_D; g.fillText('눈꽃택배', 270, 204); g.fillStyle = '#5f6b75'; g.font = '700 40px ' + FONT_D; g.fillText('동네 구석구석 · 오늘도 안전하게', 276, 420 - 148 + 148 + 20); }};
-  return finish(P, D, plateMat(truck ? '92바 6417' : '서울80 아 2046', !truck, logo), o, [truck ? hm * 2 : 1.8, truck ? 1.97 : 2.68, 5.1]);
+  const truck = kind === 'truck', logo = truck ? null : {key:'logo', draw(g){ g.save(); g.translate(0, 512);
+    g.fillStyle = '#f6f4ee'; g.fillRect(0, 378, 1024, 74); g.fillStyle = '#f0b429'; g.fillRect(0, 462, 1024, 14);
+    g.strokeStyle = '#fff'; g.lineWidth = 18; g.lineCap = 'round'; for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; g.beginPath(); g.moveTo(150, 190); g.lineTo(150 + Math.cos(a) * 88, 190 + Math.sin(a) * 88); g.stroke(); }
+    g.fillStyle = '#fff'; g.textAlign = 'left'; g.textBaseline = 'middle'; g.font = '178px ' + FONT_D; g.fillText('눈꽃택배', 280, 196);
+    g.fillStyle = '#c6281f'; g.textAlign = 'center'; g.font = '46px ' + FONT_D; g.fillText('동네 구석구석 · 오늘도 안전하게', 512, 417); g.restore(); }};
+  return finish(P, D, plateMat(truck ? ['경기 7', '바 6417'] : ['서울 8', '아 2046'], logo), o, [truck ? hm * 2 : 1.8, truck ? 1.97 : 2.68, 5.1]);
 }
 
 const car = (S, color) => o => passenger(S, {color, ...o});
@@ -210,3 +240,6 @@ defineProp('truck1t', {label:'1톤 트럭', category:'차량', isNewStyle:true, 
   usage:"W.place('truck1t', {x: 70, z: 150, rot: 0, color: 0x2e5fa3});", build:o => cabover({color:0x2e5fa3, ...o}, 'truck')});
 defineProp('deliveryVan', {label:'택배 탑차', category:'차량', isNewStyle:true, colliders:[{r:[-.95 * UNIT, -2.65 * UNIT, .95 * UNIT, 2.56 * UNIT]}],
   usage:"W.place('deliveryVan', {x: 75, z: 150, rot: 0});", build:o => cabover({color:0xeceeee, ...o}, 'van')});
+defineProp('carMini', {label:'경차', category:'차량', isNewStyle:true, colliders:[{r:[-.8 * UNIT, -1.8 * UNIT, .8 * UNIT, 1.8 * UNIT]}],
+  variants:[{label:'황금색', opts:{color:0xd9a520}}, {label:'흰색', opts:{color:0xe9ebec, v:1}}, {label:'빨간색', opts:{color:0xb8322c, v:2}}],
+  usage:"W.placeMany('carMini', [{x: 60, z: 150, rot: 0, color: 0xd9a520}, ...]);", build:car(MINI, 0xd9a520)});

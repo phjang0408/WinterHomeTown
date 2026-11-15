@@ -1,7 +1,7 @@
 // 도형·재질·텍스처 도우미. 엔진(렌더러)에 의존하지 않아서 소품 갤러리에서도 그대로 쓴다.
 import * as THREE from '../lib/three.js';
 import { PI, rr, srand } from './util.js';
-import { FONT_D } from '../config.js';
+import { FONT_D, FONT_B } from '../config.js';
 
 let root = null;
 export const setRoot = g => { root = g; };
@@ -45,19 +45,37 @@ export function mesh(geo, mat, x, y, z, parent){
   const m = new THREE.Mesh(geo, typeof mat === 'number' ? M(mat) : mat); m.position.set(x, y, z);
   m.castShadow = true; (parent || root).add(m); return m;
 }
+// 웹 한글 글꼴은 글자 묶음(unicode-range)별로 따로 내려받는다. 아직 안 받은 묶음의 글자를 캔버스에 그리면 그 글자만 다른 글꼴로 구워진다.
+// 그래서 그림을 그리는 동안 쓴 글꼴·글자를 기록해 두고, 빠진 글자가 있으면 받은 뒤 다시 그린다.
+function recordText(g){
+  const used = new Map(), wrap = k => { const f = g[k].bind(g); g[k] = (text, ...a) => { const key = g.font; used.set(key, (used.get(key) || '') + text); return f(text, ...a); }; };
+  wrap('fillText'); wrap('strokeText'); return used;
+}
+function afterGlyphs(used, redraw){
+  if (!document.fonts || !document.fonts.load) return;
+  const miss = [...used].filter(([f, t]) => { try { return !document.fonts.check(f, t); } catch (e) { return false; } });
+  if (miss.length) Promise.all(miss.map(([f, t]) => document.fonts.load(f, t).catch(() => {}))).then(redraw);
+}
 export function canvasTex(w, h, draw){
-  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
-  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; t.colorSpace = THREE.SRGBColorSpace; return t;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'), used = recordText(g); draw(g, w, h);
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 4; t.colorSpace = THREE.SRGBColorSpace;
+  afterGlyphs(used, () => { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h); draw(g, w, h); t.needsUpdate = true; });
+  return t;
 }
 export function pillSprite(text, bg, fg, hgt){
-  const c = document.createElement('canvas'), g = c.getContext('2d'), fs = 34;
-  g.font = fs + 'px ' + FONT_D; const tw = Math.ceil(g.measureText(text).width);
-  c.width = tw + 36; c.height = 54;
-  g.font = fs + 'px ' + FONT_D; g.fillStyle = bg; rr(g, 1, 1, c.width - 2, c.height - 2, 26); g.fill();
-  g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, c.width / 2, c.height / 2 + 2);
+  const c = document.createElement('canvas'), g = c.getContext('2d'), fs = 34, font = '800 ' + fs + 'px ' + FONT_B;
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
-  sp.scale.set(c.width / c.height * hgt, hgt, 1); sp.renderOrder = 10; return sp;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true})); sp.renderOrder = 10;
+  const draw = () => {
+    g.font = font; c.width = Math.ceil(g.measureText(text).width) + 36; c.height = 54;
+    g.font = font; g.fillStyle = bg; rr(g, 1, 1, c.width - 2, c.height - 2, 26); g.fill();
+    g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, c.width / 2, c.height / 2 + 2);
+    sp.scale.set(c.width / c.height * hgt, hgt, 1);
+  };
+  draw();
+  try { if (document.fonts && !document.fonts.check(font, text)) document.fonts.load(font, text).then(() => { tex.dispose(); draw(); tex.needsUpdate = true; }, () => {}); } catch (e) {}
+  return sp;
 }
 // 상자 여러 개를 지오메트리 하나로 합친다. 각 항목은 [x0,y0,z0,x1,y1,z1]. 부품이 많은 건물도 한 번에 그려진다.
 export function boxesGeo(list){

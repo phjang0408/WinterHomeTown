@@ -1,0 +1,253 @@
+// 아파트 단지 소품 3 (2026-11-13): 회전놀이기구, 그네, 나선 미끄럼틀(두 바퀴), 공중전화 부스, 단지 게시판, 현수막 게시대,
+// 차선규제봉, 차량 신호등, 보행자 신호등. 모두 미터 단위로 만들고 UNIT을 곱한다. 원점은 바닥 중심, 정면은 +z.
+// 글자와 상호·전화번호는 모두 지어낸 것이다.
+import * as THREE from '../lib/three.js';
+import { defineProp } from './registry.js';
+import { canvasTex } from '../core/gfx.js';
+import { box, loft, tube, lathe, fillet, ridge, blob, xf, groundAO, Parts } from '../core/meshkit.js';
+import { matteMaterial, snowMaterial, decalMaterial, plasticMaterial, metalMaterial, glassMaterial, clearMaterial } from '../core/texkit.js';
+import { assemble, quadZ, quad, mulberry } from './kit.js';
+import { UNIT, FONT_D, FONT_B } from '../config.js';
+
+const V = (x, y, z) => new THREE.Vector3(x, y, z), U = UNIT, PI = Math.PI;
+const once = (() => { const m = new Map(); return (k, f) => { if (!m.has(k)) m.set(k, f()); return m.get(k); }; })();
+const BLUE = 0x2f6fb5, RED = 0xd24a3a, YEL = 0xf0b429, GRN = 0x4f9e5a, WOOD = 0x7a5a42, STEEL = 0xe3e7ea;
+const litMaterial = () => once('lit', () => new THREE.MeshBasicMaterial({name:'lit', vertexColors:true}));   // 켜진 신호등 불빛
+const cyl = (r0, r1, h, seg = 12) => new THREE.CylinderGeometry(r0, r1, h, seg);
+
+// ── 회전놀이기구 (뺑뺑이): 무늬 강판 원판, 가운데 기둥, 스테인리스 손잡이 틀 여섯 개 ──
+defineProp('merryGoRound', {label:'회전놀이기구', category:'놀이터', isNewStyle:true, colliders:[{c:[0, 0, 1.3 * U]}],
+  usage:"W.place('merryGoRound', {x: 92, z: 168});  // 지름 2.5m", build(){
+    const P = new Parts(), R = 1.25, Y = .3, HT = 1.0, st = (g, c = STEEL) => P.add('met', g, c);
+    P.add('dsk', xf(cyl(R, R, .045, 48), {y:Y - .022}), 0xffffff); st(xf(new THREE.TorusGeometry(R, .034, 8, 48), {rx:PI / 2, y:Y - .022}));
+    for (let i = 0; i < 40; i++) { const a = i * 2.39996, r = .28 + .9 * Math.sqrt((i + .5) / 40); P.add('dsk', xf(box(-.05, 0, -.012, .05, .006, .012), {ry:a * 3, x:Math.cos(a) * r, y:Y, z:Math.sin(a) * r}), 0xd9dde0); }   // 미끄럼 방지 돌기
+    P.add('mat', xf(cyl(.3, .38, .2, 20), {y:.1}), 0x6f777d); P.add('mat', xf(cyl(.5, .5, .02, 24), {y:.01}), 0x8b9297);
+    st(lathe([[.13, Y], [.125, Y + HT - .04], [.15, Y + HT - .02], [.15, Y + HT + .05], [.11, Y + HT + .09], [0, Y + HT + .09]], 20));
+    for (let i = 0; i < 6; i++) { const ry = i * PI / 3;
+      st(xf(tube(fillet([V(1.13, Y, 0), V(1.13, Y + HT - .08, 0), V(.12, Y + HT - .08, 0)], .13, 5), .022, {radial:8}), {ry}));
+      st(xf(tube([V(.2, Y, 0), V(1.02, Y + HT - .1, 0)], .016, {radial:6}), {ry})); st(xf(xf(cyl(.04, .04, .012, 10), {x:1.13, y:Y + .006}), {ry}), 0xbfc5ca); }
+    st(xf(new THREE.TorusGeometry(.42, .018, 6, 28), {rx:PI / 2, y:Y + HT - .08}));
+    P.add('snw', xf(blob(.14, .05, .14, {seed:5, bump:.06, seg:10}), {y:Y + HT + .08}));
+    return assemble(P, [['dsk', metalMaterial({color:0x9ea5aa, rough:.5})], ['met', metalMaterial()], ['mat', matteMaterial()], ['snw', snowMaterial({seed:43})]], [2.6, 1.45, 2.6]); }});
+
+// ── 그네: 'A'자 다리 두 쌍과 가로대(강관), 고무 안전 매트. 앉는 판과 사슬(swingSeat)은 흔들리도록 따로 만든다 ──
+export const SWING = {top:2.4, L:1.85, seats:[-.8, .8], span:1.85};
+defineProp('swingSet', {label:'그네', category:'놀이터', isNewStyle:true, variants:[{opts:{seats:true}}],
+  colliders:[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([sx, sz]) => ({c:[sx * (SWING.span + .12) * U, sz * 1.02 * U, .1 * U]})),
+  usage:"W.place('swingSet', {x: 82, z: 189});  // 폭 4m. 앉는 판은 swingSeat을 가로대(y 2.4m)에 매단다", build(o = {}){
+    const P = new Parts(), T = SWING.top, X = SWING.span, pl = (g, c) => P.add('pla', g, c);
+    pl(tube([V(-X - .18, T, 0), V(X + .18, T, 0)], .05, {radial:10}), RED);
+    [-1, 1].forEach(s => { const x = s * X;
+      [-1, 1].forEach(k => pl(tube([V(x + s * .12, 0, k * 1.05), V(x, T - .02, k * .04)], .042, {radial:10}), BLUE));
+      pl(tube([V(x + s * .075, .95, -.64), V(x + s * .075, .95, .64)], .026, {radial:8}), BLUE);
+      pl(xf(cyl(.075, .075, .2, 12), {rz:PI / 2, x, y:T}), YEL); pl(xf(new THREE.SphereGeometry(.058, 10, 8), {x:s * (X + .18), y:T}), RED);
+      [-1, 1].forEach(k => P.add('mat', xf(cyl(.09, .1, .03, 10), {x:x + s * .12, y:.015, z:k * 1.05}), 0x6f777d)); });
+    SWING.seats.forEach(sx => [-.22, .22].forEach(dx => { P.add('mat', box(sx + dx - .03, T - .1, -.035, sx + dx + .03, T - .04, .035, .008), 0x3a4047); P.add('mat', xf(cyl(.014, .014, .1, 8), {rx:PI / 2, x:sx + dx, y:T - .1}), 0xc9ced2); }));
+    P.add('mat', box(-X + .25, 0, -1.5, X - .25, .03, 1.5, .012), 0x5f9a6b);                                                    // 고무 안전 매트
+    [[-1.2, 1.25, .5], [1.35, -1.2, .42], [0, 1.4, .35]].forEach(([x, z, r], i) => P.add('snw', xf(blob(r, .05, r * .6, {seed:i + 3, bump:.12, seg:12}), {x, y:.03, z})));
+    P.add('snw', ridge(Array.from({length:13}, (_, i) => V(-X + 2 * X * i / 12, T + .045, Math.sin(i * 1.7) * .008)), .085, .04, 5));
+    if (o.seats) SWING.seats.forEach(sx => { const g = seatGeo(); P.add('pla', xf(g.pla, {x:sx, y:T - .1}), 0xffffff); P.add('mat', xf(g.mat, {x:sx, y:T - .1}), 0xffffff); });   // 갤러리용: 앉는 판까지 한 몸으로
+    P.bake('pla', groundAO(.3, .8));
+    return assemble(P, [['pla', plasticMaterial()], ['mat', matteMaterial()], ['snw', snowMaterial({seed:43})]], [4.3, 2.5, 2.2]); }});
+// 앉는 판 한 벌: 원점은 매달린 축(가로대 바로 아래), 아래로 사슬 두 줄과 고무 판
+function seatGeo(){
+  const P = new Parts(), L = SWING.L - .1;
+  [-1, 1].forEach(s => { P.add('mat', tube([V(s * .22, 0, 0), V(s * .215, -L + .03, 0)], .009, {radial:5}), 0xb9bfc4);
+    for (let i = 1; i < 12; i++) P.add('mat', xf(cyl(.014, .014, .02, 6), {x:s * (.22 - .005 * i / 12), y:-L * i / 12}), 0x8e959b);                // 사슬 마디
+    P.add('mat', xf(cyl(.02, .02, .05, 8), {rx:PI / 2, x:s * .215, y:-L + .02}), 0x8e959b); });
+  P.add('pla', box(-.25, -L - .02, -.1, .25, -L + .02, .1, .018), 0x24272b); P.add('pla', box(-.25, -L + .012, -.1, -.2, -L + .028, .1, .006), RED); P.add('pla', box(.2, -L + .012, -.1, .25, -L + .028, .1, .006), RED);
+  return {pla:P.geo('pla'), mat:P.geo('mat')};
+}
+defineProp('swingSeat', {label:'그네 앉는 판', category:'놀이터', isNewStyle:true, small:true, hidden:true,
+  usage:"const seat = buildProp('swingSeat');  // 원점이 매달린 축. 회전(rotation.x)으로 흔든다", build(){
+    const g = seatGeo(), P = new Parts(); P.add('pla', g.pla); P.add('mat', g.mat);
+    return assemble(P, [['pla', plasticMaterial()], ['mat', matteMaterial()]], [.5, SWING.L, .2]); }});
+
+// ── 나선 미끄럼틀: 3.6m 탑에서 기둥을 두 바퀴 돌아 내려온다. 계단과 탑 바닥은 걸어 올라갈 수 있고(height), 미끄럼 길은 놀이(activities/slide.js)가 쓴다 ──
+//   배치(미터): 가운데 기둥이 원점. 탑 바닥은 x -2.05~-0.25, z 0.1~1.9. 계단은 +z 쪽(z 1.9~6.76)에서 올라오고, 미끄럼판은 -z 쪽으로 나간다.
+export const SPIRAL = {H:3.6, R:1.15, hw:.42, y1:.34, turns:2, out:1.7, deck:[-2.05, .1, -.25, 1.9], stair:[-1.65, 1.9, -.65, 6.76]};
+// 미끄럼 길의 가운데 선: [x, y, z] (미터). 탑 가장자리 → 나선 두 바퀴 → 곧은 끝.
+export function spiralPath(n = 160){
+  const S = SPIRAL, pts = [], lenH = S.turns * 2 * PI * S.R, total = lenH + S.out;
+  for (let i = 0; i <= n; i++) { const d = total * i / n;
+    if (d <= lenH) { const ph = d / S.R, a = PI + ph; pts.push(V(Math.cos(a) * S.R, S.H - (S.H - S.y1) * d / lenH, Math.sin(a) * S.R)); }
+    else { const k = (d - lenH) / S.out; pts.push(V(-S.R, S.y1 - (S.y1 - .2) * k, -(d - lenH))); } }
+  return pts;
+}
+defineProp('spiralSlide', {label:'나선 미끄럼틀 (두 바퀴)', category:'놀이터', isNewStyle:true,
+  height:(x, z) => { const mx = x / U, mz = z / U, S = SPIRAL, D = S.deck, T = S.stair; if (mx >= D[0] && mx <= D[2] && mz >= D[1] && mz <= D[3]) return S.H * U;
+    return mx >= T[0] && mx <= T[2] && mz > T[1] && mz <= T[3] ? S.H * (1 - (mz - T[1]) / (T[3] - T[1])) * U : null; },
+  colliders:[[-1.77, 1.9, -1.65, 6.76], [-.65, 1.9, -.53, 6.76], [-2.17, .1, -2.05, 1.9], [-.25, .1, -.13, 1.9], [-2.05, 1.84, -1.65, 1.96], [-.65, 1.84, -.25, 1.96], [-2.05, 0, -.25, .1],
+    [-.13, -1.6, 1.62, 1.62], [-1.62, -1.6, -.13, 0]].map(r => ({r:r.map(v => v * U)})),
+  usage:"W.place('spiralSlide', {x: 97, z: 156, rot: 0});  // 3.7m × 8.5m (계단 +z, 나가는 곳 -z)", build(){
+    const P = new Parts(), S = SPIRAL, H = S.H, pl = (g, c) => P.add('pla', g, c), mt = (g, c) => P.add('mat', g, c), pts = spiralPath(176), n = pts.length;
+    // 미끄럼판: U자 단면을 길 따라 이어 붙인다 (옆 방향은 기둥에서 바깥으로)
+    const sec = [[-.44, -.04], [.44, -.04], [.44, .4], [.39, .4], [.35, .02], [-.35, .02], [-.39, .4], [-.44, .4]], rings = [], rimO = [], rimI = [];
+    for (let i = 0; i < n; i++) { const p = pts[i], t = pts[Math.min(n - 1, i + 1)].clone().sub(pts[Math.max(0, i - 1)]).setY(0).normalize(), lat = V(-t.z, 0, t.x);
+      rings.push(sec.map(([u, v]) => V(p.x + lat.x * u, p.y + v, p.z + lat.z * u))); rimO.push(V(p.x + lat.x * .415, p.y + .41, p.z + lat.z * .415)); rimI.push(V(p.x - lat.x * .415, p.y + .41, p.z - lat.z * .415)); }
+    pl(loft(rings), YEL); [rimO, rimI].forEach(r => pl(tube(r.filter((_, i) => i % 2 === 0), .035, {radial:6}), RED));
+    pl(box(-S.R - .46, .1, -S.out - .12, -S.R + .46, .44, -S.out + .1, .08), RED); mt(box(-S.R - .9, 0, -S.out - 2.1, -S.R + .9, .035, -S.out - .1, .012), 0x5f9a6b);   // 끝 턱과 착지 매트
+    // 가운데 기둥과 받침 팔
+    pl(lathe([[.26, 0], [.26, .05], [.17, .1], [.16, H + 1.0], [.2, H + 1.03], [.2, H + 1.1], [0, H + 1.16]], 16), BLUE);
+    for (let i = 6; i < n - 12; i += 11) { const p = pts[i], d = Math.hypot(p.x, p.z); pl(tube([V(0, p.y - .12, 0), V(p.x * (S.R - .3) / d, p.y - .07, p.z * (S.R - .3) / d)], .04, {radial:8}), BLUE); }
+    // 탑: 기둥 넷, 바닥, 가림판, 손잡이 봉, 뾰족지붕
+    const [dx0, dz0, dx1, dz1] = S.deck, cx = (dx0 + dx1) / 2, cz = (dz0 + dz1) / 2;
+    [[dx0, dz0], [dx1, dz0], [dx0, dz1], [dx1, dz1]].forEach(([x, z]) => pl(tube([V(x, 0, z), V(x, H + 2.15, z)], .055, {radial:10}), BLUE));
+    mt(box(dx0, H - .07, dz0, dx1, H, dz1, .012), WOOD); [dx0, dx1].forEach(x => pl(tube([V(x, H - .12, dz0), V(x, H - .12, dz1)], .04, {radial:8}), BLUE)); [dz0, dz1].forEach(z => pl(tube([V(dx0, H - .12, z), V(dx1, H - .12, z)], .04, {radial:8}), BLUE));
+    [[dx0, GRN], [dx1, 0xe8742a]].forEach(([x, c]) => { pl(box(x - .025, H + .08, dz0 + .08, x + .025, H + .95, dz1 - .08, .014), c); pl(tube([V(x, H + 1.05, dz0), V(x, H + 1.05, dz1)], .03, {radial:8}), RED); });
+    [[dx0, T => T[0]], [dx1, T => T[2]]].forEach(([x, f]) => pl(box(Math.min(x, f(S.stair)), H + .08, dz1 - .025, Math.max(x, f(S.stair)), H + .95, dz1 + .025, .014), YEL));
+    pl(tube([V(dx0, H + 1.35, dz0), V(dx1, H + 1.35, dz0)], .032, {radial:8}), RED);                                           // 출발 손잡이 봉
+    pl(xf(new THREE.ConeGeometry(1.55, .95, 4), {ry:PI / 4, x:cx, y:H + 2.6, z:cz}), RED); P.add('snw', xf(new THREE.ConeGeometry(1.42, .9, 4), {ry:PI / 4, x:cx, y:H + 2.72, z:cz}));
+    pl(xf(new THREE.SphereGeometry(.09, 10, 8), {x:cx, y:H + 3.2, z:cz}), YEL);
+    // 계단: 디딤판 18장, 옆판, 난간
+    const [sx0, sz0, sx1, sz1] = S.stair, N = 18, run = (sz1 - sz0) / N, rise = H / N;
+    for (let k = 1; k <= N; k++) mt(box(sx0 + .04, H - k * rise - .04, sz0 + (k - 1) * run - .02, sx1 - .04, H - k * rise, sz0 + k * run, .008), WOOD);
+    [sx0, sx1].forEach(x => { const g = new THREE.BoxGeometry(.05, .26, Math.hypot(sz1 - sz0, H)); g.rotateX(Math.atan2(H, sz1 - sz0)); g.translate(x, H / 2 - .06, (sz0 + sz1) / 2); pl(g, BLUE);
+      pl(tube(fillet([V(x, 0, sz1), V(x, 1.0, sz1), V(x, H + 1.05, sz0 + .02)], .12, 4), .032, {radial:8}), RED); pl(tube([V(x, .52, sz1), V(x, H + .55, sz0)], .018, {radial:6}), RED);
+      for (let i = 1; i <= 7; i++) { const t = i / 8, z = sz1 - (sz1 - sz0) * t, y = H * t; pl(tube([V(x, y, z), V(x, y + 1.0, z)], .016, {radial:6}), RED); } });
+    [[.9, -2.3, .7], [-2.6, 4.2, .6], [.4, 3.2, .55]].forEach(([x, z, r], i) => P.add('snw', xf(blob(r, r * .42, r * .8, {seed:i + 3, bump:.1}), {x, z})));
+    P.bake('pla', groundAO(.4, .82)); P.bake('mat', groundAO(.1, .85));
+    return assemble(P, [['pla', plasticMaterial()], ['mat', matteMaterial()], ['snw', snowMaterial({seed:43})]], [3.9, 6.9, 10.6]); }});
+
+// ── 공중전화 부스: 옥색 알루미늄 틀, 유리 세 면, 앞은 열려 있다. 머리 간판, 전화기, 선반, 무늬 강판 바닥 ──
+const boothTex = () => once('booth', () => decalMaterial(canvasTex(512, 512, (g, W, H) => { g.fillStyle = '#f3f5f4'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#2f8f8a'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '88px ' + FONT_D; g.fillText('공중전화', 300, 62);
+  g.lineWidth = 12; g.strokeStyle = '#e0503c'; g.beginPath(); g.arc(74, 60, 34, 0, 7); g.stroke(); g.fillStyle = '#e0503c'; g.beginPath(); g.arc(74, 60, 14, 0, 7); g.fill();
+  // 스티커 (아래 절반): 주황 안내, 긴급 전화 안내
+  g.fillStyle = '#ef8a2c'; g.fillRect(0, 128, 256, 256); g.fillStyle = '#fff'; g.beginPath(); g.arc(128, 208, 52, 0, 7); g.fill(); g.fillStyle = '#ef8a2c'; g.font = '54px ' + FONT_D; g.fillText('☎', 128, 212);
+  g.fillStyle = '#fff'; g.font = '44px ' + FONT_D; g.fillText('공중전화', 128, 322);
+  g.fillStyle = '#fbfbf7'; g.fillRect(256, 128, 256, 256); g.fillStyle = '#c8362c'; g.fillRect(256, 128, 256, 56); g.fillStyle = '#fff'; g.font = '34px ' + FONT_D; g.fillText('긴급 전화 무료', 384, 158);
+  g.fillStyle = '#2c3136'; g.font = '800 26px ' + FONT_B; ['화재 · 구조  119', '범죄 신고  112', '동전 · 카드 겸용'].forEach((t, i) => g.fillText(t, 384, 224 + i * 48));
+  // 전화기 앞면 (맨 아래)
+  g.fillStyle = '#9aa2a8'; g.fillRect(0, 384, 256, 128); g.fillStyle = '#20262b'; g.fillRect(24, 398, 120, 36); g.fillStyle = '#7fd08a'; g.font = '800 20px ' + FONT_B; g.fillText('카드를 넣으세요', 84, 417);
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) { g.fillStyle = '#e9ecee'; g.fillRect(30 + c * 38, 444 + r * 16, 30, 12); }
+  g.fillStyle = '#f08a2a'; g.fillRect(168, 398, 70, 100); g.fillStyle = '#2a2f34'; g.fillRect(182, 408, 42, 14);
+}), {rough:.55}));
+defineProp('phoneBooth', {label:'공중전화 부스', category:'거리', isNewStyle:true, blocksCamera:false, minimap:'#5aa7a0', mmSize:1,
+  colliders:[[-.5, -.5, .5, -.42], [-.5, -.5, -.42, .46], [.42, -.5, .5, .46]].map(r => ({r:r.map(v => v * U)})),
+  usage:"W.place('phoneBooth', {x: 146, z: 186, rot: 0});  // 0.95m × 0.95m × 2.4m, 열린 쪽이 +z", build(){
+    const P = new Parts(), TEAL = 0x6fb3ad, DEEP = 0x5a9f99, W = .475, T = 2.38, fr = (g, c = TEAL) => P.add('fr', g, c);
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => fr(box(sx * W - .032, .06, sz * W - .032, sx * W + .032, T - .3, sz * W + .032, .008)));
+    fr(box(-W - .04, T - .32, -W - .04, W + .04, T, W + .04, .02)); fr(box(-W - .07, T, -W - .07, W + .07, T + .035, W + .07, .012), DEEP);      // 머리 상자와 지붕
+    P.add('mat', box(-W - .03, 0, -W - .03, W + .03, .07, W + .03, .01), 0x8f6f66); P.add('met', box(-W + .03, .07, -W + .03, W - .03, .078, W - .03), 0x9aa1a6);   // 바닥
+    const rail = (a, b, y, h = .04) => fr(box(Math.min(a.x, b.x) - .018, y - h / 2, Math.min(a.z, b.z) - .018, Math.max(a.x, b.x) + .018, y + h / 2, Math.max(a.z, b.z) + .018));
+    [[V(-W, 0, -W), V(W, 0, -W)], [V(-W, 0, -W), V(-W, 0, W)], [V(W, 0, -W), V(W, 0, W)]].forEach(([a, b]) => { [.1, 1.02, T - .34].forEach(y => rail(a, b, y)); });
+    // 유리: 뒤, 왼쪽, 오른쪽 (위·아래 두 장씩)
+    const G = new Parts(); [[.13, .99], [1.05, T - .36]].forEach(([y0, y1]) => { G.add('g', box(-W + .03, y0, -W - .004, W - .03, y1, -W + .004)); [-1, 1].forEach(s => G.add('g', box(s * W - .004, y0, -W + .03, s * W + .004, y1, W - .03))); });
+    // 전화기: 뒤 벽 오른쪽. 몸통, 수화기, 선반
+    P.add('mat', box(.02, 1.12, -W + .01, .34, 1.58, -W + .17, .015), 0x8d959b); P.add('mat', box(.25, 1.2, -W + .17, .31, 1.52, -W + .215, .018), 0x2a2f34);
+    P.add('mat', tube([V(.28, 1.2, -W + .19), V(.3, 1.02, -W + .16), V(.2, 1.0, -W + .1), V(.1, 1.13, -W + .1)], .008, {radial:5}), 0x2a2f34);
+    P.add('met', box(-W + .03, .96, -W + .02, W - .03, .985, -W + .3, .006), 0xc9ced2); P.add('met', box(-.1, 1.62, -W + .01, .34, 1.9, -W + .05, .008), 0xd7dcdf);        // 선반, 안내판
+    P.add('gls', box(-.3, T - .07, .05, .3, T - .045, .3, .01), 0xf2f1e6);                                                    // 천장 등
+    P.add('snw', box(-W - .05, T + .03, -W - .05, W + .05, T + .13, W + .05, .05));
+    const D = new Parts();
+    D.add('d', quadZ(-W - .02, T - .29, W + .02, T - .03, W + .0415, [0, .75, 1, 1])); D.add('d', quadZ(-W - .02, T - .29, W + .02, T - .03, -W - .0415, [0, .75, 1, 1], true));
+    D.add('d', quadZ(-.38, 1.5, -.12, 1.76, -W + .006, [0, .25, .5, .75])); D.add('d', quadZ(-.4, 1.12, -.14, 1.38, -W + .006, [.5, .25, 1, .75]));
+    D.add('d', quadZ(.03, 1.3, .24, 1.56, -W + .172, [0, 0, .5, .25]));
+    const glass = new THREE.Mesh(G.geo('g'), clearMaterial({color:0xcfe6e4, opacity:.3})), deco = new THREE.Mesh(D.geo('d'), boothTex());
+    return assemble(P, [['fr', plasticMaterial({rough:.5})], ['mat', matteMaterial()], ['met', metalMaterial()], ['gls', glassMaterial(), false], ['snw', snowMaterial({seed:43})]], [1.1, 2.5, 1.1], [deco, glass]); }});
+
+// ── 단지 안내 게시판: 철제 기둥 둘, 비 가림 지붕, 유리문 두 짝 안에 공고문과 광고지 ──
+function paper(g, x, y, w, h, bg, rot, draw){ g.save(); g.translate(x + w / 2, y + h / 2); g.rotate(rot); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(-w / 2 + 3, -h / 2 + 4, w, h); g.fillStyle = bg; g.fillRect(-w / 2, -h / 2, w, h);
+  g.textAlign = 'center'; g.textBaseline = 'middle'; draw(g, w, h); g.restore(); }
+const lines = (g, list, font, color, y0, dy) => { g.font = font; g.fillStyle = color; list.forEach((t, i) => g.fillText(t, 0, y0 + i * dy)); };
+const small = (g, w, y0, n, color = '#555') => { g.fillStyle = color; for (let i = 0; i < n; i++) g.fillRect(-w * .38, y0 + i * 11, w * (.76 - (i === n - 1 ? .3 : 0)), 3); };
+const noticeTex = () => once('notice', () => decalMaterial(canvasTex(1024, 512, (g, W, H) => {
+  g.fillStyle = '#3d6b5c'; g.fillRect(0, 0, W, H); const R = mulberry(9); g.fillStyle = 'rgba(255,255,255,.05)'; for (let i = 0; i < 900; i++) g.fillRect(R() * W, R() * H, 2, 2);
+  paper(g, 30, 26, 150, 236, '#fbfaf4', -.01, (g, w) => { lines(g, ['겨울철', '동파 예방 안내'], '25px ' + FONT_D, '#22262a', -86, 30); small(g, w, -28, 8); lines(g, ['(관리사무소)'], '800 17px ' + FONT_B, '#22262a', 92, 0); });
+  paper(g, 200, 34, 150, 196, '#ffffff', .015, g => lines(g, ['혹한기', '베란다', '세탁기', '사용 금지'], '36px ' + FONT_D, '#d2342a', -66, 44));
+  paper(g, 30, 284, 190, 206, '#ffffff', .01, g => { lines(g, ['수도 계량기'], '34px ' + FONT_D, '#22262a', -66, 0); lines(g, ['헌 옷으로', '감싸 주세요'], '38px ' + FONT_D, '#d2342a', -14, 46); });
+  paper(g, 240, 252, 130, 232, '#f6e3b4', -.02, (g, w) => { lines(g, ['피아노 · 태권도'], '19px ' + FONT_D, '#2b3f6b', -90, 0); lines(g, ['겨울방학'], '34px ' + FONT_D, '#d2342a', -52, 0); lines(g, ['특강 모집'], '30px ' + FONT_D, '#2b3f6b', -14, 0); small(g, w, 16, 4, '#7a6a4a'); lines(g, ['상가 2층'], '800 17px ' + FONT_B, '#2b3f6b', 86, 0); });
+  paper(g, 540, 28, 124, 214, '#f7d23c', .012, g => { lines(g, ['신속배달', '중국집'], '26px ' + FONT_D, '#22262a', -78, 32); lines(g, ['겨울 특선'], '22px ' + FONT_D, '#22262a', -8, 0); lines(g, ['굴짬뽕', '개시!'], '36px ' + FONT_D, '#d2342a', 34, 40); });
+  paper(g, 684, 40, 130, 176, '#ffffff', -.015, (g, w) => { lines(g, ['동화상가'], '19px ' + FONT_D, '#2b3f6b', -64, 0); lines(g, ['겨울방학', '특강 모집'], '28px ' + FONT_D, '#d2342a', -30, 34); small(g, w, 34, 4, '#2b3f6b'); });
+  paper(g, 548, 262, 136, 150, '#ffffff', -.01, (g, w) => { lines(g, ['크린세탁소'], '24px ' + FONT_D, '#2b3f6b', -50, 0); lines(g, ['패딩 · 코트', '할인'], '26px ' + FONT_D, '#d2342a', -14, 32); small(g, w, 44, 2); });
+  paper(g, 704, 236, 150, 250, '#f7d23c', .02, (g, w) => { lines(g, ['헌 옷 · 헌 책', '방문 수거'], '30px ' + FONT_D, '#22262a', -86, 40); small(g, w, -8, 6, '#6b5a12'); lines(g, ['단지 정문 앞'], '800 18px ' + FONT_B, '#22262a', 96, 0); });
+  paper(g, 874, 30, 124, 170, '#fbfaf4', .01, (g, w) => { lines(g, ['제설 봉사'], '26px ' + FONT_D, '#22262a', -58, 0); lines(g, ['함께해요'], '26px ' + FONT_D, '#2f7a52', -24, 0); small(g, w, 6, 5); });
+  paper(g, 880, 226, 118, 120, '#e9f0f7', -.03, g => lines(g, ['분리수거', '화 · 금'], '24px ' + FONT_D, '#2b3f6b', -18, 34));
+  [[380, 26], [1000, 216], [520, 250]].forEach(([x, y]) => { g.fillStyle = '#c8362c'; g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill(); });
+}), {rough:.75}));
+defineProp('noticeBoard', {label:'단지 안내 게시판', category:'안내', isNewStyle:true, colliders:[{r:[-1.4 * U, -.16 * U, 1.4 * U, .16 * U]}],
+  usage:"W.place('noticeBoard', {x: 140, z: 146, rot: 0});  // 폭 2.8m, 높이 2.3m", build(){
+    const P = new Parts(), X = 1.3, Y0 = .82, Y1 = 2.0, RUST = 0x8d8479, FR = 0x9fa6aa, mt = (g, c) => P.add('met', g, c);
+    [-X, X].forEach(x => { mt(box(x - .045, 0, -.045, x + .045, 2.18, .045, .006), FR); P.add('mat', box(x - .1, 0, -.1, x + .1, .03, .1), 0x8b9297); });
+    mt(box(-X, Y0 - .05, -.07, X, Y1 + .05, .05, .008), FR); P.add('mat', box(-X + .05, Y0, .0, X - .05, Y1, .052), 0x35584c);
+    mt(box(-.025, Y0, .05, .025, Y1, .075), FR); [Y0, Y1].forEach(y => mt(box(-X + .05, y - .02, .05, X - .05, y + .02, .075), FR));
+    [-.06, .06].forEach(x => mt(box(x - .008, 1.38, .078, x + .008, 1.46, .09), 0x4b5258));                                 // 문 손잡이
+    // 지붕: 앞으로 살짝 숙인 철판
+    const roof = (y, t, c, key) => { const g = new THREE.BoxGeometry(2 * X + .5, t, .78); g.rotateX(.14); g.translate(0, y, .1); P.add(key, g, c); };
+    roof(2.24, .05, RUST, 'mat'); roof(2.3, .09, undefined, 'snw'); [-1, 1].forEach(s => mt(box(s * X - .03, 2.1, -.26, s * X + .03, 2.2, .44), FR));
+    P.add('snw', ridge([V(-X, Y0 - .04, .06), V(0, Y0 - .04, .07), V(X, Y0 - .04, .06)], .12, .035));
+    const deco = new THREE.Mesh(quadZ(-X + .06, Y0 + .01, X - .06, Y1 - .01, .054), noticeTex());
+    const glass = new THREE.Mesh(box(-X + .05, Y0, .07, X - .05, Y1, .076), clearMaterial({color:0xd7e6ea, opacity:.16}));
+    return assemble(P, [['met', metalMaterial({rough:.45})], ['mat', matteMaterial()], ['snw', snowMaterial({seed:43})]], [3.1, 2.4, .8], [deco, glass]); }});
+
+// ── 현수막 게시대: 스테인리스 기둥 둘 사이에 현수막 세 장 ──
+const BAN = [
+  {bg:'#fbfbf8', a:[['보일러 ', '#1f3f8f'], ['무상 점검', '#d2342a'], [' 및 ', '#1f3f8f'], ['콘덴싱 교체', '#1f3f8f'], [' 특가', '#d2342a']], sub:'동화설비  ☎ 000-0000', sc:'#22262a'},
+  {bg:'#d8372c', a:[['동화마트 ', '#ffe14a'], ['겨울맞이 초특가 세일!', '#ffffff']], sub:'귤 · 호빵 · 사골  이번 주말까지', sc:'#ffe14a'},
+  {bg:'#f3e3b0', a:[['외풍 차단! ', '#1f3f8f'], ['샷시 수리', '#d2342a'], [' · 틈막이 시공', '#1f3f8f']], sub:'새봄창호  ☎ 000-0000', sc:'#22262a'}];
+const bannerTex = () => once('banner', () => decalMaterial(canvasTex(2048, 1024, (g, W, H) => { const R = mulberry(4);
+  BAN.forEach((b, i) => { const y = i * 320; g.fillStyle = b.bg; g.fillRect(0, y, W, 320);
+    g.font = '150px ' + FONT_D; g.textBaseline = 'middle'; g.textAlign = 'left'; const tw = b.a.reduce((s, [t]) => s + g.measureText(t).width, 0), k = Math.min(1, (W - 120) / tw); let x = (W - tw * k) / 2;
+    g.save(); g.translate(0, y + 122); g.scale(k, 1); x /= k; b.a.forEach(([t, c]) => { g.fillStyle = c; g.fillText(t, x, 0); x += g.measureText(t).width; }); g.restore();
+    g.font = '72px ' + FONT_D; g.textAlign = 'center'; g.fillStyle = b.sc; g.fillText(b.sub, W / 2, y + 256);
+    g.fillStyle = 'rgba(120,90,40,.10)'; for (let j = 0; j < 14; j++) g.fillRect(R() * W, y + R() * 320, 60 + R() * 200, 8 + R() * 30);          // 빗물 얼룩
+    g.fillStyle = 'rgba(0,0,0,.06)'; for (let j = 1; j < 8; j++) g.fillRect(j * W / 8, y, 3, 320); });                                          // 접힌 자국
+}), {rough:.8}));
+defineProp('bannerBoard', {label:'현수막 게시대', category:'안내', isNewStyle:true, colliders:[{c:[-2.5 * U, 0, .1 * U]}, {c:[2.5 * U, 0, .1 * U]}],
+  usage:"W.place('bannerBoard', {x: 184, z: 146, rot: Math.PI / 2});  // 폭 5m, 높이 4.4m, 현수막 세 장", build(){
+    const P = new Parts(), X = 2.5, T = 4.2, D = new Parts(), mt = (g, c = STEEL) => P.add('met', g, c);
+    [-X, X].forEach(x => { mt(tube([V(x, 0, 0), V(x, T, 0)], .055, {radial:10})); P.add('mat', xf(cyl(.14, .16, .05, 12), {x, y:.025}), 0x8b9297); });
+    mt(box(-X - .25, T, -.22, X + .25, T + .05, .22, .01), 0xcfd4d7); P.add('snw', box(-X - .22, T + .04, -.2, X + .22, T + .16, .2, .06));
+    [0, 1, 2].forEach(i => { const y1 = 3.9 - i * 1.02, y0 = y1 - .78; [y0 - .03, y1 + .03].forEach(y => mt(tube([V(-X, y, 0), V(X, y, 0)], .016, {radial:6})));
+      const uv = [0, 1 - (i + 1) * 320 / 1024, 1, 1 - i * 320 / 1024]; D.add('d', quadZ(-X + .12, y0, X - .12, y1, .012, uv)); D.add('d', quadZ(-X + .12, y0, X - .12, y1, -.012, uv, true));
+      [[-1, y0], [-1, y1], [1, y0], [1, y1]].forEach(([s, y]) => P.add('mat', tube([V(s * (X - .12), y, .012), V(s * (X - .03), y + (y === y0 ? -.03 : .03), 0)], .006, {radial:4}), 0xe9e6dc)); });   // 묶은 끈
+    return assemble(P, [['met', metalMaterial()], ['mat', matteMaterial()], ['snw', snowMaterial({seed:43})]], [5.5, 4.4, .5], [new THREE.Mesh(D.geo('d'), bannerTex())]); }});
+
+// ── 차선규제봉: 중앙선 위에 세우는 주황 봉. 반사띠 두 줄 ──
+defineProp('laneDelineator', {label:'차선규제봉', category:'도로', isNewStyle:true,                  // 충돌 없음: 사람이 사이로 지나갈 수 있다
+  usage:"W.placeMany('laneDelineator', zs.map(z => ({x: 198.5, z})));  // 높이 0.75m", build(){
+    const P = new Parts(), ORG = 0xf2601c;
+    // 받침: 넓고 낮은 원판이 매끈하게 기둥으로 이어진다 (참고 사진). 기둥은 위로 아주 조금 가늘어진다.
+    P.add('pla', lathe([[.13, 0], [.136, .01], [.132, .022], [.11, .034], [.07, .052], [.052, .075], [.047, .11], [.042, .735], [.036, .75], [0, .753]], 20), ORG);
+    [[.42, .5], [.585, .665]].forEach(([y0, y1]) => P.add('gls', xf(cyl(.0446, .0444, y1 - y0, 20), {y:(y0 + y1) / 2}), 0xdfe5ea));
+    [.095, -.095].forEach(x => P.add('mat', xf(cyl(.016, .016, .006, 10), {x, y:.03, rz:x > 0 ? -.55 : .55}), 0x3a3f44));                             // 받침의 볼트 구멍 두 개
+    P.bake('pla', groundAO(.1, .8));
+    return assemble(P, [['pla', plasticMaterial()], ['gls', glassMaterial({rough:.2}), false], ['mat', matteMaterial(), false]], [.26, .75, .26]); }});
+
+// ── 차량 신호등 (한국식): 오른쪽 길가 기둥에서 차로 위로 가로 팔을 내밀고, 가로로 늘어선 4색등(빨강·노랑·좌회전·초록) ──
+defineProp('trafficLight', {label:'차량 신호등', category:'도로', isNewStyle:true, colliders:[{c:[0, 0, .16 * U]}],
+  variants:[{label:'빨간불', opts:{}}, {label:'초록불', opts:{state:'green'}}],
+  usage:"W.place('trafficLight', {x: 170, z: 255, rot: Math.PI / 2, arm: 5, state: 'red'});  // 불빛은 +z(다가오는 차)를 보고, 팔은 운전자가 볼 때 왼쪽(-x)으로 뻗는다", build(o = {}){
+    const P = new Parts(), A = o.arm || 4.5, TOP = 5.9, AY = 5.25, GREY = 0x8d959b, DARK = 0x262a2f, on = o.state || 'red', mt = (g, c = GREY) => P.add('mat', g, c);
+    mt(lathe([[.2, 0], [.2, .04], [.14, .1], [.115, .6], [.085, TOP - .05], [.09, TOP], [0, TOP + .03]], 14)); for (let i = 0; i < 4; i++) mt(xf(cyl(.02, .02, .04, 6), {x:Math.cos(i * PI / 2 + .78) * .16, y:.06, z:Math.sin(i * PI / 2 + .78) * .16}), 0x5f666c);
+    mt(tube([V(0, AY - .25, 0), V(-.5, AY, 0), V(-A * .5, AY + .1, 0), V(-A, AY + .14, 0)], t => .075 - .025 * t, {radial:8})); mt(tube([V(0, TOP - .15, 0), V(-A * .55, AY + .12, 0)], .014, {radial:5}), 0x6b7379);   // 팔과 당김줄
+    const hx = -(A - 1.0), hy = AY - .32, L = 1.62, LAMPS = [['red', 0xff3b2f, 0x4a1512], ['yellow', 0xffc21a, 0x4a3a10], ['arrow', 0x25e07a, 0x123a26], ['green', 0x25e07a, 0x123a26]];
+    mt(box(hx - L / 2, hy - .2, -.1, hx + L / 2, hy + .2, .08, .03), DARK); [hx - .5, hx + .5].forEach(x => mt(box(x - .025, hy + .2, -.03, x + .025, AY + .1, .03), GREY));
+    LAMPS.forEach(([name, lit, dim], i) => { const x = hx - L / 2 + .225 + i * .39, isOn = name === on;
+      P.add(isOn ? 'lit' : 'gls', xf(cyl(.15, .15, .02, 20), {rx:PI / 2, x, y:hy, z:.085}), isOn ? lit : dim);
+      if (name === 'arrow') P.add('gls', xf(box(-.08, -.018, 0, .08, .018, .006), {x, y:hy, z:.096}), 0x0d2a1b);
+      mt(box(x - .17, hy + .15, .08, x + .17, hy + .175, .26, .008), DARK); [-1, 1].forEach(s => mt(box(x + s * .17 - .012, hy - .02, .08, x + s * .17 + .012, hy + .17, .2 , .006), DARK)); });
+    mt(box(-.16, 2.4, .1, .16, 2.9, .2, .02), 0xf0c020); mt(box(-.12, 2.45, .2, .12, 2.85, .206), 0x2a2f34);                           // 기둥의 노란 제어함
+    P.add('snw', box(hx - L / 2 + .02, hy + .195, -.09, hx + L / 2 - .02, hy + .27, .07, .035)); P.add('snw', xf(blob(.1, .05, .1, {seed:2, bump:.05, seg:8}), {y:TOP + .01}));
+    P.bake('mat', groundAO(.3, .8));
+    return assemble(P, [['mat', matteMaterial()], ['gls', glassMaterial({rough:.25}), false], ['lit', litMaterial(), false], ['snw', snowMaterial({seed:43})]], [A + .3, 6, .5]); }});
+
+// ── 보행자 신호등: 세로 2색등(빨간 사람·초록 사람)과 남은 시간 표시 ──
+const pedTex = green => once('ped' + green, () => { const t = canvasTex(128, 256, (g, W, H) => { g.fillStyle = '#0e1012'; g.fillRect(0, 0, W, H);
+  const man = (cy, c, walk) => { g.fillStyle = g.strokeStyle = c; g.lineWidth = 11; g.lineCap = 'round'; g.beginPath(); g.arc(64, cy - 38, 10, 0, 7); g.fill();
+    g.beginPath(); g.moveTo(64, cy - 24); g.lineTo(64, cy + 8); g.stroke(); g.beginPath();
+    if (walk) { g.moveTo(64, cy + 8); g.lineTo(46, cy + 42); g.moveTo(64, cy + 8); g.lineTo(82, cy + 40); g.moveTo(64, cy - 16); g.lineTo(42, cy - 2); g.moveTo(64, cy - 16); g.lineTo(84, cy - 4); }
+    else { g.moveTo(58, cy + 8); g.lineTo(56, cy + 42); g.moveTo(70, cy + 8); g.lineTo(72, cy + 42); g.moveTo(64, cy - 18); g.lineTo(46, cy + 6); g.moveTo(64, cy - 18); g.lineTo(82, cy + 6); }
+    g.stroke(); };
+  man(64, green ? '#4a1a17' : '#ff4034', false); man(192, green ? '#35f08a' : '#143a26', true); }); return new THREE.MeshBasicMaterial({name:'ped', map:t}); });
+defineProp('pedSignal', {label:'보행자 신호등', category:'도로', isNewStyle:true, colliders:[{c:[0, 0, .1 * U]}],
+  variants:[{label:'초록불', opts:{}}, {label:'빨간불', opts:{state:'red'}}],
+  usage:"W.place('pedSignal', {x: 177, z: 254.5, rot: 0});  // 높이 3.1m, 불빛은 +z(건너편)를 본다", build(o = {}){
+    const P = new Parts(), GREY = 0x8d959b, DARK = 0x262a2f, mt = (g, c = GREY) => P.add('mat', g, c), green = o.state !== 'red';
+    mt(lathe([[.12, 0], [.12, .03], [.075, .08], [.06, 2.2], [.055, 3.05], [0, 3.07]], 12));
+    mt(box(-.19, 2.28, .02, .19, 3.02, .2, .025), DARK); [2.66, 3.0].forEach(y => mt(box(-.2, y, .2, .2, y + .02, .34, .006), DARK)); mt(box(-.04, 2.5, -.04, .04, 2.8, .04), GREY);
+    mt(box(-.09, 1.15, .05, .09, 1.42, .13, .015), 0xf0c020); mt(xf(cyl(.035, .035, .02, 12), {rx:PI / 2, y:1.3, z:.135}), 0xd2342a);                // 누름 단추
+    P.add('snw', box(-.18, 3.015, .03, .18, 3.07, .32, .025));
+    const face = new THREE.Mesh(quadZ(-.16, 2.31, .16, 2.99, .2015), pedTex(green));
+    return assemble(P, [['mat', matteMaterial()], ['snw', snowMaterial({seed:43})]], [.45, 3.1, .4], [face]); }});

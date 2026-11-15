@@ -3,12 +3,13 @@ import * as THREE from '../lib/three.js';
 import { root } from '../core/engine.js';
 import { PI } from '../core/util.js';
 import { W } from '../world/world.js';
-import { ROAD } from '../map/layout.js';
+import { ROAD, LOOP } from '../map/layout.js';
 
 const N = 700, fp = {i:0, x:new Float32Array(N), y:new Float32Array(N), z:new Float32Array(N), r:new Float32Array(N), t:new Float64Array(N), tick:0};
 let inst = null;
 const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), s = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
-export const noPrints = [(x, z) => z > ROAD.z0 - 1 && z < ROAD.z1 + 1];   // 발자국이 안 찍히는 곳 (도로 등)
+export const noPrints = [(x, z) => z > ROAD.z0 - 1 && z < ROAD.z1 + 1,
+  (x, z) => x > LOOP.x0 && x < LOOP.x1 && ((z > LOOP.zN && z < LOOP.zN + LOOP.w) || (z > LOOP.zS && z < LOOP.zS + LOOP.w) || x < LOOP.x0 + LOOP.w || x > LOOP.x1 - LOOP.w) && z > 90 && z < ROAD.z0];   // 발자국이 안 찍히는 곳 (도로 등)
 
 export function initFootprints(){
   const g = new THREE.CircleGeometry(.15, 8); g.rotateX(-PI / 2); g.scale(1, 1, 1.7);

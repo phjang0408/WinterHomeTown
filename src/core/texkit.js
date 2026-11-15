@@ -102,18 +102,44 @@ export function asphaltMaterial({seed = 51} = {}){
     return new THREE.MeshStandardMaterial({name:'asphalt', map, normalMap, normalScale:new THREE.Vector2(.7, .7), roughnessMap, roughness:1, metalness:0, vertexColors:true, envMapIntensity:LOOK.envIntensity});
   });
 }
-// 보도블록: 20×10cm 벽돌 엇갈려 쌓기, 줄눈에 눈이 낌. uv 1 = 1m.
-export function paverMaterial({seed = 61} = {}){
-  return once('paver' + seed, () => {
+// 보도블록·벽돌 보도: 20×10cm 블록 엇갈려 쌓기, 줄눈에 눈이 낌. uv 1 = 1m. tones는 블록 색 네 가지.
+function pavers(key, seed, P, dustAmt = .25){
+  return once(key + seed, () => {
     const r = rng(seed), cols = 6, rows = 12, tone = Array.from({length:cols * rows * 2}, () => r()), a = noise2(seed + 1, [8, 16, 32]);
     const brick = (u, v) => { const row = Math.floor(v * rows), x = u * cols + (row % 2) * .5, col = Math.floor(x), fx = x - col, fy = v * rows - row;
       return {id:((col % cols) + cols) % cols + row * cols, edge:Math.min(fx, 1 - fx) * 2 * 2, edgeY:Math.min(fy, 1 - fy) * 2}; };
     const joint = (u, v) => { const q = brick(u, v); return cl(Math.min(q.edge * 8, q.edgeY * 5)); };
-    const P = [[.56, .4, .34], [.52, .53, .55], [.47, .36, .31], [.6, .5, .42]];
-    const map = colorTex(256, 256, (u, v) => { const q = brick(u, v), c = P[Math.floor(tone[q.id] * 4)], j = joint(u, v), k = (.86 + a(u, v) * .2) * (.8 + tone[q.id + 72] * .2), dust = cl((a(u * .5, v * .5) - .5) * 3) * .25;
+    const map = colorTex(256, 256, (u, v) => { const q = brick(u, v), c = P[Math.floor(tone[q.id] * 4)], j = joint(u, v), k = (.86 + a(u, v) * .2) * (.8 + tone[q.id + 72] * .2), dust = cl((a(u * .5, v * .5) - .5) * 3) * dustAmt;
       return [lerp(.84, c[0] * k, j) + dust, lerp(.87, c[1] * k, j) + dust, lerp(.9, c[2] * k, j) + dust]; }, [1 / 1.2, 1 / 1.2]);
     const normalMap = normalTex(256, 256, (u, v) => joint(u, v) * .8 + a(u, v) * .2, .004, [1 / 1.2, 1 / 1.2]);
-    return new THREE.MeshStandardMaterial({name:'paver', map, normalMap, normalScale:new THREE.Vector2(.8, .8), roughness:.9, metalness:0, vertexColors:true, envMapIntensity:LOOK.envIntensity});
+    return new THREE.MeshStandardMaterial({name:key, map, normalMap, normalScale:new THREE.Vector2(.8, .8), roughness:.9, metalness:0, vertexColors:true, envMapIntensity:LOOK.envIntensity});
+  });
+}
+export const paverMaterial = ({seed = 61} = {}) => pavers('paver', seed, [[.56, .4, .34], [.52, .53, .55], [.47, .36, .31], [.6, .5, .42]]);
+// 붉은 벽돌 보도 (단지 안 보도): 적벽돌 네 가지 색을 섞어 깐다.
+export const brickPaveMaterial = ({seed = 63} = {}) => pavers('brickpave', seed, [[.57, .27, .2], [.5, .23, .18], [.63, .33, .25], [.44, .21, .17]], .12);
+// 화단 바닥: 눈이 덮인 잔디밭. 넓이의 80%는 눈, 20%는 마른 겨울 잔디가 얼룩져 드러난다 (grass로 비율을 바꾼다). uv 1 = 1m.
+export function bedMaterial({seed = 81, grass = .2} = {}){
+  return once('bed' + seed + grass, () => {
+    const a = noise2(seed, [5, 9, 17]), c = noise2(seed + 2, [28, 56]), d = noise2(seed + 3, [96, 192]), b = noise2(seed + 1, [128, 256]);
+    const f = (u, v) => a(u, v) * .5 + c(u, v) * .3 + d(u, v) * .2;                       // 큰 얼룩 + 중간 얼룩 + 풀포기 낱알
+    const vals = []; for (let i = 0; i < 128; i++) for (let j = 0; j < 128; j++) vals.push(f(i / 128, j / 128)); vals.sort((p, q) => p - q);
+    const T = vals[Math.floor(vals.length * (1 - grass))];                                // 이 값보다 큰 곳(전체의 grass 비율)이 잔디
+    const blade = (u, v) => cl((f(u, v) - T) * 34 + .5);
+    const map = colorTex(512, 512, (u, v) => { const g = blade(u, v), k = .78 + b(u, v) * .44, s = .935 + b(u, v) * .05;
+      return [lerp(s * .985, .52 * k, g), lerp(s * .995, .5 * k, g), lerp(s * 1.03, .33 * k, g)]; }, [1 / 26, 1 / 26]);
+    const normalMap = normalTex(256, 256, (u, v) => b(u, v) * .5 - blade(u, v) * .5, .005, [1 / 26, 1 / 26]);
+    return new THREE.MeshStandardMaterial({name:'bed', map, normalMap, normalScale:new THREE.Vector2(.6, .6), roughness:.96, metalness:0, vertexColors:true, envMapIntensity:LOOK.envIntensity});
+  });
+}
+// 어린이 보호구역 붉은 포장: 암적색 미끄럼방지 포장에 골재 알갱이와 닳은 자국, 눈가루. uv 1 = 1m.
+export function schoolZoneMaterial({seed = 91} = {}){
+  return once('schoolzone' + seed, () => {
+    const a = noise2(seed, [64, 128]), b = noise2(seed + 1, [3, 6, 12]), c = noise2(seed + 2, [128]);
+    const map = colorTex(256, 256, (u, v) => { const sp = c(u, v) > .84 ? .1 : 0, dust = cl((b(u, v) - .58) * 4) * .3, wear = cl((b(u * 2, v * 2) - .5) * 2) * .12, k = .82 + a(u, v) * .2;
+      return [(.6 - wear) * k + sp + dust, (.2 + wear * .3) * k + sp + dust, (.17 + wear * .3) * k + sp + dust]; }, [1 / 6, 1 / 6]);
+    const normalMap = normalTex(128, 128, (u, v) => a(u, v), .006, [1 / 1.5, 1 / 1.5]);
+    return new THREE.MeshStandardMaterial({name:'schoolzone', map, normalMap, normalScale:new THREE.Vector2(.7, .7), roughness:.95, metalness:0, vertexColors:true, envMapIntensity:LOOK.envIntensity});
   });
 }
 // 스테인리스·알루미늄: 하늘이 비치는 금속.
@@ -154,4 +180,56 @@ export function clearMaterial({color = 0xbfd6df, opacity = .32} = {}){
 // 바닥에 칠한 선·글씨: 바닥과 겹쳐 깜빡이지 않게 살짝 앞으로 당겨 그린다. 색은 정점 색.
 export function roadPaintMaterial(){
   return once('roadpaint', () => new THREE.MeshStandardMaterial({name:'roadpaint', vertexColors:true, roughness:.88, metalness:0, envMapIntensity:LOOK.envIntensity, polygonOffset:true, polygonOffsetFactor:-2, polygonOffsetUnits:-2}));
+}
+
+// ───────── 추가 재질 (간이역 · 도로 · 강변) ─────────
+// 비율 문턱값: 노이즈 값을 늘어놓고 위에서 frac 비율이 되는 값을 찾는다 (눈·풀이 덮는 넓이를 맞출 때 쓴다).
+function quantile(f, frac){ const vals = []; for (let i = 0; i < 96; i++) for (let j = 0; j < 96; j++) vals.push(f(i / 96, j / 96)); vals.sort((p, q) => p - q); return vals[Math.min(vals.length - 1, Math.floor(vals.length * (1 - frac)))]; }
+// 자갈: 선로 도상(회갈색 쇄석)과 철길 옆 자갈밭. snow는 눈이 덮은 넓이 비율, grass는 마른 풀 비율. uv 1 = 1m, 한 장이 3m.
+export function gravelMaterial({seed = 101, snow = .25, grass = 0, tone = [1, .95, .88]} = {}){
+  return once('gravel' + seed + snow + grass + tone, () => {
+    const a = noise2(seed, [96, 192]), d = noise2(seed + 3, [192]), b = noise2(seed + 1, [3, 6, 12]), c = noise2(seed + 2, [12, 24, 48]), g = noise2(seed + 4, [6, 12, 48]);
+    const sn = (u, v) => b(u, v) * .7 + c(u, v) * .3, gr = (u, v) => g(u, v);
+    const Ts = snow > 0 ? quantile(sn, snow) : 9, Tg = grass > 0 ? quantile(gr, grass) : 9;
+    const stone = (u, v) => cl((a(u, v) - .3) * 2.2);                                          // 돌 하나하나의 볼록함
+    const sMask = (u, v) => cl((sn(u, v) - Ts) * 22 + .5 - stone(u, v) * .35), gMask = (u, v) => cl((gr(u, v) - Tg) * 18 + .5) * (1 - sMask(u, v));
+    const map = colorTex(512, 512, (u, v) => { const k = .3 + stone(u, v) * .34 + (d(u, v) > .7 ? .1 : 0), s = sMask(u, v), q = gMask(u, v), w = .9 + d(u, v) * .08;
+      const r = lerp(lerp(k * tone[0], .5 * (.8 + d(u, v) * .4), q), w, s), gg = lerp(lerp(k * tone[1], .46 * (.8 + d(u, v) * .4), q), w * 1.01, s), bb = lerp(lerp(k * tone[2], .3 * (.8 + d(u, v) * .4), q), w * 1.04, s); return [r, gg, bb]; }, [1 / 5, 1 / 5]);
+    const normalMap = normalTex(256, 256, (u, v) => stone(u, v) * (1 - sMask(u, v) * .8), .01, [1 / 2, 1 / 2]);
+    return new THREE.MeshStandardMaterial({name:'gravel', map, normalMap, normalScale:new THREE.Vector2(1, 1), roughness:.97, metalness:0, vertexColors:true, envMapIntensity:LOOK.envIntensity});
+  });
+}
+// 붉은 벽돌 벽: 22.5 × 7.5cm 벽돌을 반장씩 엇갈려 쌓은 길이쌓기, 줄눈은 밝은 회색. uv 1 = 1m, 한 장이 0.9m.
+export function brickWallMaterial({seed = 111} = {}){
+  return once('brickwall' + seed, () => {
+    const r = rng(seed), cols = 4, rows = 12, tone = Array.from({length:cols * rows}, () => r()), a = noise2(seed + 1, [16, 32, 64]), b = noise2(seed + 2, [4, 8]);
+    const at = (u, v) => { const row = Math.floor(v * rows), x = u * cols + (row % 2) * .5, col = Math.floor(x), fx = x - col, fy = v * rows - row;
+      return {id:((col % cols) + cols) % cols + row * cols, j:cl(Math.min(Math.min(fx, 1 - fx) * 22, Math.min(fy, 1 - fy) * 9))}; };
+    const map = colorTex(512, 512, (u, v) => { const q = at(u, v), t = tone[q.id], k = (.82 + a(u, v) * .26) * (.86 + t * .24), soot = Math.max(0, b(u, v) - .6) * .5;
+      const c = t < .2 ? [.48, .24, .18] : t < .7 ? [.6, .3, .21] : [.55, .33, .24];
+      return [lerp(.78, c[0] * k - soot * .1, q.j), lerp(.77, c[1] * k - soot * .08, q.j), lerp(.74, c[2] * k - soot * .06, q.j)]; }, [1 / .9, 1 / .9]);
+    const normalMap = normalTex(256, 256, (u, v) => at(u, v).j * .8 + a(u, v) * .2, .006, [1 / .9, 1 / .9]);
+    return new THREE.MeshStandardMaterial({name:'brickwall', map, normalMap, normalScale:new THREE.Vector2(.9, .9), roughness:.92, metalness:0, vertexColors:true, envMapIntensity:LOOK.envIntensity});
+  });
+}
+// 투수 포장 (강변 산책로 · 자전거 도로): 잔 알갱이가 박힌 포장에 눈가루. tone이 바탕색. uv 1 = 1m, 한 장이 4m.
+export function permeableMaterial({seed = 121, tone = [.78, .7, .58], dust = .25} = {}){
+  return once('permeable' + seed + tone + dust, () => {
+    const a = noise2(seed, [128, 256]), b = noise2(seed + 1, [3, 6, 12]), c = noise2(seed + 2, [256]);
+    const map = colorTex(256, 256, (u, v) => { const sp = c(u, v) > .8 ? .07 : c(u, v) < .2 ? -.05 : 0, ds = cl((b(u, v) - .55) * 4) * dust, k = .9 + a(u, v) * .16 + sp;
+      return [tone[0] * k + ds, tone[1] * k + ds, tone[2] * k + ds]; }, [1 / 4, 1 / 4]);
+    const normalMap = normalTex(128, 128, (u, v) => a(u, v), .006, [1, 1]);
+    return new THREE.MeshStandardMaterial({name:'permeable', map, normalMap, normalScale:new THREE.Vector2(.6, .6), roughness:.95, metalness:0, vertexColors:true, envMapIntensity:LOOK.envIntensity});
+  });
+}
+
+// 타일 외벽: 20 × 10cm 타일을 줄 맞춰 붙이고 줄눈은 옅은 회색. 색은 정점 색으로 준다 (베이지 · 회색 · 녹회색). uv 1 = 1m, 한 장이 1m.
+export function tileWallMaterial({seed = 131} = {}){
+  return once('tilewall' + seed, () => {
+    const r = rng(seed), cols = 5, rows = 10, tone = Array.from({length:cols * rows}, () => r()), a = noise2(seed + 1, [8, 16, 32]), b = noise2(seed + 2, [3, 6]);
+    const at = (u, v) => { const row = Math.floor(v * rows), col = Math.floor(u * cols), fx = u * cols - col, fy = v * rows - row; return {id:col + row * cols, j:cl(Math.min(Math.min(fx, 1 - fx) * 30, Math.min(fy, 1 - fy) * 15))}; };
+    const map = colorTex(256, 256, (u, v) => { const q = at(u, v), k = (.9 + tone[q.id] * .1) * (.95 + a(u, v) * .08) - Math.max(0, b(u, v) - .62) * .25; return [lerp(.7, k, q.j), lerp(.7, k, q.j), lerp(.7, k * 1.01, q.j)]; }, [1, 1]);
+    const normalMap = normalTex(128, 128, (u, v) => at(u, v).j, .004, [1, 1]);
+    return new THREE.MeshStandardMaterial({name:'tilewall', map, normalMap, normalScale:new THREE.Vector2(.6, .6), roughness:.6, metalness:0, vertexColors:true, envMapIntensity:LOOK.envIntensity});
+  });
 }

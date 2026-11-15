@@ -1,7 +1,7 @@
 // 미니맵: 월드에 등록된 도형·이름표를 그대로 그리고, 사람 위치와 내 시야 방향을 얹는다.
 import { S } from '../core/state.js';
 import { TAU } from '../core/util.js';
-import { FONT_D, COLORS } from '../config.js';
+import { FONT_D, FONT_B, COLORS } from '../config.js';
 import { W } from '../world/world.js';
 import { WORLD } from '../map/layout.js';
 
@@ -14,8 +14,8 @@ export function drawMiniBase(){
     if (s[0] === 'c') { b.beginPath(); b.arc(X(s[1]), Z(s[2]), s[3] * MS, 0, TAU); b.fill(); } else b.fillRect(X(s[0]), Z(s[1]), (s[2] - s[0]) * MS, (s[3] - s[1]) * MS); }
   b.fillStyle = '#2f7f8c'; b.fillRect(X(6), Z(297.9), 628 * MS, 2);
   b.textAlign = 'center'; b.textBaseline = 'middle'; b.lineJoin = 'round';
-  for (const l of W.mm.labels) { b.font = l[3] + 'px ' + FONT_D; b.lineWidth = 4; b.strokeStyle = 'rgba(255,255,255,.9)'; b.strokeText(l[2], X(l[0]), Z(l[1])); b.fillStyle = '#34465c'; b.fillText(l[2], X(l[0]), Z(l[1])); }
-  b.font = '20px ' + FONT_D; b.fillStyle = '#4b6f86'; b.fillText('강', X(450), Z(364));
+  for (const l of W.mm.labels) { b.font = '800 ' + l[3] + 'px ' + FONT_B; b.lineWidth = 4; b.strokeStyle = 'rgba(255,255,255,.9)'; b.strokeText(l[2], X(l[0]), Z(l[1])); b.fillStyle = '#34465c'; b.fillText(l[2], X(l[0]), Z(l[1])); }
+  b.font = '800 20px ' + FONT_B; b.fillStyle = '#4b6f86'; b.fillText('강', X(450), Z(364));
 }
 export function drawMini(){
   g.drawImage(base, 0, 0);

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><title>preview</title><style>html,body{margin:0;height:100%;background:#cfe0ee}canvas{display:block;width:100%;height:100%}</style></head>
+<body><canvas id="c"></canvas>
+<script type="module">
+// 개발용 미리보기 (게시하지 않음): ?n=소품&o={"len":5}&yaw=30&pitch=18&dist=1.0&files=bus,railway
+import * as THREE from '../src/lib/three.js';
+import { buildProp } from '../src/props/registry.js';
+import { setupRenderer, makeLights, makeEnvironment } from '../src/core/look.js';
+const q = new URLSearchParams(location.search);
+for (const f of (q.get('files') || '').split(',').filter(Boolean)) await import('../src/props/' + f + '.js');
+const c = document.getElementById('c'), r = new THREE.WebGLRenderer({canvas:c, antialias:true}); r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap; setupRenderer(r);
+const W = innerWidth, H = innerHeight; r.setSize(W, H, false);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xcfe0ee);
+const sunOff = new THREE.Vector3(-70, 78, 75); scene.environment = makeEnvironment(r, sunOff);
+const L = makeLights(); Object.values(L).forEach(l => l && l.isObject3D && scene.add(l));
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshStandardMaterial({color:0xf1f4f7, roughness:1})); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const obj = buildProp(q.get('n'), JSON.parse(q.get('o') || '{}')); scene.add(obj);
+const bb = new THREE.Box3().setFromObject(obj), ctr = bb.getCenter(new THREE.Vector3()), sz = bb.getSize(new THREE.Vector3()), rad = Math.max(sz.x, sz.y, sz.z) * .62 * (+q.get('dist') || 1);
+const yaw = (+q.get('yaw') || 30) * Math.PI / 180, pitch = (+q.get('pitch') || 18) * Math.PI / 180;
+const cam = new THREE.PerspectiveCamera(35, W / H, .05, 2000);
+const d = rad / Math.tan(17.5 * Math.PI / 180);
+cam.position.set(ctr.x + Math.sin(yaw) * Math.cos(pitch) * d, ctr.y + Math.sin(pitch) * d, ctr.z + Math.cos(yaw) * Math.cos(pitch) * d); cam.lookAt(ctr);
+const sun = L.sun; sun.position.copy(ctr).add(sunOff); sun.target.position.copy(ctr); scene.add(sun.target);
+const sc = sun.shadow.camera, e = rad * 1.6; sc.left = -e; sc.right = e; sc.top = e; sc.bottom = -e; sc.near = 1; sc.far = 300; sc.updateProjectionMatrix();
+r.render(scene, cam);
+window.__info = obj.userData.info; window.__galleryReady = true;
+</script></body></html>

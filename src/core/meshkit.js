@@ -245,6 +245,8 @@ export class Parts {
   add(key, g, hex){ if (hex !== undefined) tint(g, hex); (this.m[key] || (this.m[key] = [])).push(g); return g; }
   has(key){ return !!(this.m[key] && this.m[key].length); }
   geo(key){ const g = merge(this.m[key]); if (!g.getAttribute('color')) tint(g, 0xffffff); return g; }
+  // 모은 부품을 합쳐 가짜 AO를 굽고, 구운 결과로 바꿔 둔다 (assemble이 그대로 쓴다)
+  bake(key, fn){ if (!this.has(key)) return null; const g = this.geo(key); bakeAO(g, fn); this.m[key] = [g]; return g; }
   mesh(key, mat, {cast = true, receive = true} = {}){ const m = new THREE.Mesh(this.geo(key), mat); m.castShadow = cast; m.receiveShadow = receive; m.name = key; return m; }
 }
 // 반구 모양 눈더미·둥근 관목 (아래가 평평한 타원 돔).

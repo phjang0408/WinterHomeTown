@@ -1,23 +1,31 @@
-// 지형: 땅, 강변 경사, 둔치, 강물, 강 건너편. 높이와 미끄러움, 걸을 수 있는 범위를 월드에 등록한다.
+// 지형: 땅, 강변 경사, 둔치, 강물, 강 건너편. 높이와 걸을 수 있는 범위를 월드에 등록한다.
 import * as THREE from '../lib/three.js';
 import { root } from '../core/engine.js';
 import { M, G, flat, box } from '../core/gfx.js';
 import { sr, PI } from '../core/util.js';
 import { W } from '../world/world.js';
-import { BANK, DECK, PLAT, HILL, POND, WALK } from './layout.js';
+import { UNIT as U } from '../config.js';
+import { BANK, PLAT, DOCK, HILL, WALK, NROAD, BRIDGE, RAILS, SIDING } from './layout.js';
+import { PLATFORM, TRACK } from '../props/railway.js';
 
-export function hillY(x, z){ const d = Math.hypot(x - HILL.x, z - HILL.z) / HILL.r; if (d >= 1) return 0; const t = 1 - d; return HILL.h * t * t * (3 - 2 * t); }
+export function hillY(x, z){ if (!HILL.h) return 0; const d = Math.hypot(x - HILL.x, z - HILL.z) / HILL.r; if (d >= 1) return 0; const t = 1 - d; return HILL.h * t * t * (3 - 2 * t); }
+// 승강장 · 화물 홈 윗면 높이 (양 끝 경사로). 소품(platformModule)과 같은 치수.
+function deckY(r, h, ramp){ return (x, z) => { if (x < r.x0 || x > r.x1 || z < r.z0 || z > r.z1) return null;
+  const hl = (r.x1 - r.x0) / 2 - ramp * U, d = Math.abs(x - (r.x0 + r.x1) / 2) - hl; return d <= 0 ? h * U : Math.max(0, h * U * (1 - d / (ramp * U))); }; }
 
 export function buildTerrain(){
-  // 높이: 데크 → 둔치(언덕 포함) → 경사 → 승강장 → 평지
-  W.addHeight((x, z) => x > DECK.x0 && x < DECK.x1 && z > DECK.z0 && z < DECK.z1 ? DECK.y : null);
+  // 높이: 승강장 → 화물 홈 → 선로 도상 → 둔치 → 경사 → 평지 (육교 · 상가 테라스 등 소품 높이는 소품이 등록한다)
+  W.addHeight(deckY(PLAT, PLATFORM.h, PLATFORM.ramp));
+  W.addHeight(deckY(DOCK, 1, 2));
+  const bal = TRACK.bTop * U, by = TRACK.bH * U;
+  W.addHeight((x, z) => z < 70 && (RAILS.some(c => Math.abs(z - c) < bal) || (x > SIDING.x0 && x < SIDING.x1 && Math.abs(z - SIDING.z) < bal)) ? by : null);
   W.addHeight((x, z) => z >= 282 ? BANK + hillY(x, z) : null);
   W.addHeight((x, z) => z > 275 ? BANK * (z - 275) / 7 : null);
-  W.addHeight((x, z) => x > PLAT.x0 && x < PLAT.x1 && z > PLAT.z0 && z < PLAT.z1 ? .9 : null);
-  W.addSlippery((x, z) => Math.hypot(x - POND.x, z - POND.z) < POND.r);
   W.bounds = (x, z) => {
-    if (x < WALK.x0 || x > WALK.x1 || z < WALK.z0) return false;
-    if (z > WALK.zRiver) { if (Math.hypot(x - POND.x, z - POND.z) < POND.r - .5) return true; return x > DECK.x0 + .7 && x < DECK.x1 - .7 && z < DECK.z1 - .7; }
+    if (x < WALK.x0 || x > WALK.x1 || z < WALK.z0 || z > WALK.zRiver) return false;
+    if (z > NROAD.z0 - .4 && z < NROAD.z1 + .4 && Math.abs(x - BRIDGE.x) > 1.6) return false;   // 북쪽 도로: 육교 위로만 지나간다 (도로와 단지 쪽 길 끝은 투명벽)
+    if (z > NROAD.z1 && z < 256 && x < 15.6) return false;                                    // 아파트단지 서쪽 방음벽 바깥
+    if (z > NROAD.z1 && z < 95.7 && x < 186) return false;                                    // 아파트단지 북쪽 방음벽 바깥
     return true;
   };
 
@@ -36,7 +44,7 @@ export function buildTerrain(){
 
   // 떠다니는 얼음 조각
   const floes = [];
-  for (let i = 0; i < 22; i++) { const x = sr(-60, 700), z = sr(348, 445); if (Math.hypot(x - POND.x, z - POND.z) < POND.r + 4) continue;
+  for (let i = 0; i < 22; i++) { const x = sr(-60, 700), z = sr(348, 445);
     const f = new THREE.Mesh(new THREE.CircleGeometry(1, 7), M(0xf4f8fb)); f.rotation.x = -PI / 2; f.scale.set(sr(1.5, 4.5), sr(1.2, 3), 1);
     f.position.set(x, BANK - .42, z); f.userData.v = sr(.25, .7); f.receiveShadow = true; root.add(f); floes.push(f); }
   W.animated.push({obj:null, update:dt => floes.forEach(f => { f.position.x += f.userData.v * dt; if (f.position.x > 700) f.position.x = -60; })});

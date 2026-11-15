@@ -5,4 +5,5 @@ import './target.js';
 import './ttakji.js';
 import './snowman.js';
 import './sled.js';
+import './slide.js';
 export { ACTS, current, findAction, doAction, stopActivity } from './registry.js';

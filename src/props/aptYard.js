@@ -2,7 +2,7 @@
 import * as THREE from '../lib/three.js';
 import { defineProp } from './registry.js';
 import { canvasTex } from '../core/gfx.js';
-import { box, tube, lathe, sweep, curveZY, extrudeProfile, fillet, ridge, blob, xf, bakeAO, groundAO, Parts } from '../core/meshkit.js';
+import { box, loft, tube, lathe, sweep, curveZY, extrudeProfile, fillet, ridge, blob, xf, bakeAO, groundAO, Parts } from '../core/meshkit.js';
 import { matteMaterial, snowMaterial, decalMaterial, plasticMaterial, metalMaterial, woodMaterial } from '../core/texkit.js';
 import { assemble, quadZ, grain, mulberry } from './kit.js';
 import { UNIT, FONT_D } from '../config.js';
@@ -20,7 +20,7 @@ function slab(a, b, w, t, axis = 'x'){
 // ── 쓰레기 분리수거장: 철골 지붕 아래 마대 걸이 다섯 칸 ──
 const KINDS = [['종이류', '#3f6fa8'], ['플라스틱', '#e8742a'], ['캔·고철', '#8a9299'], ['유리병', '#3f8a5a'], ['비닐류', '#b0558a']];
 const recycleTex = () => once('recycle', () => decalMaterial(canvasTex(1024, 256, (g, W, H) => { g.fillStyle = '#2f7d5b'; g.fillRect(0, 0, W, 150); g.fillStyle = '#f4f6f4'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.font = '700 92px ' + FONT_D; g.fillText('재활용품 분리수거장', 512, 80); KINDS.forEach(([t, c], i) => { g.fillStyle = c; g.fillRect(i * 204.8, 152, 204.8, 104); g.fillStyle = '#fff'; g.font = '700 54px ' + FONT_D; g.fillText(t, i * 204.8 + 102.4, 206); }); }), {rough:.7}));
+  g.font = '92px ' + FONT_D; g.fillText('재활용품 분리수거장', 512, 80); KINDS.forEach(([t, c], i) => { g.fillStyle = c; g.fillRect(i * 204.8, 152, 204.8, 104); g.fillStyle = '#fff'; g.font = '54px ' + FONT_D; g.fillText(t, i * 204.8 + 102.4, 206); }); }), {rough:.7}));
 defineProp('recycleStation', {label:'쓰레기 분리수거장', category:'분리수거', isNewStyle:true, colliders:[{r:[-3.3 * U, -1.3 * U, 3.3 * U, 1.25 * U]}], build(){
   const P = new Parts(), W2 = 3.2, D2 = 1.2, HF = 2.75, HB = 2.3, R = mulberry(9), post = 0x4d5f58;
   [-W2, 0, W2].forEach(x => { P.add('mat', box(x - .04, 0, D2 - .04, x + .04, HF, D2 + .04), post); P.add('mat', box(x - .04, 0, -D2 - .04, x + .04, HB, -D2 + .04), post);
@@ -146,3 +146,4 @@ defineProp('seesaw', {label:'시소', category:'놀이터', isNewStyle:true, col
   [-.1, .1].forEach(z => P.add('pla', box(-.1, 0, z - .015, .1, .6, z + .015, .01), 0x4f9e5a)); P.add('mat', xf(new THREE.CylinderGeometry(.03, .03, .26, 10), {rx:Math.PI / 2, y:.52}), 0x30363b); P.add('mat', box(-.2, 0, -.16, .2, .03, .16), 0x4a5157);
   P.add('snw', T(xf(blob(.14, .035, .1, {seed:3, bump:.1, seg:10}), {x:1.42, y:.075})));
   return assemble(P, [['pla', plasticMaterial()], ['mat', matteMaterial()], ['snw', snowMaterial({seed:43})]], [3.4, .9, .5]); }});
+// 대형 미끄럼틀은 두 바퀴 도는 나선 미끄럼틀(props/aptStreet.js의 spiralSlide)로 바뀌었다.

@@ -1,11 +1,11 @@
 // 진입점: 맵 → 놀이 → 반복 소품 → 캐릭터 → 네트워크 순서로 준비하고 메인 루프를 돌린다.
-import { onFrame, start, shadowRange, canvas } from './core/engine.js';
+import { onFrame, start, shadowRange, canvas, renderer, scene } from './core/engine.js';
 import { S, setMode } from './core/state.js';
 import { PI, rnd } from './core/util.js';
 import { audio, sfx, flash, updateFx } from './core/fx.js';
 import { updateCamera, camLook } from './core/camera.js';
 import { initInput, turnCamera, freeMove } from './core/input.js';
-import { coarse, reduceMotion, COLORS, ADJ, NOUN } from './config.js';
+import { coarse, reduceMotion, COLORS, ADJ, NOUN, FONTS_TO_LOAD } from './config.js';
 import './props/basic.js';
 import './props/parkBench.js';
 import './props/decor.js';
@@ -15,6 +15,13 @@ import './props/cars.js';
 import './props/aptSite.js';
 import './props/aptYard.js';
 import './props/aptCenter.js';
+import './props/shops.js';
+import './props/bus.js';
+import './props/railway.js';
+import './props/street.js';
+import './props/stationery.js';
+import './props/shopTowers.js';
+import './props/aptStreet.js';
 import { W } from './world/world.js';
 import { finalizeBatches, spotLabels } from './world/builders.js';
 import { buildMap } from './map/index.js';
@@ -94,7 +101,7 @@ function frame(dt, now){
 }
 
 async function boot(){
-  try { if (document.fonts && document.fonts.load) await Promise.race([Promise.all([document.fonts.load('32px "Jua"', '겨울'), document.fonts.load('16px "Gowun Dodum"', '겨울')]), new Promise(r => setTimeout(r, 1800))]); } catch (e) {}
+  try { if (document.fonts && document.fonts.load) await Promise.race([Promise.all(FONTS_TO_LOAD.map(f => document.fonts.load(f, '겨울동화'))), new Promise(r => setTimeout(r, 1800))]); } catch (e) {}
   buildMap();
   ACTS.forEach(a => a.setup && a.setup());
   setupVehicles();
@@ -103,6 +110,7 @@ async function boot(){
   dressMe(); drawMiniBase(); bindUi();
   onFrame(frame);
   start();
+  if (location.search.includes('debug')) window.__town = {S, me, W, findAction, renderer, scene};   // 개발용: 콘솔에서 상태를 들여다본다
   window.__townReady = true;
   connect({onPeers:list => { applyPeers(list); updateCount(); }, onStatus:updateCount});
 }

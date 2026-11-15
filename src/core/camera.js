@@ -13,7 +13,8 @@ const head = new THREE.Vector3(), want = new THREE.Vector3(), look = new THREE.V
 
 export function updateCamera(dt, now){
   const C = S.cam, a = current(); let follow = false;
-  if (S.mode === 'intro') { const t = (reduceMotion ? 0 : now * .00004) + .4; want.set(INTRO.x + Math.sin(t) * INTRO.r, INTRO.h, INTRO.z + Math.cos(t) * INTRO.r); look.set(INTRO.x, 0, INTRO.z); }
+  if (S.dbgCam) { want.set(...S.dbgCam.p); look.set(...S.dbgCam.l); camPos.copy(want); camLook.copy(look); }   // 개발용: 고정 시점 (?debug)
+  else if (S.mode === 'intro') { const t = (reduceMotion ? 0 : now * .00004) + .4; want.set(INTRO.x + Math.sin(t) * INTRO.r, INTRO.h, INTRO.z + Math.cos(t) * INTRO.r); look.set(INTRO.x, 0, INTRO.z); }
   else if (!(a && a.camera && a.camera(want, look))) {
     follow = true; const me = S.me;
     head.set(me.x, me.char.position.y + 1.6, me.z);
