@@ -106,11 +106,11 @@ defineProp('stationCanopy', {label:'대합 지붕 (파란 골강판)', category:
     [-1, 1].forEach(s => P.add('pnt', xf(box(-.02, -.1, 0, .02, .1, Math.hypot(C.front - C.back, C.yf - C.yb)), {rx:-up, x:s * (L / 2 + .02), y:C.yb + .06, z:C.back}), BL));
     P.add('met', xf(tube([V(-L / 2, 0, 0), V(L / 2, 0, 0)], .06, {radial:8}), {y:C.yb - .02, z:C.back - .04}), 0xb9c0c6);
     // 기둥 (H형강) · 서까래 · 도리
-    for (let i = 0; i < n; i++) { const x = -L / 2 + .3 + (L - .6) * i / (n - 1), h = yAt(0);
+    for (let i = 0; i < n; i++) { const x = -L / 2 + .3 + (L - .6) * i / (n - 1), h = Math.min(yAt(-.11), yAt(.11)) - .1;   // 기둥 끝은 서까래 밑 (지붕을 뚫지 않게)
       P.add('pst', box(x - .1, 0, -.11, x + .1, h, -.095), POST); P.add('pst', box(x - .1, 0, .095, x + .1, h, .11), POST); P.add('pst', box(x - .008, 0, -.095, x + .008, h, .095), POST);
       P.add('pst', box(x - .17, 0, -.17, x + .17, .02, .17), 0x7c8a96); P.add('con', box(x - .25, -.05, -.25, x + .25, .06, .25, .02), 0xcfccc4);
       P.add('pst', xf(box(-.05, -.09, 0, .05, .09, Math.hypot(C.front - C.back, C.yf - C.yb) - .06), {rx:-up, x, y:C.yb - .06, z:C.back}), POST);                // 서까래
-      P.add('pst', xf(box(-.04, -.24, 0, .04, 0, 1.6), {rx:-up - .55, x, y:h - .05, z:.0}), POST); }                                                              // 가새
+      P.add('pst', tube([V(x, h - .85, .12), V(x, yAt(1.35) - .1, 1.35)], .035, {radial:6}), POST); }                                                       // 가새: 기둥 중간에서 서까래 밑으로
     [0, 1.4, 2.8, 4.1].forEach(z => P.add('pst', box(-L / 2 + .1, yAt(z) - .08, z - .04, L / 2 - .1, yAt(z) - .005, z + .04), POST));                          // 도리
     // 지붕 위 눈: 기운 판 위에 얇게, 가장자리는 얼룩지게
     const R = mulberry(5);                                                                                                       // 지붕 위 눈은 군데군데 (파란 골이 보이게)
@@ -150,13 +150,19 @@ defineProp('stationSign', {label:'역명판', category:'간이역', isNewStyle:t
 // 원점은 전체 가운데, 다리는 z 방향으로 놓인다. 바깥 기둥은 piers(상판 위 z 위치, m)에 선다.
 export const FOOTBRIDGE = {hw:1.2, rise:4.6, run:8, deck:27.2, piers:[-13.6, -1.7, 8.5, 13.6]};
 const FB = FOOTBRIDGE, FBL = FB.deck / 2 + FB.run;
+// 충돌 (2026-11-15): 계단 낮은 쪽(높이 2m 아래)은 누구나 막고, 그 위 난간은 위에 선 사람만 막는다. 밑을 지나는 사람은 기둥과 낮은 계단 밑 입구에만 막힌다.
+const FB_LOW = FB.run * 2 / FB.rise, FB_UP = 1.9 * UNIT;
+const FB_COLLIDERS = [-1, 1].flatMap(s => { const xa = s < 0 ? -(FB.hw + .14) : FB.hw, xb = s < 0 ? -FB.hw : FB.hw + .14;
+  return [{r:[xa * U, -FBL * U, xb * U, (-FBL + FB_LOW) * U]}, {r:[xa * U, (FBL - FB_LOW) * U, xb * U, FBL * U]}, {r:[xa * U, (-FBL + FB_LOW) * U, xb * U, (FBL - FB_LOW) * U], y0:FB_UP}]; })
+  .concat([-1, 1].map(s => ({r:[-FB.hw * U, (s * (FBL - FB_LOW) - .15) * U, FB.hw * U, (s * (FBL - FB_LOW) + .15) * U], y1:1})))
+  .concat(FB.piers.flatMap(z => [-1, 1].map(s => ({r:[(s * (FB.hw + .22) - .25) * U, (z - .25) * U, (s * (FB.hw + .22) + .25) * U, (z + .25) * U], y1:1}))));
 export function footBridgeHeight(xm, zm){                                   // 다리 위 높이 (미터, 다리 밖이면 null)
   if (Math.abs(xm) > FB.hw || Math.abs(zm) > FBL) return null;
   const a = Math.abs(zm); return a <= FB.deck / 2 ? FB.rise : FB.rise * (FBL - a) / FB.run;
 }
 defineProp('footBridge', {label:'육교', category:'간이역', isNewStyle:true, blocksCamera:false,
-  height:(x, z) => { const h = footBridgeHeight(x / U, z / U); return h === null ? null : h * U; },
-  colliders:[{r:[-(FB.hw + .14) * U, -FBL * U, -FB.hw * U, FBL * U]}, {r:[FB.hw * U, -FBL * U, (FB.hw + .14) * U, FBL * U]}],
+  height:(x, z, y) => { const h = footBridgeHeight(x / U, z / U); if (h === null) return null; return y !== undefined && h * U > y + 1.2 ? null : h * U; },   // 1.2보다 높으면 밑으로 지나간다
+  colliders:FB_COLLIDERS,
   usage:"W.place('footBridge', {x: 230.5, z: 80});  // 폭 2.4m, 높이 4.6m, 길이 43.2m. 계단 바닥이 양 끝", build(){
     const P = new Parts(), hw = FB.hw, H = FB.rise, D2 = FB.deck / 2, BL = 0x4f7d96, GR = 0xb9c3ca;
     const nSteps = 26, rs = H / nSteps, run = FB.run / nSteps;

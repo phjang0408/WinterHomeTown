@@ -132,6 +132,14 @@ export function bedMaterial({seed = 81, grass = .2} = {}){
     return new THREE.MeshStandardMaterial({name:'bed', map, normalMap, normalScale:new THREE.Vector2(.6, .6), roughness:.96, metalness:0, vertexColors:true, envMapIntensity:LOOK.envIntensity});
   });
 }
+// 얼음판 (2026-11-17, 강변 얼음 썰매장): 푸르스름한 반들 얼음과 눈가루 얼룩. uv 1 = 1m.
+export function iceMaterial({seed = 141} = {}){
+  return once('ice' + seed, () => {
+    const a = noise2(seed, [3, 7, 13]), b = noise2(seed + 1, [64, 128]);
+    const map = colorTex(512, 512, (u, v) => { const k = a(u, v), w = cl((k - .55) * 3); return [lerp(.56, .86, w) - b(u, v) * .04, lerp(.72, .92, w) - b(u, v) * .03, lerp(.86, .97, w)]; }, [1 / 30, 1 / 30]);   // 얼음은 눈보다 짙은 하늘빛, 군데군데 흰 눈가루
+    return new THREE.MeshStandardMaterial({name:'ice', map, roughness:.12, metalness:.1, vertexColors:true, envMapIntensity:LOOK.envIntensity * 1.6});
+  });
+}
 // 어린이 보호구역 붉은 포장: 암적색 미끄럼방지 포장에 골재 알갱이와 닳은 자국, 눈가루. uv 1 = 1m.
 export function schoolZoneMaterial({seed = 91} = {}){
   return once('schoolzone' + seed, () => {
@@ -232,4 +240,31 @@ export function tileWallMaterial({seed = 131} = {}){
     const normalMap = normalTex(128, 128, (u, v) => at(u, v).j, .004, [1, 1]);
     return new THREE.MeshStandardMaterial({name:'tilewall', map, normalMap, normalScale:new THREE.Vector2(.6, .6), roughness:.6, metalness:0, vertexColors:true, envMapIntensity:LOOK.envIntensity});
   });
+}
+
+// 반복 무늬 깨기 (2026-11-17): 넓은 바닥 재질에서 같은 타일이 눈에 띄지 않게 한다.
+//   ① 같은 텍스처를 돌리고 크기를 바꿔 한 번 더 읽어, 큰 얼룩 노이즈로 두 결과를 섞는다 ② 아주 큰 노이즈로 밝기를 조금씩 바꾼다.
+//   세계 좌표(xz)를 써서 바닥판마다 이어진다. strength: 밝기 변화 폭.
+export function antiTile(mat, {strength = .22, mixScale = .045, macroScale = .011} = {}){
+  if (!mat || mat.userData.antiTile) return mat; mat.userData.antiTile = true;
+  const prev = mat.onBeforeCompile;
+  mat.onBeforeCompile = (sh, r) => { if (prev) prev(sh, r);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vAtW;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvAtW = (modelMatrix * vec4(transformed, 1.0)).xz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+varying vec2 vAtW;
+float atH(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float atN(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(atH(i), atH(i + vec2(1.0, 0.0)), f.x), mix(atH(i + vec2(0.0, 1.0)), atH(i + vec2(1.0, 1.0)), f.x), f.y); }`)
+      .replace('#include <map_fragment>', `#ifdef USE_MAP
+  vec4 atA = texture2D(map, vMapUv);
+  vec2 atUv = mat2(0.8, -0.6, 0.6, 0.8) * vMapUv * 0.73 + vec2(0.37, 0.19);
+  vec4 atB = texture2D(map, atUv);
+  float atM = smoothstep(0.3, 0.7, atN(vAtW * ${mixScale.toFixed(4)}) * 0.65 + atN(vAtW * ${(mixScale * 2.7).toFixed(4)} + 3.1) * 0.35);
+  vec4 sampledDiffuseColor = mix(atA, atB, atM);
+  sampledDiffuseColor.rgb *= 1.0 - ${(strength / 2).toFixed(3)} + ${strength.toFixed(3)} * atN(vAtW * ${macroScale.toFixed(4)} + 11.7);
+  diffuseColor *= sampledDiffuseColor;
+#endif`); };
+  mat.customProgramCacheKey = () => 'antiTile' + strength + mixScale + macroScale;
+  mat.needsUpdate = true; return mat;
 }

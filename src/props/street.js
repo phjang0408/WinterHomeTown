@@ -4,9 +4,10 @@
 import * as THREE from '../lib/three.js';
 import { defineProp } from './registry.js';
 import { box, tube, blob, xf, Parts, groundAO, bakeAO } from '../core/meshkit.js';
-import { asphaltMaterial, roadPaintMaterial, plasticMaterial, snowMaterial, matteMaterial } from '../core/texkit.js';
-import { assemble, mulberry } from './kit.js';
-import { UNIT } from '../config.js';
+import { asphaltMaterial, roadPaintMaterial, plasticMaterial, snowMaterial, matteMaterial, decalMaterial, metalMaterial } from '../core/texkit.js';
+import { canvasTex } from '../core/gfx.js';
+import { assemble, mulberry, quadZ } from './kit.js';
+import { UNIT, FONT_D } from '../config.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z), U = UNIT;
 
@@ -86,3 +87,38 @@ defineProp('grassTuft', {label:'마른 풀 포기', category:'조경', isNewStyl
     P.add('snw', xf(blob(.09, .03, .08, {seed:v + 2, seg:8}), {x:.03}));
     P.bake('gr', groundAO(.2, .6));
     return assemble(P, [['gr', matteMaterial({rough:.9}), false], ['snw', snowMaterial({seed:66}), false]], [.4, h, .4]); }});
+
+// ───────── 낮춘 공원 계단 (2026-11-16): 화강석 디딤판 · 노란 미끄럼 방지 줄 · 양옆 옆벽(앉음벽 높이) · 손스침 ─────────
+//   원점은 위쪽 끝 가운데(땅 높이), +z로 내려간다. o.w 폭, o.run 길이, o.rise 높이 (미터). 폭이 6m를 넘으면 가운데에도 손스침.
+import { concreteMaterial as _con, metalMaterial as _met } from '../core/texkit.js';
+defineProp('parkStair', {label:'공원 계단 (낮춘 마당)', category:'공원', isNewStyle:true,
+  colliders:[], usage:"W.place('parkStair', {x, z, y:0, rot, w, run, rise});  // 원점은 위쪽 가운데, +z로 내려간다", build(o = {}){
+    const w = o.w || 4, run = o.run || 4, rise = o.rise || 2, hw = w / 2, n = Math.max(3, Math.round(rise / .16)), tr = run / n, rs = rise / n, P = new Parts(), WT = .3, TOP = .45;
+    for (let k = 0; k < n; k++) { const z0 = k * tr, y = -(k + 1) * rs;
+      P.add('stn', box(-hw, -rise, z0, hw, y, z0 + tr, .008), k % 2 ? 0xcfd0cc : 0xdcddd9);            // 단 하나 (디딤판 길이만큼, 바닥까지 채운 덩어리)
+      P.add('yel', box(-hw + .05, y, z0 + tr - .11, hw - .05, y + .012, z0 + tr - .03), 0xe0b63a); }    // 디딤판 앞 끝의 미끄럼 방지 줄
+    [-1, 1].forEach(s => { const x0 = s < 0 ? -hw - WT : hw, x1 = s < 0 ? -hw : hw + WT;
+      for (let k = 0; k < n; k++) { const y = -k * rs + TOP; P.add('stn', box(x0, -rise, k * tr - (k ? 0 : .02), x1, y, (k + 1) * tr + (k === n - 1 ? .02 : 0), .01), 0xbfc1bd);   // 옆벽: 단을 따라 내려간다 (위는 앉음벽 높이)
+        P.add('stn', box(x0 - .02, y, k * tr, x1 + .02, y + .05, (k + 1) * tr, .01), 0xd7d8d4); }
+      const xr = s * (hw - .12); P.add('met', tube([new THREE.Vector3(xr, .9, -.2), new THREE.Vector3(xr, -rise + .9, run + .2)], .025, {radial:6}), 0x9aa3a8);
+      [0, .5, 1].forEach(t => P.add('met', box(xr - .02, -rise * t, run * t - .02, xr + .02, -rise * t + .9, run * t + .02), 0x9aa3a8)); });
+    if (w > 6) { P.add('met', tube([new THREE.Vector3(0, .9, .3), new THREE.Vector3(0, -rise + .9, run - .3)], .025, {radial:6}), 0x9aa3a8);
+      [.1, .5, .9].forEach(t => P.add('met', box(-.02, -rise * t, run * t - .02, .02, -rise * t + .9, run * t + .02), 0x9aa3a8)); }
+    return assemble(P, [['stn', _con({seed:91})], ['yel', matteMaterial()], ['met', _met({rough:.35})], ['snw', snowMaterial({seed:93}), false]], [w + .6, rise + 1, run]); }});
+
+// ───────── 바리케이드 (2026-11-17): 걷는 끝을 막는 빨강 · 흰 줄무늬 가림막 + 글자 판. 폭 1.8m, 높이 1.1m, 판이 +z를 본다 ─────────
+const barMats = new Map();
+const barText = t => { if (!barMats.has(t)) barMats.set(t, decalMaterial(canvasTex(512, 128, g => { g.fillStyle = '#fbfbf8'; g.fillRect(0, 0, 512, 128); g.strokeStyle = '#c62828'; g.lineWidth = 10; g.strokeRect(6, 6, 500, 116);
+  g.fillStyle = '#c62828'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '64px ' + FONT_D; g.fillText(t, 256, 68); }), {rough:.6})); return barMats.get(t); };
+const stripeMat = () => barMats.get('_s') || (barMats.set('_s', decalMaterial(canvasTex(256, 32, g => { for (let i = -2; i < 18; i++) { g.fillStyle = i % 2 ? '#d32f2f' : '#f5f5f2'; g.beginPath(); g.moveTo(i * 16, 32); g.lineTo(i * 16 + 16, 32); g.lineTo(i * 16 + 32, 0); g.lineTo(i * 16 + 16, 0); g.fill(); } }), {rough:.5})), barMats.get('_s'));
+defineProp('barricade', {label:'바리케이드 (통행 금지)', category:'도로', isNewStyle:true, colliders:[{r:[-.95 * UNIT, -.25 * UNIT, .95 * UNIT, .25 * UNIT]}],
+  usage:"W.place('barricade', {x, z, rot, text:'통행 금지'});  // 폭 1.8m", build(o = {}){
+    const P = new Parts(), extra = [];
+    [-.8, .8].forEach(x => { P.add('leg', box(x - .04, 0, -.22, x + .04, 1.1, -.14, .01), 0x6f777e); P.add('leg', box(x - .04, 0, .14, x + .04, 1.1, .22, .01), 0x6f777e);
+      P.add('foot', box(x - .12, 0, -.3, x + .12, .08, .3, .02), 0x2b2e31); });
+    [.45, .8].forEach(y => { P.add('bd', box(-.9, y, -.03, .9, y + .16, .03, .01), 0xf5f5f2); extra.push(new THREE.Mesh(quadZ(-.9, y, .9, y + .16, .031, [0, 0, 1, 1]), stripeMat())); });
+    // 안내판은 윗판 위에 바로 얹고 뒤에서 두 쇠붙이로 잡는다 (떠 보이지 않게)
+    P.add('bd', box(-.55, .96, -.02, .55, 1.24, .02, .01), 0xfbfbf8); extra.push(new THREE.Mesh(quadZ(-.54, .97, .54, 1.23, .021, [0, 0, 1, 1]), barText(o.text || '통행 금지')));
+    [-.4, .4].forEach(x => P.add('leg', box(x - .03, .7, -.05, x + .03, 1.2, -.02, .005), 0x6f777e));
+    [[-.9, -.55], [.55, .9]].forEach(([a, b]) => P.add('snw', box(a, .96, -.03, b, .99, .03)));
+    return assemble(P, [['leg', metalMaterial({rough:.4})], ['foot', matteMaterial()], ['bd', plasticMaterial({rough:.5})], ['snw', snowMaterial({seed:97}), false]], [1.9, 1.3, .6], extra); }});

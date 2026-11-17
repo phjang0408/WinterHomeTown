@@ -52,18 +52,22 @@ function tower(S){
     const z0 = hd - 1.2, zg = hd - .25;
     con(box(x0, 0, z0, x1, .12, hd), k === 'door' ? 0x9c9a94 : 0x8a8780); P.add('int', box(x0, 2.6, z0, x1, 2.75, hd - .02), 0xeeeee8);
     if (k === 'shop') {
-      P.add('int', box(x0, .12, z0, x1, 2.6, z0 + .02), 0xece8dc);
-      [.45, .95, 1.45].forEach(y => { P.add('met', box(x0 + .1, y - .02, z0, x1 - .1, y, z0 + .4), 0xb7bcc0);
-        for (let x = x0 + .14; x < x1 - .2;) { const w = .08 + R() * .16, h = .08 + R() * .2; P.add('pla', box(x, y, z0 + .05, x + w, y + h, z0 + .05 + .12 + R() * .2), GOODS[Math.floor(R() * GOODS.length)]); x += w + .01; } });
-      P.add('glow', box(x0 + .3, 2.56, z0 + .5, x1 - .3, 2.6, z0 + .62), 0xf4f8ff);
-      P.add('clr', box(x0 + .03, .12, zg - .01, x1 - .03, 2.7, zg + .01));
+      // 가게 유리는 시트지로 덮어 안이 보이지 않는다 (2026-11-15): 아래는 불투명한 우윳빛 시트, 허리에 색 띠, 위 1/4만 어두운 유리
+      const band = GOODS[Math.floor(R() * GOODS.length)];
+      P.add('int', box(x0, .12, z0, x1, 2.6, z0 + .02), 0x8e959b);
+      P.add('gls', box(x0 + .03, .12, zg - .01, x1 - .03, 2.1, zg + .01), 0xe6eaec); P.add('gls', box(x0 + .03, 2.1, zg - .01, x1 - .03, 2.7, zg + .01), 0x34424f);
+      P.add('pla', box(x0 + .03, 1.05, zg + .018, x1 - .03, 1.3, zg + .03), band);   // 유리 앞면(+.01)과 떼어 겹치지 않게
       [x0, (x0 + x1) / 2, x1].forEach((x, i) => met(box(x - (i === 2 ? .06 : 0) - (i === 1 ? .03 : 0), .12, zg - .04, x + (i === 0 ? .06 : 0) + (i === 1 ? .03 : 0), 2.75, zg + .04), 0x9ea5ab));
       [[.12, .2], [2.66, 2.75], [.9, .95]].forEach(([a, b]) => met(box(x0, a, zg - .04, x1, b, zg + .04), 0x9ea5ab));
     } else {
       P.add('int', box(x0, .12, z0, x1, 2.6, z0 + .02), 0x3d4247);
       for (let k = 0; k < 4; k++) con(box(x0 + .1, .12 + k * .18, z0 + .02 + (3 - k) * .22, x1 - .1, .12 + (k + 1) * .18, z0 + .9), 0xa7a59f);   // 안쪽 계단
       [x0, x1].forEach((x, i) => met(box(x - (i ? .07 : 0), .12, zg - .05, x + (i ? 0 : .07), 2.4, zg + .05), 0x7e868c)); met(box(x0, 2.33, zg - .05, x1, 2.4, zg + .05), 0x7e868c);
-      P.add('clr', box(x0 + .07, .12, zg - .15, (x0 + x1) / 2 - .02, 2.33, zg - .13)); met(box((x0 + x1) / 2 - .06, .12, zg - .16, (x0 + x1) / 2 + .06, 2.33, zg - .1), 0x7e868c);   // 열어 둔 유리문
+      // 열어 둔 유리문: 안쪽으로 90° 젖혀 왼쪽 벽에 붙인다 (입구 앞을 회색 판이 막아 보이던 것)
+      { const dl = Math.min(.8, (x1 - x0) / 2 - .05), za = zg - .12, zb = za - dl, xd = x0 + .06;
+        P.add('clr', box(xd - .01, .14, zb, xd + .01, 2.3, za));
+        [[za - .05, za], [zb, zb + .05]].forEach(([a, b]) => met(box(xd - .025, .12, a, xd + .025, 2.33, b), 0x7e868c));
+        [[.12, .2], [2.27, 2.33]].forEach(([a, b]) => met(box(xd - .025, a, zb, xd + .025, b, za), 0x7e868c)); }
       P.add('pla', box(x0 + .15, 1.2, z0 + .02, x0 + .75, 1.8, z0 + .14), 0xc9cdd1);                                // 우편함
     }
   });
@@ -208,7 +212,7 @@ export const TOWER_SIGNS = {
     ['signFascia', {text:'푸른 영어교습소', bg:'#3f8a5a', fg:'#ffffff', w:6.2, h:.7}, -1, fy(5), 5.5],
     ['signVertical', {text:'으뜸학원', bg:'#1f4e8c', fg:'#ffffff', len:2.4}, -4.16, fy(3, .3), 5.5],
     ['signRoof', {text:'새빛교회', bg:'#ffffff', fg:'#b71c1c'}, -.6, topOf(TOWER.beige) + .1, 3.8],
-    ['foodWasteBin', {}, 3.1, 0, 6.35], ['foodWasteBin', {}, 3.75, 0, 6.35]],
+    ['foodWasteBin', {}, -4.75, 0, 4.1, Math.PI / 2], ['foodWasteBin', {}, -4.75, 0, 3.4, Math.PI / 2]],   // 상가 입구 앞이 아닌 건물 옆벽에 붙임
   gray:[
     ['signFascia', {text:'희망 슈퍼', bg:'#2f9a4a', fg:'#ffffff', w:4.5, h:.72}, -1.2, 2.8, 5],
     ['shopAwning', {w:4.4, proj:1.3, y0:2.72, c:0x2f6fb5}, -1.2, 0, 5],
@@ -252,19 +256,25 @@ defineProp('barberPole', {label:'이발소 회전등', category:'근린상가', 
 const priceMat = () => once('fruitPrice', () => decalMaterial(canvasTex(512, 64, g => { g.fillStyle = '#fffdf2'; g.fillRect(0, 0, 512, 64); g.fillStyle = '#c62828'; g.font = '800 40px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
   ['귤 5,000', '사과 7,000', '배 9,000'].forEach((t, i) => g.fillText(t, 85 + i * 171, 34)); })));
 defineProp('fruitStand', {label:'과일 좌판', category:'근린상가', isNewStyle:true, small:true, colliders:[{r:[-.9 * U, -.5 * U, .9 * U, .5 * U]}],
-  usage:"W.place('fruitStand', {x, z, rot});  // 1.8m × 1.0m, 앞이 낮게 기운 진열대", build(){
-    const P = new Parts(), R = mulberry(9), tilt = .32, yAt = z => .72 - (z + .45) * tilt;
-    [[-.85, -.42], [.85, -.42], [-.85, .42], [.85, .42]].forEach(([x, z]) => P.add('wood', box(x - .04, 0, z - .04, x + .04, yAt(z), z + .04), 0x8b6a4a));
-    P.add('wood', xf(box(-.9, -.03, -.47, .9, 0, .47), {rx:Math.atan(tilt), y:yAt(0)}), 0xa07a54);
+  usage:"W.place('fruitStand', {x, z, rot});  // 1.8m × 1.0m 나무 진열대, 바구니 여섯에 과일 무더기", build(){
+    // (2026-11-17) 판을 평평하게 하고 과일은 바구니 바닥부터 층층이 쌓는다 (공중에 뜨지 않게), 개수는 줄임
+    const P = new Parts(), R = mulberry(9), TOP = .72;
+    [[-.85, -.42], [.85, -.42], [-.85, .42], [.85, .42]].forEach(([x, z]) => P.add('wood', box(x - .04, 0, z - .04, x + .04, TOP, z + .04), 0x8b6a4a));
+    P.add('wood', box(-.9, TOP - .04, -.47, .9, TOP, .47, .01), 0xa07a54); P.add('wood', box(-.9, .25, -.47, .9, .28, .47, .01), 0x8b6a4a);
     const KIND = [[0xf28c1e, .045, 0xe07a10], [0xc8282e, .05, 0xa81e24], [0xd9c26a, .055, 0xc9ae52]];
     [-.6, 0, .6].forEach((x, i) => { const [c, r, c2] = KIND[i];
-      [-.22, .2].forEach(zc => { const y0 = yAt(zc);
-        P.add('pla', xf(box(-.27, 0, -.19, .27, .09, .19, .01), {rx:Math.atan(tilt), x, y:y0, z:zc}), i === 1 ? 0x2f6fb5 : 0xd83a2e);
-        for (let k = 0; k < 16; k++) { const dx = (R() - .5) * .44, dz = (R() - .5) * .3, h = .09 + r * (k < 9 ? 1 : 2.4) * .8;
-          P.add('fruit', xf(new THREE.IcosahedronGeometry(r * (.9 + R() * .2), 1), {x:x + dx, y:y0 + h - dz * tilt, z:zc + dz}), R() < .3 ? c2 : c); } }); });
-    const tag = new THREE.Mesh(xf(new THREE.PlaneGeometry(1.7, .2), {rx:-.15, y:yAt(.47) - .14, z:.49}), priceMat());
-    P.add('wood', box(-.88, yAt(.47) - .26, .46, .88, yAt(.47) - .02, .48), 0x8b6a4a);
-    P.add('snw', xf(box(-.86, .02, -.45, .86, .03, -.38), {rx:Math.atan(tilt), y:yAt(-.42)}));
+      [-.2, .2].forEach(zc => { const y0 = TOP, bw = .25, bd = .17;
+        P.add('pla', box(x - bw, y0, zc - bd, x + bw, y0 + .02, zc + bd), i === 1 ? 0x2f6fb5 : 0xd83a2e);                     // 바구니 바닥
+        [[-bw, -bw + .02, -bd, bd], [bw - .02, bw, -bd, bd]].forEach(([a, b, p, q]) => P.add('pla', box(x + a, y0, zc + p, x + b, y0 + .09, zc + q), i === 1 ? 0x2f6fb5 : 0xd83a2e));
+        [[-bd, -bd + .02], [bd - .02, bd]].forEach(([p, q]) => P.add('pla', box(x - bw, y0, zc + p, x + bw, y0 + .09, zc + q), i === 1 ? 0x2f6fb5 : 0xd83a2e));
+        // 아래층 6개(3×2) 바닥에 닿게, 위층 2개는 아래층 사이 오목한 자리에
+        const d = r * 2.05, base = [];
+        for (let a = 0; a < 3; a++) for (let b = 0; b < 2; b++) base.push([x + (a - 1) * d, zc + (b - .5) * d, y0 + .02 + r]);
+        const top = [[x - d / 2, zc, y0 + .02 + r + r * 1.45], [x + d / 2, zc, y0 + .02 + r + r * 1.45]];
+        [...base, ...top].forEach(([fx, fz, fy]) => P.add('fruit', xf(new THREE.IcosahedronGeometry(r * (.95 + R() * .1), 1), {x:fx + (R() - .5) * .006, y:fy, z:fz + (R() - .5) * .006}), R() < .3 ? c2 : c)); }); });
+    const tag = new THREE.Mesh(xf(new THREE.PlaneGeometry(1.7, .2), {y:TOP - .16, z:.475}), priceMat());
+    P.add('wood', box(-.88, TOP - .27, .44, .88, TOP - .05, .47), 0x8b6a4a);
+    P.add('snw', box(-.86, TOP, -.45, -.62, TOP + .015, -.38));
     return assemble(P, [['wood', woodMaterial({seed:17})], ['pla', plasticMaterial({rough:.5})], ['fruit', plasticMaterial({rough:.55})], ['snw', snowMaterial({seed:74}), false]], [1.8, .9, 1], [tag]); }});
 
 // ───────── 배달 오토바이: 작은 스쿠터 + 뒤 배달통 (중국집 앞에 세워 둠) ─────────

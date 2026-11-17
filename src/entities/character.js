@@ -62,6 +62,6 @@ export const emote = (ch, k) => { ch.userData.em = {k, t0:performance.now()}; };
 export function placeChar(w, ch, dt, moved, now){
   const pose = POSES.get(w.st);
   if (pose) pose(w, ch, now);
-  else { const gy = W.groundY(w.x, w.z); w.y = w.y === undefined ? gy : w.y + (gy - w.y) * Math.min(1, dt * 14); ch.position.set(w.x, w.y, w.z); ch.rotation.set(0, w.r, 0); }
+  else { const gy = W.groundY(w.x, w.z, w.y); w.y = w.y === undefined ? gy : w.y + (gy - w.y) * Math.min(1, dt * 14); ch.position.set(w.x, w.y, w.z); ch.rotation.set(0, w.r, 0); }
   animChar(ch, dt, moved, w.st, now);
 }

@@ -1,5 +1,6 @@
 // 진입점: 맵 → 놀이 → 반복 소품 → 캐릭터 → 네트워크 순서로 준비하고 메인 루프를 돌린다.
-import { onFrame, start, shadowRange, canvas, renderer, scene } from './core/engine.js';
+import { onFrame, start, shadowRange, canvas, renderer, scene, camera } from './core/engine.js';
+import { getProp, usedProps, propNames } from './props/registry.js';
 import { S, setMode } from './core/state.js';
 import { PI, rnd } from './core/util.js';
 import { audio, sfx, flash, updateFx } from './core/fx.js';
@@ -8,8 +9,6 @@ import { initInput, turnCamera, freeMove } from './core/input.js';
 import { coarse, reduceMotion, COLORS, ADJ, NOUN, FONTS_TO_LOAD } from './config.js';
 import './props/basic.js';
 import './props/parkBench.js';
-import './props/decor.js';
-import './props/buildings.js';
 import './props/aptTower.js';
 import './props/cars.js';
 import './props/aptSite.js';
@@ -21,8 +20,15 @@ import './props/railway.js';
 import './props/street.js';
 import './props/stationery.js';
 import './props/shopTowers.js';
+import './props/bigShops.js';
+import './props/aptBike.js';
+import './props/utilityPole.js';
 import './props/aptStreet.js';
 import { W } from './world/world.js';
+const FAR = {snowDrift:110, grassTuft:90, reedClump:150, tactileStrip:90, wheelStop:90, laneDelineator:120, noParkingSign:100, foodWasteBin:100, shrubBall:150, shrubCluster:150,
+  planterIsland:150, hedgeRow:180, parkLamp:220, roadFence:200, railFence:160, bench:150, bikeShelter:170, carSedan:220, carSUV:220, carMini:220, truck1t:220, deliveryVan:220,
+  bareTree:330, pineTree:330, signFascia:160, signVertical:160};
+Object.entries(FAR).forEach(([n, f]) => { const d = getProp(n); if (d) d.far = f; });
 import { finalizeBatches, spotLabels } from './world/builders.js';
 import { buildMap } from './map/index.js';
 import { SPAWN } from './map/layout.js';
@@ -109,8 +115,9 @@ async function boot(){
   initFootprints(); initSnow();
   dressMe(); drawMiniBase(); bindUi();
   onFrame(frame);
+  onFrame(() => W.cull(camera.position), 95);   // 거리 숨김 (카메라가 자리 잡은 뒤)
   start();
-  if (location.search.includes('debug')) window.__town = {S, me, W, findAction, renderer, scene};   // 개발용: 콘솔에서 상태를 들여다본다
+  if (location.search.includes('debug')) window.__town = {S, me, W, findAction, renderer, scene, usedProps, propNames};   // 개발용: 콘솔에서 상태를 들여다본다
   window.__townReady = true;
   connect({onPeers:list => { applyPeers(list); updateCount(); }, onStatus:updateCount});
 }

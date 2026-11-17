@@ -179,8 +179,8 @@ export function buildEntrance(o = {}){
   // 그림: 점자블록과 글씨·게시판 (글씨는 뒤집지 않고 위치만 옮긴다)
   const tq = (x0, z0, x1, z1, y) => { const q = flatXZ(Math.min(x0, x1), z0, Math.max(x0, x1), z1, y), uv = q.getAttribute('uv'); for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / .3, uv.getY(i) / .3); return q; };
   const endC = off(RL + .2, 0), T = new Parts();
-  [tq(-SW, Z1 - .36, SW, Z1 - .06, PH + .008), tq(-SW, Z1 + STEPS * TREAD + .1, SW, Z1 + STEPS * TREAD + .4, .012), tq(side * (PW - .42), RP.z - .6, side * (PW - .12), RP.z + .6, PH + .008),
-    tq(side * (endC.x - .6), endC.z, side * (endC.x + .6), endC.z + .3, .012)].forEach(q => T.add('t', q));
+  [tq(-SW, Z1 - .36, SW, Z1 - .06, PH + .008), tq(-SW, Z1 + STEPS * TREAD + .1, SW, Z1 + STEPS * TREAD + .4, .046), tq(side * (PW - .42), RP.z - .6, side * (PW - .12), RP.z + .6, PH + .008),
+    tq(side * (endC.x - .6), endC.z, side * (endC.x + .6), endC.z + .3, .046)].forEach(q => T.add('t', q));
   const tm = new THREE.Mesh(T.geo('t'), tactileMat()); tm.receiveShadow = true; g.add(tm);
   const S = new Parts(); S.add('s', quadGeo(-2.34, CAN.y + .14, 2.34, CAN.y + CAN.t - .05, CAN.z1 + .012, 0, 1 - 94 / 256, 1, 1));
   S.add('s', quadGeo(side * -1.91 - .3, D0 + 1.01, side * -1.91 + .3, D0 + 1.89, .034, 0, 0, 174 / 1024, 160 / 256));

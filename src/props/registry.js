@@ -12,7 +12,8 @@ const defs = new Map();
 export function defineProp(name, def){ defs.set(name, def); }
 export const getProp = name => defs.get(name);
 export const propNames = () => [...defs.keys()];
+export const usedProps = new Set();   // 이번 실행에서 실제로 만든 소품 이름 (안 쓰는 소품 찾기용)
 export function buildProp(name, opts = {}){
   const d = defs.get(name); if (!d) throw new Error('등록되지 않은 소품: ' + name);
-  const obj = d.build(opts); obj.userData.prop = name; return obj;
+  usedProps.add(name); const obj = d.build(opts); obj.userData.prop = name; return obj;
 }

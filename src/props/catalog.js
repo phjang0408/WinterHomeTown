@@ -1,7 +1,6 @@
 // 소품 목록표: 갤러리가 이 순서와 묶음대로 보여 준다. 맵 배치도를 짤 때도 이 표를 기준으로 쓴다.
 // 상태(status)를 적지 않으면 소품 정의를 보고 정한다: unplaced → 'new', 그 밖 → 'placed'.
 //   placed   맵에 배치됨          new      만들었지만 아직 맵에 없음
-//   idle     예전 방식, 아직 안 씀  replaced 새 소품으로 바뀌어 더는 안 씀 (참고용)
 // 항목은 소품 이름(문자열) 또는 {n, status, note}.
 
 export const STATUS = {
@@ -9,46 +8,44 @@ export const STATUS = {
   idle:{label:'예전 방식 · 아직 안 씀', badge:'안 씀'}, replaced:{label:'교체됨 (참고용)', badge:'교체됨'},
 };
 
+// 2026-11-17: 맵에서 쓰지 않는 예전 방식 소품(거리 · 겨울 장식 14종, 예전 벤치 · 차 · 아파트 · 공중전화, 붕어빵 노점)을 지우고
+//   큰 묶음을 구역별(아파트 단지 · 공원 · 학교 · 간이역 · 기타)로 다시 나눔. 묶음 안의 '조립 예시'는 맵에 놓인 부품을 한 번에 보여 주는 갤러리용이다.
 export const CATALOG = [
-  {title:'아파트 단지', open:true, note:'곡선·PBR 재질로 만든 새 방식 소품', cats:[
-    ['동·현관', ['aptTower', 'aptTowerL', 'aptEntrance']],
+  {title:'아파트 단지', open:true, note:'단지 안 · 단지 앞 상가', cats:[
+    ['동 · 현관', ['aptTower', 'aptTowerL', {n:'aptEntrance', note:'아파트 동에 붙어 있는 현관 부품'}]],
     ['단지 건물', ['communityCenter', 'guardHouse']],
-    ['상가', ['shopComplex', 'shopBuilding', 'shopStairs', 'signFascia', 'signVertical', 'signRoof']],
-    ['입구·경계', ['aptGate', 'noiseBarrier']],
-    ['단지 도로', ['speedBump', 'fireLane', 'parkLamp']],
-    ['바깥 도로', ['trafficLight', 'pedSignal', 'laneDelineator']],
+    ['입구 · 경계', ['aptGate', 'aptNameWall', 'noiseBarrier']],
+    ['단지 도로 · 주차', ['speedBump', 'fireLane', 'wheelStop', 'planterIsland', 'disabledBay', 'noParkingSign']],
     ['안내', ['noticeBoard', 'bannerBoard', 'phoneBooth']],
-    ['주차장', ['wheelStop', 'planterIsland', 'disabledBay', 'noParkingSign']],
-    ['차량', ['carSedan', 'carSUV', 'carMini', 'truck1t', 'deliveryVan']],
     ['놀이터', ['playSet', 'spiralSlide', 'merryGoRound', 'swingSet', 'swingSeat', 'springRider', 'seesaw']],
-    ['쉼터', ['pavilion', {n:'bench', note:'공원·강변 등 맵 13곳에 배치됨'}]],
+    ['쉼터 · 자전거', ['pavilion', 'bikeShelter']],
     ['분리수거', ['recycleStation', 'foodWasteBin']],
-    ['조경', ['bareTree', 'pineTree', 'hedgeRow', 'shrubBall', 'shrubCluster']],
+    ['조경', ['hedgeRow', 'shrubBall', 'shrubCluster']],
+    ['단지 상가', [{n:'shopComplex', note:'상가 부품을 맞춘 조립 예시'}, 'shopBuilding', 'shopStairs', 'signFascia', 'signVertical', 'signRoof']],
   ]},
-  {title:'공원 동쪽 줄: 문구점 · 근린상가', open:true, note:'2026-11-15 새로 만든 소품. 근린상가 간판은 기존 간판 소품에 글자 옵션을 준 것', cats:[
-    ['문구점', ['stationeryCorner', 'stationeryShop', 'shopAwning', 'gachaRow', 'miniArcade', 'iceFreezer', 'drinkFridge', 'kidStool', 'hulaHoops']],
+  {title:'공원', open:true, note:'낮춘 공원 · 둘레 순환 도로 · 공원 아래 큰 가게', cats:[
+    ['공원 안', ['parkStair', 'bench', 'parkLamp', 'snowman']],
+    ['순환 도로', ['roadHump', 'tactileStrip', 'townBus']],
+    ['큰 가게 (공원 아래)', ['meatHouseSet', 'martBuildingSet', 'meatHouse', 'martBuilding', 'shoppingCart', 'cartCorral', 'parkingSign']],
+    ['목욕탕 (남쪽 줄 가운데)', ['bathhouseSet', 'bathhouse', 'woodenPlatform']],
+  ]},
+  {title:'학교', open:true, note:'학교는 닫음 (방학 중). 학교 앞 동쪽 줄의 문구점 · 근린상가', cats:[
+    ['학교 앞 문구점', [{n:'stationeryCorner', note:'문구점 부품을 맞춘 조립 예시'}, 'stationeryShop', 'shopAwning', 'gachaRow', 'miniArcade', 'iceFreezer', 'drinkFridge', 'kidStool', 'hulaHoops']],
     ['근린상가 (조립 예시)', ['shopTowerBrickSet', 'shopTowerBeigeSet', 'shopTowerGraySet', 'shopTowerGreenSet']],
     ['근린상가 몸체', ['shopTowerBrick', 'shopTowerBeige', 'shopTowerGray', 'shopTowerGreen']],
     ['근린상가 앞 물건', ['barberPole', 'fruitStand', 'deliveryScooter']],
   ]},
-  {title:'간이역 · 도로 · 강변', open:true, note:'2026-11-15 새로 만든 소품 (공원 벤치와 같은 방식)', cats:[
-    ['간이역', ['trackModule', 'platformModule', 'stationCanopy', 'railFence', 'stationSign', 'bufferStop', 'footBridge']],
+  {title:'간이역', open:true, note:'선로 · 승강장 · 대합 지붕 · 육교 (역 쪽 도로 포함)', cats:[
+    ['선로', [{n:'trackModule', note:'선로를 깔 때 쓰는 한 토막'}, 'bufferStop']],
+    ['승강장', ['platformModule', 'stationCanopy', 'railFence', 'stationSign']],
+    ['육교', ['footBridge']],
+  ]},
+  {title:'기타', open:true, note:'도로 · 강변 · 차량 · 나무처럼 맵 전체에 쓰는 것', cats:[
+    ['도로', ['trafficLight', 'pedSignal', 'laneDelineator', 'utilityPole', 'barricade']],
     ['경계', ['brickWall', 'roadFence']],
-    ['도로', ['roadHump', 'tactileStrip']],
-    ['차량', ['townBus']],
+    ['차량', ['carSedan', 'carSUV', 'carMini', 'truck1t', 'deliveryVan']],
+    ['나무', ['bareTree', 'pineTree']],
     ['강변', ['reedClump']],
     ['바닥 꾸밈', ['snowDrift', 'grassTuft']],
-  ]},
-  {title:'다른 구역 소품', note:'예전 방식, 놀이 장소에서 쓰는 중', cats:[
-    ['놀이 장소', ['snowman', 'fishStall']],
-  ]},
-  {title:'예전 방식 장식', note:'15종, 아직 맵에 없음. 쓸 때 새 방식으로 다시 만든다', cats:[
-    ['거리', ['busStop', 'vending', 'mailbox', 'hydrant', 'bikeRack', 'schoolZone', {n:'recycle', note:'단지 안은 분리수거장으로 대체'}].map(n => typeof n === 'string' ? {n, status:'idle'} : {...n, status:'idle'})],
-    ['겨울', ['xmasTree', 'stringLights', 'yamDrum', 'igloo', 'snowPile'].map(n => ({n, status:'idle'}))],
-    ['한국 골목', ['onggi', 'briquettes'].map(n => ({n, status:'idle'}))],
-  ]},
-  {title:'교체된 소품', note:'새 소품으로 바뀐 예전 것 (비교용)', cats:[
-    ['', [{n:'apartment', status:'replaced', note:'→ 아파트 동'}, {n:'benchOld', status:'replaced', note:'→ 공원 벤치'}, {n:'phoneBoothOld', status:'replaced', note:'→ 공중전화 부스'},
-      {n:'car', status:'replaced', note:'→ 차량 5종 (달리는 차도 2026-11-15에 교체)'}]],
   ]},
 ];

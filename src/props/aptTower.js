@@ -104,8 +104,9 @@ function balconyRun(S, G, F, R, a, b, z1, o = {}){
     }
   }
   box(S, a, H - .3, z1, b, H + .9, z1 + .55, C.trim);
-  if (o.endA) box(S, a, 0, z1, a + .22, H + .9, z1 + .62, C.joint);
-  if (o.endB) box(S, b - .22, 0, z1, b, H + .9, z1 + .62, C.joint);
+  // 파란 줄눈 기둥은 베란다 판보다 3cm 밖으로 내민다 (옆면이 같은 면에 겹쳐 깜빡이지 않게)
+  if (o.endA) box(S, a - .03, 0, z1, a + .22, H + .93, z1 + .64, C.joint);
+  if (o.endB) box(S, b - .22, 0, z1, b + .03, H + .93, z1 + .64, C.joint);
   for (let k = 1; k < nb; k++) { const x = a + k * bw; box(S, x - .22, 0, z1, x + .22, H + .9, z1 + .62, C.trim); }
 }
 
@@ -140,8 +141,8 @@ function chunk(S, G, F, R, o){
   box(S, -.04, TOP + 1.9, z0 + .6, .04, TOP + 4.2, z0 + .68, C.dark);
   // 드러난 측벽의 세로 창 줄
   [[x0, -1, o.neg], [x1, 1, o.pos]].forEach(([sx, s, open]) => { if (!open) return;
-    for (let f = 0; f < F; f++) { const y = f * FH + 1.05; box(G, Math.min(sx, sx + s * .1), y, z1 - 1.9, Math.max(sx, sx + s * .1), y + 1.25, z1 - .8, glass());
-      box(S, Math.min(sx, sx + s * .17), y - .1, z1 - 1.98, Math.max(sx, sx + s * .17), y, z1 - .72, C.trim); } });
+    for (let f = 0; f < F; f++) { const y = f * FH + 1.05; box(G, Math.min(sx, sx + s * .18), y, z1 - 1.9, Math.max(sx, sx + s * .18), y + 1.25, z1 - .8, glass());
+      box(S, Math.min(sx, sx + s * .25), y - .1, z1 - 1.98, Math.max(sx, sx + s * .25), y, z1 - .72, C.trim); } });
 }
 // 'ㄱ'자 모서리 세대: 정사각 몸통(DEPTH×DEPTH). 중심 (cx, cz), 바깥면은 북(-z)·동(+x).
 // 베란다를 북쪽과 동쪽에 둘러 붙이고, 바깥 모서리에서 두 줄이 겹치지 않게 북쪽 줄이 모서리 칸을 맡는다.
@@ -175,7 +176,7 @@ export function buildAptTower(o = {}){
     // 측벽 그림과 현관 표지는 덩어리 그룹에 따로 붙인다
     const cg = new THREE.Group(); cg.rotation.y = p.rot; cg.position.set(XF.tx, 0, XF.tz); inner.add(cg);
     [[p.x0 ?? -HX, -1, p.neg], [p.x1 ?? HX, 1, p.pos]].forEach(([sx, s, open]) => { if (!open) return;
-      const mat = stdMat(sideTex(H, F, num)); mat.polygonOffset = true; mat.polygonOffsetFactor = -1; mat.polygonOffsetUnits = -4;   // 벽면과 겹쳐 깜빡이지 않게 (측벽 그림은 벽에서 4cm, 창은 10cm 튀어나온다)
+      const mat = stdMat(sideTex(H, F, num)); mat.polygonOffset = true; mat.polygonOffsetFactor = -1; mat.polygonOffsetUnits = -1;   // 벽면과 겹쳐 깜빡이지 않게 (2026-11-17: 측벽 그림은 벽에서 4cm, 창은 18cm로 더 내밀어 그림이 창을 덮어 깜빡이지 않게)
       const m = new THREE.Mesh(new THREE.PlaneGeometry(DEPTH - .02, H - .02), mat); m.rotation.y = s * Math.PI / 2; m.position.set(sx + s * .04, H / 2, 0); cg.add(m); });
     const P = q => xp([q[0], 0, q[1]]);
     const a = P([p.x0 ?? -HX, -HZ]), b = P([p.x1 ?? HX, HZ + .7]); colliders.push(addRect(a[0], a[2], b[0], b[2]));

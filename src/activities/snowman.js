@@ -38,7 +38,7 @@ const snowman = defineActivity({
   id:'snow', st:ST.SNOW, score:{index:2, label:'눈사람', unit:'점'}, free:true, speedMul:.85,
   setup(){
     W.place('snowman', {x:SNOW_SPOT.x, z:SNOW_SPOT.z, rb:1.35, rh:.82, ci:0});
-    spotLabel('눈사람 만들기', SNOW_SPOT.x, 5.6, SNOW_SPOT.z);
+    spotLabel('눈사람 만들기', SNOW_SPOT.x, 5.6 + W.groundY(SNOW_SPOT.x, SNOW_SPOT.z), SNOW_SPOT.z);
     flag = new THREE.Group(); mesh(new THREE.CylinderGeometry(.05,.05,2.2,6), M(0x6b7684), 0, 1.1, 0, flag);
     flag.userData.cloth = mesh(new THREE.BoxGeometry(.9,.55,.04), new THREE.MeshLambertMaterial({color:0x3f8a97}), .5, 1.85, 0, flag); flag.visible = false; root.add(flag);
     mySnowman = new THREE.Group(); root.add(mySnowman);
@@ -49,7 +49,7 @@ const snowman = defineActivity({
     const used = {}; S.remotes.forEach(R => { if (R.sm[0] > 0) used[R.slot] = 1; });
     if (used[me.slot]) for (let i = 0; i < SLOTS.length; i++) if (!used[i]) { me.slot = i; break; }
     begin(snowman, {stage:0}); me.sm = [0, 0]; me.ballR = .25; snowmanInto(mySnowman, 0, 0, 0);
-    const s = SLOTS[me.slot]; mySnowman.position.set(s[0], 0, s[1]); flag.position.set(s[0] + 1.6, 0, s[1]); flag.visible = true;
+    const s = SLOTS[me.slot]; mySnowman.position.set(s[0], W.groundY(s[0], s[1]), s[1]); flag.position.set(s[0] + 1.6, W.groundY(s[0] + 1.6, s[1]), s[1]); flag.visible = true;
     flag.userData.cloth.material.color.setHex(0x3f8a97);
     hud.showGame('눈사람 만들기'); hudStage(); flash('깃발이 내 자리예요');
   },
@@ -62,7 +62,7 @@ const snowman = defineActivity({
   remote(R, p){
     if (!R.sman) { R.sman = new THREE.Group(); root.add(R.sman); R.sm = [0, 0]; R.slot = 0; }
     if (p.sm[0] !== R.sm[0] || p.sm[1] !== R.sm[1] || p.sl !== R.slot || R.smCi !== R.ci) {
-      R.sm = p.sm; R.slot = p.sl; R.smCi = R.ci; R.sman.position.set(SLOTS[p.sl][0], 0, SLOTS[p.sl][1]); snowmanInto(R.sman, p.sm[0], p.sm[1], R.ci); }
+      R.sm = p.sm; R.slot = p.sl; R.smCi = R.ci; R.sman.position.set(SLOTS[p.sl][0], W.groundY(SLOTS[p.sl][0], SLOTS[p.sl][1]), SLOTS[p.sl][1]); snowmanInto(R.sman, p.sm[0], p.sm[1], R.ci); }
     R.ball = p.ball;
   },
   remoteFrame(R, dt, moved){

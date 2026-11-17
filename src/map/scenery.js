@@ -5,6 +5,7 @@ import { M, box, canvasTex } from '../core/gfx.js';
 import { sr, srand, TAU } from '../core/util.js';
 import { W } from '../world/world.js';
 import { BANK } from './layout.js';
+import { TREES } from './base.js';
 
 export let sky = null;
 // 하늘 셰이더는 색을 화면에 바로 쓰므로 색 관리 변환 없이 원래 sRGB 값을 그대로 넘긴다.
@@ -59,9 +60,10 @@ export function buildScenery(){
   ridge(740, 30, 95, 0x98b8da, 0x7ea2ca);
   for (let x = -400; x < 1000; x += sr(16, 30)) { const h = sr(8, 26), w = sr(8, 16), z = sr(485, 515);
     box(x, z, x + w, z + sr(6, 12), h, M(srand() < .5 ? 0xe6e2da : 0xdfe6ee), BANK + .1); }
-  const deco = (x, z, i) => (i % 2 ? W.tree : W.pine).call(W, x, z, {collide:false, y:0});
-  for (let i = 0; i < 120; i++) { const z = sr(-110, 272); if (z > 40 && z < 49) continue; deco(sr(-110, -4), z, i); }
-  for (let i = 0; i < 120; i++) { const z = sr(-110, 272); if (z > 40 && z < 49) continue; deco(sr(644, 750), z, i); }
-  for (let i = 0; i < 150; i++) deco(sr(-110, 750), sr(-110, 16), i);
-  for (let i = 0; i < 100; i++) W.tree(sr(-300, 950), sr(458, 476), {collide:false, y:BANK + .1});
+  // 맵 바깥 숲 (2026-11-17): 옛 방식 둥근 나무 · 원뿔 나무를 지우고 새 방식 겨울 나무 · 소나무로 (수를 줄여 가볍게)
+  const deco = (x, z, i, y = 0) => (i % 2 ? TREES.bare[i % 6].push({x, z, y, rot:srand() * 6, s:.95 + srand() * .35}) : TREES.pine[i % 3].push({x, z, y, rot:srand() * 6}));
+  for (let i = 0; i < 40; i++) { const z = sr(-60, 272); if (z > 30 && z < 50) continue; deco(sr(-70, -6), z, i); }
+  for (let i = 0; i < 40; i++) { const z = sr(-60, 272); if (z > 30 && z < 50) continue; deco(sr(646, 710), z, i + 1); }
+  for (let i = 0; i < 40; i++) deco(sr(-70, 710), sr(-60, 14), i);
+  for (let i = 0; i < 40; i++) deco(sr(-200, 850), sr(458, 476), i + 1, BANK + .1);
 }

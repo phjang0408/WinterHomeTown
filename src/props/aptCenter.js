@@ -58,20 +58,28 @@ defineProp('communityCenter', {label:'주민센터', category:'건물', isNewSty
 const gateTex = () => once('gate', () => decalMaterial(canvasTex(1024, 256, (g, W, H) => { g.clearRect(0, 0, W, H); g.fillStyle = '#2b3a4a'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '150px ' + FONT_D; g.fillText('동화아파트', 560, 120);
   g.strokeStyle = '#3f6fa8'; g.lineWidth = 14; g.lineCap = 'round'; for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; g.beginPath(); g.moveTo(110, 118); g.lineTo(110 + Math.cos(a) * 70, 118 + Math.sin(a) * 70); g.stroke(); }
   g.fillStyle = '#5f6b75'; g.font = '800 36px ' + FONT_B; g.fillText('DONGHWA APARTMENT', 560, 222); }), {alpha:true, rough:.6}));
-defineProp('aptGate', {label:'단지 정문 문주', category:'경계', isNewStyle:true, usage:"W.place('aptGate', {x: 186, z: 137.5, rot: Math.PI / 2});  // 기둥 사이 7.6m, 이름 벽은 -x 쪽",
-  colliders:[{r:[-4.5 * U, -.5 * U, -3.6 * U, .5 * U]}, {r:[3.6 * U, -.5 * U, 4.5 * U, .5 * U]}, {r:[-9.6 * U, -.3 * U, -4.5 * U, .3 * U]}, {c:[3.2 * U, 1.2 * U, .3 * U]}], build(){
+// (2026-11-17) 이름 벽은 문주에서 떼어 'aptNameWall'로: 보도를 막지 않고 옆 화단 위에 따로 세운다
+defineProp('aptGate', {label:'단지 정문 문주', category:'경계', isNewStyle:true, usage:"W.place('aptGate', {x: 186, z: 137.5, rot: Math.PI / 2});  // 기둥 사이 7.6m. 이름 벽은 aptNameWall",
+  colliders:[{r:[-4.5 * U, -.5 * U, -3.6 * U, .5 * U]}, {r:[3.6 * U, -.5 * U, 4.5 * U, .5 * U]}, {c:[3.2 * U, 1.2 * U, .3 * U]}], build(){
     const P = new Parts(), con = (g, c) => P.add('con', g, c);
     [-4.05, 4.05].forEach(x => { con(box(x - .45, 0, -.45, x + .45, 3.3, .45, .03), 0xb9b4a8); con(box(x - .52, 0, -.52, x + .52, .4, .52, .02), 0x8f9193); con(box(x - .55, 3.3, -.55, x + .55, 3.48, .55, .03), 0xd4d7d8);
       [.9, 1.7, 2.5].forEach(y => con(box(x - .46, y, -.46, x + .46, y + .03, .46), 0x9d988d)); P.add('mat', lathe([[.1, 3.48], [.2, 3.56], [.22, 3.8], [.12, 3.9], [0, 3.92]].map(([r, y]) => [r, y]), 14).translate(x, 0, 0), 0xfff3d2);
       P.add('snw', xf(blob(.5, .14, .5, {seed:3, bump:.06}), {x, y:3.46})); P.add('snw', xf(blob(.2, .07, .2, {seed:5, bump:.05, seg:10}), {x, y:3.9})); });
-    con(box(-9.6, 0, -.22, -4.5, 1.9, .22, .03), 0xc9c4b8); con(box(-9.66, 0, -.28, -4.5, .35, .28, .02), 0x8f9193); con(box(-9.66, 1.9, -.28, -4.5, 2.04, .28, .03), 0xd4d7d8);
-    P.add('snw', ridge(Array.from({length:11}, (_, i) => V(-9.55 + i * .5, 2.04, 0)), .5, .13));
     // 차단기
     P.add('mat', box(2.95, 0, .95, 3.45, 1.05, 1.45, .03), 0xe8a020); P.add('mat', box(2.9, 1.05, .9, 3.5, 1.1, 1.5, .02), 0x30363b); P.add('snw', box(2.92, 1.09, .92, 3.48, 1.17, 1.48, .035));
     for (let i = 0; i < 8; i++) P.add('mat', box(2.9 - (i + 1) * .7, .88, 1.16, 2.9 - i * .7, .98, 1.22), i % 2 ? 0xf2f2ee : 0xd0312a);
     bakeAO(P.geo('con'), (p, n) => .76 + .24 * Math.min(1, p.y / .5));
-    const d = new Parts(); d.add('d', quadZ(-9.4, .55, -4.7, 1.72, .225)); d.add('d', quadZ(-9.4, .55, -4.7, 1.72, -.225, undefined, true));
-    return assemble(P, [['con', concreteMaterial()], ['mat', matteMaterial()], ['snw', snowMaterial({seed:47})]], [14.2, 3.95, 1.6], [new THREE.Mesh(d.geo('d'), gateTex())]); }});
+    return assemble(P, [['con', concreteMaterial()], ['mat', matteMaterial()], ['snw', snowMaterial({seed:47})]], [9.2, 3.95, 1.6]); }});
+
+defineProp('aptNameWall', {label:'단지 이름 벽', category:'경계', isNewStyle:true, usage:"W.place('aptNameWall', {x, z, rot, y: .21});  // 길이 5.1m, 양면에 단지 이름. 화단 위에 둔다",
+  colliders:[{r:[-2.6 * U, -.3 * U, 2.6 * U, .3 * U]}], build(){
+    const P = new Parts(), con = (g, c) => P.add('con', g, c);
+    con(box(-2.55, 0, -.22, 2.55, 1.9, .22, .03), 0xc9c4b8); con(box(-2.61, 0, -.28, 2.61, .35, .28, .02), 0x8f9193); con(box(-2.61, 1.9, -.28, 2.61, 2.04, .28, .03), 0xd4d7d8);
+    P.add('snw', ridge(Array.from({length:11}, (_, i) => V(-2.5 + i * .5, 2.04, 0)), .5, .13));
+    bakeAO(P.geo('con'), (p, n) => .76 + .24 * Math.min(1, p.y / .5));
+    const d = new Parts(); d.add('d', quadZ(-2.35, .55, 2.35, 1.72, .225)); d.add('d', quadZ(-2.35, .55, 2.35, 1.72, -.225, undefined, true));
+    return assemble(P, [['con', concreteMaterial()], ['snw', snowMaterial({seed:47})]], [5.3, 2.2, .6], [new THREE.Mesh(d.geo('d'), gateTex())]); }});
+
 
 // ── 경비실: 주민센터와 같은 붉은 벽돌·콘크리트 띠·짙은 알루미늄 창틀. 정면(+z)이 박공면이고 민원 창구와 유리문이 있다 ──
 const guardTex = () => once('guard', () => decalMaterial(canvasTex(512, 256, g => { g.clearRect(0, 0, 512, 256);

@@ -49,8 +49,8 @@ export function movePlayer(dt, speedMul = 1){
   else { me.vx = ix * sp; me.vz = iz * sp; }
   if (Math.abs(me.vx) + Math.abs(me.vz) < .02) { me.vx = me.vz = 0; return 0; }
   const ox = me.x, oz = me.z, nx = me.x + me.vx * dt, nz = me.z + me.vz * dt;
-  if (!W.blocked(nx, me.z)) me.x = nx; else me.vx = 0;
-  if (!W.blocked(me.x, nz)) me.z = nz; else me.vz = 0;
+  if (!W.blocked(nx, me.z, me.y)) me.x = nx; else me.vx = 0;
+  if (!W.blocked(me.x, nz, me.y)) me.z = nz; else me.vz = 0;
   if (len) me.r = wrapA(lerpAngle(me.r, Math.atan2(ix, iz), Math.min(1, dt * (onIce ? 5 : 12))));
   if (onIce && !me.iceHint) { me.iceHint = true; flash('미끄러워요'); }
   return Math.hypot(me.x - ox, me.z - oz);

@@ -37,6 +37,22 @@ const signMat = () => once('stSign', () => decalMaterial(canvasTex(2048, 272, g 
 
 // ───────── 건물 몸체: 붉은 벽돌 2층, 1층 앞이 통째로 열린 가게 (폭 11m, 깊이 7m, 높이 7.2m) ─────────
 export const STN = {W:11, D:7, H1:3.4, H:6.6, top:7.2, open:4.7};
+// 가게 안 그림 판 (진열대 · 상품 · 매단 장난감, 홍보물). 그림 한 장 = 그리기 한 번
+const IMG = new Map();
+function shopImg(kind){ if (IMG.has(kind)) return IMG.get(kind);
+  const C = ['#d83a2e', '#f2b632', '#2f6fb5', '#3f8a5a', '#e8742a', '#b0558a', '#7fc6e8', '#f4f1e6', '#8e6bbf'], r = mulberry(kind.length * 17 + 3), pick = () => C[Math.floor(r() * C.length)];
+  const [Wc, Hc] = kind === 'back' ? [1024, 512] : kind === 'side' ? [1024, 384] : kind === 'hang' ? [1024, 128] : kind === 'open' ? [256, 80] : [256, 192];
+  const t = canvasTex(Wc, Hc, g => {
+    if (kind === 'back' || kind === 'side') { g.fillStyle = '#ece8dc'; g.fillRect(0, 0, Wc, Hc); const rows = kind === 'back' ? 5 : 4, rh = Hc / rows;
+      for (let i = 0; i < rows; i++) { const y = i * rh; g.fillStyle = '#b7bcc0'; g.fillRect(0, y + rh - 8, Wc, 8);
+        for (let x = 4; x < Wc - 10;) { const w = 14 + r() * 34, h = rh * (.35 + r() * .5); g.fillStyle = pick(); g.fillRect(x, y + rh - 8 - h, w, h); g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(x + 2, y + rh - 8 - h + 3, w - 4, 4); x += w + 2; } }
+      g.fillStyle = '#9aa0a5'; for (let x = 0; x < Wc; x += Wc / 4) g.fillRect(x, 0, 6, Hc); }
+    else if (kind === 'hang') { g.clearRect(0, 0, Wc, Hc); for (let x = 10; x < Wc - 20; x += 22 + r() * 20) { const w = 16 + r() * 22, h = 30 + r() * 60; g.fillStyle = '#6f777e'; g.fillRect(x + w / 2 - 1, 0, 2, 14); g.fillStyle = pick(); g.fillRect(x, 14, w, h); } }
+    else if (kind === 'open') { g.fillStyle = '#d83a2e'; g.fillRect(0, 0, Wc, Hc); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '44px ' + FONT_D; g.fillText('영업 중', Wc / 2, Hc / 2 + 2); }
+    else { const bg = {poster:'#2f6fb5', poster2:'#f2b632', poster3:'#3f8a5a'}[kind]; g.fillStyle = bg; g.fillRect(0, 0, Wc, Hc); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      const L = {poster:['신학기', '학용품 할인'], poster2:['뽑기', '새 상품 입고'], poster3:['딱지 · 구슬', '팽이 있어요']}[kind]; g.font = '54px ' + FONT_D; g.fillText(L[0], Wc / 2, 70); g.font = '800 26px ' + FONT_B; g.fillText(L[1], Wc / 2, 140); } });
+  const m = kind === 'hang' ? decalMaterial(t, {alpha:true, rough:.8}) : new THREE.MeshLambertMaterial({map:t}); if (kind === 'hang') m.side = THREE.DoubleSide; IMG.set(kind, m); return m; }
+
 defineProp('stationeryShop', {label:'문구점 건물 (별빛문구)', category:'문구점', isNewStyle:true, blocksCamera:true, minimap:'#c58b6e', mmSize:6,
   colliders:[{r:[-5.5 * U, -3.5 * U, 5.5 * U, 3.95 * U]}],
   usage:"STATIONERY_LAYOUT으로 차양 · 뽑기 기계 · 오락기 등과 함께 놓는다. 가게 안은 들어갈 수 없다", build(){
@@ -54,15 +70,21 @@ defineProp('stationeryShop', {label:'문구점 건물 (별빛문구)', category:
     con(box(-open, 0, -hd + .24, open, .14, hd - .02), 0x8a8780); con(box(-open, H1 - .5, -hd + .24, open, H1 - .45, hd - .3), 0xf1f1ec);
     con(box(-open, .14, -hd + .24, open, H1 - .5, -hd + .3), 0xeceae2); [-1, 1].forEach(s => con(box(s * open - (s > 0 ? .06 : 0), .14, -hd + .3, s * open + (s < 0 ? .06 : 0), H1 - .5, hd - .24), 0xe7e4dc));
     [-2.6, 0, 2.6].forEach(x => P.add('glow', box(x - .6, H1 - .56, .2 - 1.6, x + .6, H1 - .5, .3 - 1.6), 0xf4f8ff)); [-2.6, 0, 2.6].forEach(x => P.add('glow', box(x - .6, H1 - .56, 1.3, x + .6, H1 - .5, 1.4), 0xf4f8ff));
-    // 진열대: 뒤 벽 5단, 양옆 4단, 가운데 섬 진열대 3단 (양면). 상품은 제각각 상자
-    const shelf = (x0, x1, z0, z1, ys) => { ys.forEach(y => P.add('met', box(x0, y - .02, z0, x1, y, z1), 0xb7bcc0)); [x0, x1].forEach(x => P.add('met', box(x - .02, .14, z0, x + .02, ys[ys.length - 1] + .3, z0 + .03), 0x9aa0a5)); };
-    const backY = [.35, .78, 1.2, 1.62, 2.04]; shelf(-open + .1, open - .1, -hd + .3, -hd + .72, backY); backY.forEach(y => goods(P, R, -open + .12, open - .12, y, -hd + .3, -hd + .72));
-    [-1, 1].forEach(s => { const x0 = s > 0 ? open - .5 : -open + .06, x1 = x0 + .44, ys = [.35, .8, 1.25, 1.7];
-      ys.forEach(y => { P.add('met', box(x0, y - .02, -hd + .8, x1, y, hd - .7), 0xb7bcc0); for (let z = -hd + .82; z < hd - .8;) { const w = .07 + R() * .15, h = .08 + R() * .22; P.add('pla', box(x0 + .02, y, z, x1 - .02, y + h, z + w), GOODS[Math.floor(R() * GOODS.length)]); z += w + .006; } }); });
-    P.add('met', box(-1.3, .14, -.9, 1.3, .2, .5), 0x9aa0a5); [.55, 1.0, 1.45].forEach(y => { P.add('met', box(-1.3, y - .02, -.9, 1.3, y, .5), 0xb7bcc0); goods(P, R, -1.28, 1.28, y, -.9, -.2, .22); goods(P, R, -1.28, 1.28, y, -.2, .5, .22); });
-    // 천장에 매단 장난감 · 가방 (형광등 사이)
-    for (let i = 0; i < 26; i++) { const x = -open + .4 + R() * (open * 2 - .8), z = -2 + R() * 4, y = H1 - .62 - R() * .5, s = .12 + R() * .2;
-      P.add('met', box(x - .004, y + s, z - .004, x + .004, H1 - .5, z + .004), 0x7d8388); P.add('pla', box(x - s / 2, y, z - s * .3, x + s / 2, y + s, z + s * .3), GOODS[Math.floor(R() * GOODS.length)]); }
+    // 가게 안 (2026-11-17): 진열대 · 상품 · 매단 장난감을 입체 대신 그림 판으로 (뒤 벽 · 양옆 벽 · 천장 아래 매단 줄) — 안은 보이고 그리기 부담은 작다
+    const inner = [];
+    inner.push(new THREE.Mesh(quadZ(-open + .08, .14, open - .08, H1 - .5, -hd + .31, [0, 0, 1, 1]), shopImg('back')));
+    [-1, 1].forEach(s => { const g = new THREE.PlaneGeometry(D - .6, H1 - .64); g.rotateY(-s * Math.PI / 2); g.translate(s * (open - .07), (H1 - .5 + .14) / 2, 0); inner.push(new THREE.Mesh(g, shopImg('side'))); });
+    { const g = new THREE.PlaneGeometry(open * 2 - .3, .7); g.translate(0, H1 - .9, -.4); inner.push(new THREE.Mesh(g, shopImg('hang'))); }
+    // 계산대 하나만 입체 (앞에서 보이는 자리)
+    P.add('pla', box(-open + .2, .14, -.6, -open + 1.4, 1.0, .4, .03), 0xe9e2cf); P.add('met', box(-open + .4, 1.0, -.3, -open + .9, 1.25, 0, .02), 0x2b2e31);
+    // 유리 미닫이 (가운데 두 짝은 열어 둠): 알루미늄 틀 + 투명 유리. 가게 안에는 들어가지 않는다
+    const gz = hd - .36, nP = 4, pw = open * 2 / nP;
+    for (let k = 0; k < nP; k++) { const x0 = -open + k * pw, open_ = k === 1 || k === 2, dz = k % 2 ? -.06 : 0, shift = open_ ? (k === 1 ? -pw * .8 : pw * .8) : 0;
+      const a = x0 + shift, b = x0 + pw + shift; if (open_) continue;
+      P.add('clr', box(a + .05, .2, gz + dz - .01, b - .05, H1 - .55, gz + dz + .01));
+      [[a, a + .05], [b - .05, b]].forEach(([u, v]) => P.add('met', box(u, .14, gz + dz - .03, v, H1 - .5, gz + dz + .03), 0xb9c0c5));
+      [[.14, .2], [H1 - .58, H1 - .5]].forEach(([u, v]) => P.add('met', box(a, u, gz + dz - .03, b, v, gz + dz + .03), 0xb9c0c5)); }
+    P.add('met', box(-open, .14, gz - .1, open, .17, gz + .04), 0x9aa0a5);                                          // 문 레일
     // 입구 양옆 걸이판: 과자 · 장난감 봉지가 빽빽이 걸려 있다 (참고 사진의 앞모습)
     [-1, 1].forEach(s => { const xa = s * (open - 1.5), xb = s * (open - .05), x0 = Math.min(xa, xb), x1 = Math.max(xa, xb);
       P.add('met', box(x0, .5, hd - .5, x1, H1 - .55, hd - .46), 0xcfd3d6);
@@ -92,9 +114,16 @@ defineProp('stationeryShop', {label:'문구점 건물 (별빛문구)', category:
     P.add('snw', ridge([-hw + .3, -2, 0, 2, hw - .3].map(x => V(x, H1 + 1.15, hd + .08)), .16, .06, 4));
     P.bake('brk', (p, n) => (.75 + .25 * Math.min(1, p.y / 1.2)) * (.86 + .14 * (n.y * .5 + .5)));
     P.bake('con', groundAO(.4, .75));
+    // 옆 · 앞 꾸밈 (2026-11-17): 빗물받이 관, 옆벽 홍보물, 방범창 단 작은 창, 앞 기둥 홍보물, 영업 중 팻말
+    [-1, 1].forEach(s => { const x = s * (hw + .06); P.add('met', tube([V(x, .2, hd - .3), V(x, top + .05, hd - .3)], .045, {radial:8}), 0x8f969c); P.add('met', tube([V(x, .2, -hd + .3), V(x, top + .05, -hd + .3)], .045, {radial:8}), 0x8f969c);
+      P.add('gls', box(s * hw - (s > 0 ? -.005 : .02), 1.4, -2.6, s * hw + (s > 0 ? .02 : -.005), 2.2, -1.6), 0x33424e);
+      for (let z = -2.55; z < -1.6; z += .16) P.add('met', box(s * (hw + .03) - .01, 1.35, z - .01, s * (hw + .03) + .01, 2.25, z + .01), 0xe6e8ea); });
+    inner.push(...[-1, 1].map(s => { const g = new THREE.PlaneGeometry(1.6, 1.1); g.rotateY(s * Math.PI / 2); g.translate(s * (hw + .015), 1.75, 1.2); return new THREE.Mesh(g, shopImg('poster')); }));
+    [-1, 1].forEach(s => inner.push(new THREE.Mesh(quadZ(s > 0 ? open + .2 : -hw + .2, .9, s > 0 ? hw - .2 : -open - .2, 2.3, hd + .005, [0, 0, 1, 1]), shopImg(s > 0 ? 'poster2' : 'poster3'))));
+    P.add('pla', box(open + .4, 2.45, hd, open + 1.3, 2.75, hd + .03, .01), 0xd83a2e); inner.push(new THREE.Mesh(quadZ(open + .42, 2.47, open + 1.28, 2.73, hd + .032, [0, 0, 1, 1]), shopImg('open')));
     const sign = new THREE.Mesh(quadZ(-hw + .25, H1 - .32, hw - .25, H1 + 1.07, hd + .165), signMat());
     return assemble(P, [['brk', brickWallMaterial({seed:113})], ['con', concreteMaterial()], ['mat', matteMaterial()], ['met', metalMaterial({rough:.4})], ['pla', plasticMaterial({rough:.5}), false],
-      ['gls', glassMaterial()], ['glow', glow(), false], ['snw', snowMaterial({seed:71}), false]], [W, top + .2, D], [sign]); }});
+      ['gls', glassMaterial()], ['clr', clearMaterial({color:0xdde9ee, opacity:.22}), false], ['glow', glow(), false], ['snw', snowMaterial({seed:71}), false]], [W, top + .2, D], [sign, ...inner]); }});
 
 // ───────── 차양: 초록 · 흰 줄무늬 천, 앞 늘어뜨림, 철제 팔 (벽에 붙는 선이 원점, 앞으로 proj만큼) ─────────
 defineProp('shopAwning', {label:'줄무늬 차양', category:'문구점', isNewStyle:true, small:true,

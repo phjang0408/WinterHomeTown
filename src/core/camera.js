@@ -23,7 +23,7 @@ export function updateCamera(dt, now){
     const hit = ray.intersectObjects(W.blockers, true)[0], d = hit ? Math.max(1.4, hit.distance - .6) : C.dist;
     C.cur = d < C.cur ? d : C.cur + (d - C.cur) * Math.min(1, dt * 4);
     want.copy(head).addScaledVector(dir, C.cur);
-    const gy = W.groundY(want.x, want.z) + .4; if (want.y < gy) want.y = gy;
+    const gy = W.groundY(want.x, want.z, me.char.position.y) + .4; if (want.y < gy) want.y = gy;
     look.copy(head);
   }
   C.blend = Math.min(1, C.blend + dt * 1.6);

@@ -11,18 +11,18 @@ import { root } from '../../core/engine.js';
 import { W } from '../../world/world.js';
 import { zone, tower } from '../../world/builders.js';
 import { flatXZ, box, loft, Parts } from '../../core/meshkit.js';
-import { asphaltMaterial, roadPaintMaterial, concreteMaterial, brickPaveMaterial, bedMaterial, decalMaterial } from '../../core/texkit.js';
-import { canvasTex } from '../../core/gfx.js';
+import { asphaltMaterial, roadPaintMaterial, concreteMaterial, brickPaveMaterial, bedMaterial, decalMaterial , antiTile } from '../../core/texkit.js';
+import { canvasTex, flat, G } from '../../core/gfx.js';
 import { quadY, mulberry } from '../../props/kit.js';
 import { SHOP_LAYOUT } from '../../props/shops.js';
 import { UNIT as U, FONT_D } from '../../config.js';
 import { SLIDE } from '../layout.js';
 
-const PI = Math.PI, A = .045, PV = .04;                        // A: 아스팔트 높이, PV: 보도 높이
+const PI = Math.PI, A = .045, PV = .15;                        // A: 아스팔트 높이, PV: 보도 높이 (2026-11-16: 길보다 한 단 높게)
 const BW = 2.5 * U, BD = 5 * U;                                // 주차 칸 2.5m × 5m
 // 길: 북쪽 도로, 서쪽 통로, 남쪽 도로 (x0, z0, x1, z1). R1·R2는 꺾이는 곳의 바깥·안쪽 반지름.
 const NR = [50, 131, 195, 139], WD = [50, 131, 58, 206], SR = [50, 198, 195, 206], R1 = 4.5, R2 = 1.5, CW = .35;
-const PLAY = [66, 144, 118, 193], CROSS_Z = [175, 181];       // 놀이터·공터, 104동 ↔ 놀이터 ↔ 상가 보행로
+const PLAY = [66, 144, 118, 193], CROSS_Z = [175, 181], LOW = {road:null, bays:[]};       // 놀이터·공터, 104동 ↔ 놀이터 ↔ 상가 보행로
 const PAINT = [0xe9ebec, 0xe9ebec, 0xd9dcde, 0xa3aab0, 0x8a9198, 0x2a2d31, 0x35393e, 0x2f4a6e, 0x6b2b2a, 0xc9c2b2, 0x46553f];
 const FIRE = [[75, 135, PI / 2], [138, 135, PI / 2], [54, 158, 0], [88, 202, PI / 2]];       // 소방차 전용구역 (6m × 12m)
 
@@ -41,6 +41,10 @@ export default {
   id:'apartments', name:'아파트단지',
   build(){
     W.mmRect(13, 93, 186, 246, '#e0e7f2');
+    // 걷는 높이: 단지 안은 보도 높이(PV), 길 · 주차칸 · 놀이터만 낮다 (길 · 주차칸은 아래에서 정해지면 LOW에 넣는다)
+    const inRoad = (x, z) => { const road = LOW.road; if (!road) return false; let c = false; for (let i = 0, j = road.length - 1; i < road.length; j = i++) { const [xi, zi] = road[i], [xj, zj] = road[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) c = !c; } return c; };
+    const low = (x, z) => inRoad(x, z) || LOW.bays.some(r => x > r[0] && x < r[2] && z > r[1] && z < r[3]) || (x > PLAY[0] && x < PLAY[2] && z > PLAY[1] && z < PLAY[3] && !(z > CROSS_Z[0] && z < CROSS_Z[1]));
+    W.addHeight((x, z) => x > 13 && x < 186 && z > 93 && z < 246 && !low(x, z) ? PV : null, -1);
     const R = mulberry(2026), P = new Parts(), D = new Parts();
     const line = (x0, z0, x1, z1, c = 0xe6eaed) => P.add('lin', flatXZ(x0, z0, x1, z1, A + .006), c);
     const paver = (x0, z0, x1, z1, mm = true) => { P.add('pav', flatXZ(x0, z0, x1, z1, PV), 0xffffff); if (mm) W.mmRect(x0, z0, x1, z1, '#e2cdc0'); };
@@ -48,9 +52,10 @@ export default {
     const curbArc = (cx, cz, r0, r1, a0, a1) => P.add('con', loft(arc(cx, cz, 1, a0, a1, 10).map(([x, z]) => { const dx = x - cx, dz = z - cz;
       return [[r0, 0], [r1, 0], [r1, .17], [r0, .17]].map(([r, y]) => new THREE.Vector3(cx + dx * r, y, cz + dz * r)); })), 0xb4b8ba);
     // 경계석을 두른 화단 (나무 띠, 녹지)
-    const bed = (x0, z0, x1, z1) => { [[x0, z0, x1, z0 + .3], [x0, z1 - .3, x1, z1], [x0, z0 + .3, x0 + .3, z1 - .3], [x1 - .3, z0 + .3, x1, z1 - .3]].forEach(r => P.add('con', box(r[0], 0, r[1], r[2], .19, r[3], .03), 0xb4b8ba));
-      P.add('bed', flatXZ(x0 + .3, z0 + .3, x1 - .3, z1 - .3, .13), 0xffffff); };
-    P.add('bed', flatXZ(13, 93, 186, 246, .012), 0xffffff);                                   // 단지 맨바닥: 눈 80% · 잔디 20%
+    const bed = (x0, z0, x1, z1) => { [[x0, z0, x1, z0 + .3], [x0, z1 - .3, x1, z1], [x0, z0 + .3, x0 + .3, z1 - .3], [x1 - .3, z0 + .3, x1, z1 - .3]].forEach(r => P.add('con', box(r[0], 0, r[1], r[2], .27, r[3], .03), 0xb4b8ba));
+      P.add('bed', flatXZ(x0 + .3, z0 + .3, x1 - .3, z1 - .3, .21), 0xffffff); };   // 보도(.15)보다 높게
+    // 단지 맨바닥 (2026-11-16): 화단이 아닌 곳은 모두 벽돌. 놀이터 자리만 비운다 (놀이터 바닥이 따로 있다). 화단은 아래 '화단' 목록에서 경계석과 함께 올린다
+    // (벽돌 맨바닥은 길 · 주차칸 · 놀이터를 빼고 맨 끝에서 깐다: groundRaster)
 
     // ── 동 7개 ──
     // 일자 동: rot 0이면 현관이 북쪽, π면 남쪽, -π/2면 동쪽. 'ㄱ'자: +π/2면 모서리가 북서, π면 남서.
@@ -61,17 +66,19 @@ export default {
     W.mmLabel(98, 116, '동화', 15);
 
     // ── 도로: 'ㄷ'자 한 장. 꺾이는 곳은 둥글게, 소방차 전용구역 자리는 도려낸다 (표지가 자기 바닥판을 들고 온다) ──
-    const road = [[195, NR[1]], ...arc(NR[0] + R1, NR[1] + R1, R1, -90, -180), ...arc(SR[0] + R1, SR[3] - R1, R1, 180, 90), [195, SR[3]], [195, SR[1]],
-      ...arc(WD[2] + R2, SR[1] - R2, R2, 90, 180), ...arc(WD[2] + R2, NR[3] + R2, R2, 180, 270), [195, NR[3]]];
+    // 길 (2026-11-16): 동쪽 끝은 단지 경계(x 186)까지 — 그 너머는 끊기지 않는 보도. 남서 모퉁이는 105동 현관 앞까지 넓혀 차를 댈 수 있다 (배치도)
+    // 길 (2026-11-16): 정문 · 후문에서 바깥 서쪽 도로(x 195)까지 끊기지 않는다. 남서 모퉁이는 105동 현관 앞까지 넓힘 (배치도)
+    // (2026-11-17) 남서 모퉁이 길을 x 44.5까지만: 105동 3·4호 현관 앞 보도를 넓힘
+    const road = [[195, NR[1]], ...arc(NR[0] + R1, NR[1] + R1, R1, -90, -180), [NR[0], 200], [44.5, 200], [44.5, 212.25], [61, 212.25], [61, SR[3]], [195, SR[3]], [195, SR[1]],
+      ...arc(WD[2] + R2, SR[1] - R2, R2, 90, 180), ...arc(WD[2] + R2, NR[3] + R2, R2, 180, 270), [195, NR[3]]]; LOW.road = road;
     const fireHole = ([x, z, rot]) => { const hx = (rot ? 6 : 3) * U, hz = (rot ? 3 : 6) * U; return rectPts(x - hx, z - hz, x + hx, z + hz); };
     P.add('asp', slab(road, FIRE.map(fireHole), A), 0xffffff);
     [NR, WD, SR].forEach(r => W.mmRect(r[0], r[1], r[2], r[3], '#c2c9d2'));
     FIRE.forEach(([x, z, rot]) => W.place('fireLane', {x, y:A, z, rot}));
     // 꺾이는 곳의 경계석과 보도 메움
-    curbArc(NR[0] + R1, NR[1] + R1, R1, R1 + CW, -90, -180); curbArc(SR[0] + R1, SR[3] - R1, R1, R1 + CW, 180, 90);
+    curbArc(NR[0] + R1, NR[1] + R1, R1, R1 + CW, -90, -180);
     curbArc(WD[2] + R2, NR[3] + R2, R2 - CW, R2, 180, 270); curbArc(WD[2] + R2, SR[1] - R2, R2 - CW, R2, 90, 180);
     P.add('pav', slab([[NR[0] - CW, NR[1] - CW], ...arc(NR[0] + R1, NR[1] + R1, R1 + CW, -90, -180)], [], PV), 0xffffff);
-    P.add('pav', slab([[SR[0] - CW, SR[3] + CW], ...arc(SR[0] + R1, SR[3] - R1, R1 + CW, 180, 90)], [], PV), 0xffffff);
     P.add('pav', slab([[WD[2] + R2, NR[3] + R2], ...arc(WD[2] + R2, NR[3] + R2, R2 - CW, 180, 270)], [], PV), 0xffffff);
     P.add('pav', slab([[WD[2] + R2, SR[1] - R2], ...arc(WD[2] + R2, SR[1] - R2, R2 - CW, 90, 180)], [], PV), 0xffffff);
 
@@ -80,9 +87,8 @@ export default {
     paver(40.5, 124.75, 58.4, 130.65);                            // 북서 모퉁이 마당 (분리수거장)
     paver(96.9, 124.75, 108.9, 130.65); paver(100, 130.65, 106, 131, false);          // 북쪽 횡단보도 머리
     paver(165, 124.75, 181, 130.65); paver(165.5, 130.65, 171.5, 131, false);         // 경비실 앞
-    paver(40.5, 130.65, 49.65, 206.35);                           // 104동 앞 넓은 보도
+    paver(40.5, 130.65, 49.65, 200);                              // 104동 앞 넓은 보도 (남쪽 끝은 105동 앞 길)
     paver(49.65, 174.5, 50, 181.5, false); paver(58, 174.5, 58.35, 181.5, false);     // 서쪽 통로 횡단보도 턱 낮춤
-    paver(40.5, 206.35, 59.4, 212.25);                            // 남서 모퉁이 마당
     paver(40.5, 212.25, 181, 216.6);                              // 남쪽 줄 현관 앞
     paver(112.6, 206.35, 118.4, 212.25); paver(113, 206, 118, 206.35, false);         // 남쪽 횡단보도 머리
     paver(165.7, 206.35, 181, 212.25); paver(165.7, 206, 171.5, 206.35, false);
@@ -93,11 +99,21 @@ export default {
     paver(58.35, 171.85, 64.25, 183.15); paver(64.25, CROSS_Z[0], 120, CROSS_Z[1]);    // 104동 ↔ 놀이터 ↔ 광장
     paver(120, 143, 146, 194);                                    // 가운데 광장
     paver(146, 143, 162, 150.5); paver(146, 163, 168, 194);       // 주민센터 앞, 상가 마당
-    paver(168, CROSS_Z[0], 188, CROSS_Z[1]);                      // 상가 뒤 → 단지 동쪽 보행로
+    paver(168, CROSS_Z[0], 186, CROSS_Z[1]);                      // 상가 뒤 → 단지 동쪽 보행로 (186부터는 보도판: 겹치지 않게)
+    // (2026-11-15) 빈 땅 메움: 주민센터 옆(동쪽) · 상가 뒤와 녹지 화단 사이
+    paver(162, 143, 169, 163); paver(168, 163, 169, CROSS_Z[0]); paver(168, CROSS_Z[1], 169, 194); paver(169, 174.5, 185.6, CROSS_Z[0]); paver(169, CROSS_Z[1], 185.6, 181.5);
+    // 현관 앞마당: 현관 계단 · 경사로 둘레의 빈 땅까지 벽돌로 (동 정면 ~ 현관 앞 보도)
+    [[59.9, 113.1, 88.1, 120.5], [113.9, 113.1, 142.1, 120.5], [43.1, 112.7, 54.9, 120.5], [32.7, 123.1, 40.5, 134.9], [33.6, 163, 40.5, 193],
+      [75.9, 216.6, 104.1, 225.5], [125.9, 216.6, 154.1, 225.5], [42.6, 216.6, 54.5, 228.8], [32.2, 206.4, 40.5, 218.4]].forEach(r => paver(...r, false));
+    // 동 사이 자전거 보관소 마당 (벽돌, 끝은 경계석)
+    const bikePads = [[89.2, 107.5, 112.8, 120.5, 'n'], [106.5, 216.6, 123.5, 229, 's'], [56, 216.6, 74, 229, 's']], sheds = [];
+    bikePads.forEach(([x0, z0, x1, z1, side]) => { paver(x0, z0, x1, z1);
+      // (2026-11-17) 둘레 경계석은 없앴다: 마당과 둘레가 같은 벽돌 높이라 경계석이 튀어나와 보였다
+      if (side === 'n') [x0 + 5.2, x1 - 5.2].forEach(x => sheds.push({x, z:z0 + 2.2, rot:0})); else [x0 + 5.2, x1 - 5.2].forEach(x => sheds.push({x, z:z1 - 2.2, rot:PI})); });
 
     // ── 주차 줄: 길 가장자리에서 칸이 바깥으로 이어진다 ──
     // axis 'x': x0부터 동쪽으로 n칸, 칸 깊이는 z0에서 dir 쪽으로. axis 'z': z0부터 남쪽으로 n칸, 깊이는 x0에서 dir 쪽으로.
-    const stops = [], cars = {}, islands = [], bays = [], car = (name, v, it) => (cars[name + '/' + v] || (cars[name + '/' + v] = [])).push(it);
+    const stops = [], cars = {}, islands = [], bays = LOW.bays, car = (name, v, it) => (cars[name + '/' + v] || (cars[name + '/' + v] = [])).push(it);
     function bayRow({x0, z0, n, axis, dir, dis = [], fill = .5}){
       const along = (i, t = .5) => axis === 'x' ? [x0 + (i + t) * BW, z0 + dir * BD / 2] : [x0 + dir * BD / 2, z0 + (i + t) * BW];
       const rot = axis === 'x' ? (dir > 0 ? 0 : PI) : (dir > 0 ? PI / 2 : -PI / 2), d0 = Math.min(axis === 'x' ? z0 : x0, (axis === 'x' ? z0 : x0) + dir * BD), d1 = d0 + BD, s0 = axis === 'x' ? x0 : z0;
@@ -133,10 +149,10 @@ export default {
     // 경계석
     [[60, 124.75, 95.28, 125.1], [110.5, 124.75, 163.42, 125.1], [54.5, 130.65, 58.4, 131], [96.9, 130.65, 100, 131], [106, 130.65, 108.9, 131], [165, 130.65, 165.5, 131], [171.5, 130.65, 181, 131],
       [59.5, 139, 100, 139.35], [106, 139, 165.5, 139.35], [171.5, 139, 186, 139.35],
-      [49.65, 135.5, 50, 174.5], [49.65, 181.5, 50, 201.5], [58, 140.5, 58.35, 144.65], [58, 144.65, 64.25, 145], [63.9, 145, 64.25, 171.5], [58, 171.5, 64.25, 171.85], [58, 171.85, 58.35, 174.5],
+      [49.65, 135.5, 50, 174.5], [49.65, 181.5, 50, 200], [44.1, 199.65, 49.65, 200], [44.1, 200, 44.5, 212.25], [44.1, 211.9, 61, 212.25], [58, 140.5, 58.35, 144.65], [58, 144.65, 64.25, 145], [63.9, 145, 64.25, 171.5], [58, 171.5, 64.25, 171.85], [58, 171.85, 58.35, 174.5],
       [58, 181.5, 58.35, 183.15], [58, 183.15, 64.25, 183.5], [63.9, 183.5, 64.25, 195.3], [58, 195.3, 64.25, 195.65], [58, 195.65, 58.35, 196.5],
       [59.5, 197.65, 113, 198], [118, 197.65, 165.5, 198], [171.5, 197.65, 186, 198],
-      [54.5, 206, 59.4, 206.35], [61, 211.9, 110.98, 212.25], [112.6, 206, 113, 206.35], [118, 206, 118.4, 206.35], [120, 211.9, 164.1, 212.25], [171.5, 206, 181, 206.35]]
+      [61, 211.9, 110.98, 212.25], [112.6, 206, 113, 206.35], [118, 206, 118.4, 206.35], [120, 211.9, 164.1, 212.25], [171.5, 206, 181, 206.35]]
       .forEach(r => curb(...r));
     W.placeMany('wheelStop', stops);
     W.placeMany('planterIsland', islands, {len:5, wid:1.2});
@@ -164,13 +180,19 @@ export default {
     [[54, 172.6, 0], [54, 183.4, 0], [174, 135, PI / 2], [62, 202, PI / 2], [175, 202, PI / 2]].forEach(([x, z, rot]) => W.place('speedBump', {x, y:A, z, rot, len:6.9}));
 
     // ── 입구·출구 문주, 경비실 ──
-    W.place('aptGate', {x:183.5, z:135, rot:PI / 2}); W.place('aptGate', {x:183.5, z:202, rot:-PI / 2});
-    W.place('guardHouse', {x:171, z:121.2}); W.mmLabel(171, 117, '경비실', 10);
+    W.place('aptGate', {x:185.3, z:135, rot:PI / 2}); W.place('aptGate', {x:185.3, z:202, rot:-PI / 2});
+    // (2026-11-17) 단지 이름 벽은 문주에서 떼어 바로 옆 동쪽 녹지 화단 위에 (보행통로 끝을 막지 않게)
+    W.place('aptNameWall', {x:184.4, z:148.6, rot:PI / 2, y:.21}); W.place('aptNameWall', {x:184.4, z:188.4, rot:-PI / 2, y:.21});
+    // 경비실 · 분리수거장 (2026-11-17): 앞 보행로를 비우도록 방음벽 쪽으로 물리고, 바닥은 콘크리트 받침
+    const pad = (x0, z0, x1, z1) => { P.add('con', box(x0, 0, z0, x1, PV + .03, z1, .03), 0xc9cac6); };
+    pad(166.5, 112, 179.5, 119.6); W.place('guardHouse', {x:173, z:115.8}); W.mmLabel(173, 112, '경비실', 10);
 
     // ── 분리수거장 두 곳 (북서 모퉁이 마당, 107동 동쪽), 음식물 쓰레기통 ──
-    W.place('recycleStation', {x:53.6, z:127.4}); W.place('recycleStation', {x:168.5, z:220, rot:PI});
-    W.placeMany('foodWasteBin', [{x:47.6, z:127.6, rot:0}, {x:48.6, z:127.7, rot:.08}, {x:164, z:224.4, rot:PI}, {x:164.9, z:224.4, rot:PI - .1}, {x:165.8, z:224.5, rot:PI + .06}]);
-    W.mmLabel(53.6, 124, '분리수거장', 9); W.mmLabel(168.5, 226, '분리수거장', 9);
+    // (2026-11-17) 북쪽 분리수거장은 103동 앞 마당에서 103 · 104동 사이로: 자전거 보관소처럼 화단을 덜어 마당을 내고 넣는다 (열린 쪽이 동쪽 보도)
+    pad(19, 136.2, 31, 147.4); W.place('recycleStation', {x:24.4, z:141.8, rot:PI / 2});
+    pad(161, 220.8, 177, 229.8); W.place('recycleStation', {x:170.5, z:225.2, rot:PI});
+    W.placeMany('foodWasteBin', [{x:29.6, z:145.8, rot:PI / 2}, {x:29.6, z:146.7, rot:PI / 2 + .08}, {x:163.2, z:228.6, rot:PI}, {x:164.1, z:228.6, rot:PI - .1}, {x:165, z:228.7, rot:PI + .06}]);
+    W.mmLabel(25, 141.8, '분리수거장', 9); W.mmLabel(168.5, 226, '분리수거장', 9);
 
     // ── 주민센터와 상가 ──
     W.place('communityCenter', {x:150, z:156, rot:PI}); W.mmLabel(150, 155, '주민센터', 11);
@@ -180,10 +202,11 @@ export default {
     W.place('phoneBooth', {x:147.3, z:186.6, rot:-PI / 2});
 
     // ── 놀이터·공터 ──
-    zone(PLAY[0], PLAY[1], PLAY[2], PLAY[3], 0xf3ecdc, '#efe5d0', .02); W.mmLabel(80, 150, '놀이터', 13); W.mmLabel(106, 188, '공터', 11);
-    W.place('playSet', {x:78.5, z:154}); W.place('spiralSlide', {x:SLIDE.x, z:SLIDE.z, rot:SLIDE.rot}); W.place('pavilion', {x:111, z:152});
-    W.place('seesaw', {x:76, z:168.5, rot:.1}); W.place('merryGoRound', {x:87.5, z:167});
-    W.place('springRider', {x:70, z:161.5, rot:.9}); W.place('springRider', {x:96.5, z:170, rot:-.6, color:0xd24a3a});
+    { const m = flat(PLAY[0], PLAY[1], PLAY[2], PLAY[3], G(0xf3ecdc).clone(), .02); m.material.polygonOffset = true; m.material.polygonOffsetUnits = -4; W.mmRect(PLAY[0], PLAY[1], PLAY[2], PLAY[3], '#efe5d0'); }   // 아래 땅(y 0)과 깜빡이지 않게 W.mmLabel(80, 150, '놀이터', 13); W.mmLabel(106, 188, '공터', 11);
+    const PS = 1.55;   // 놀이기구 배율: 나선 미끄럼틀(높이 3.6m)과 어울리게
+    W.place('playSet', {x:78, z:154, s:PS}); W.place('spiralSlide', {x:SLIDE.x, z:SLIDE.z, rot:SLIDE.rot}); W.place('pavilion', {x:111.5, z:152});
+    W.place('seesaw', {x:80, z:168.5, rot:.05, s:PS}); W.place('merryGoRound', {x:100.5, z:168.5, s:PS});
+    W.place('springRider', {x:70.5, z:168, rot:.4, s:1.8}); W.place('springRider', {x:90, z:169, rot:-.3, color:0xd24a3a, s:1.8});
     // 놀이터 둘레 생울타리: 변마다 두 줄, 드나드는 자리는 비운다
     [144.7, 192.3].forEach(z => [[77.5, 21], [106.5, 21]].forEach(([x, len]) => W.place('hedgeRow', {x, z, len:len / U})));
     [65.5, 118.6].forEach(x => [[159.5, 28], [187, 9.5]].forEach(([z, len]) => W.place('hedgeRow', {x, z, len:len / U, rot:PI / 2})));
@@ -197,15 +220,33 @@ export default {
     // ── 화단과 나무: 줄을 맞춰 같은 간격으로 심는다 ──
     bed(47.2, 141.5, 49.65, 174.2); bed(47.2, 181.8, 49.65, 201);                  // 104동 앞 나무 띠
     bed(169, 143.5, 185.6, 174.5); bed(169, 181.5, 185.6, 193.5);                  // 동쪽 녹지
+    // (2026-11-15) 같은 동 두 현관(1·2호 / 3·4호) 사이와 'ㄱ'자 동 안쪽 모퉁이를 경계석 화단으로
+    const unitBeds = [[70.7, 113.3, 77.3, 120.4], [124.7, 113.3, 131.3, 120.4], [86.7, 218.2, 93.3, 225.4], [136.7, 218.2, 143.3, 225.4], [33.8, 174.6, 40.4, 181.4], [33, 113, 43.1, 123.1], [32.4, 218.4, 42.6, 228.6]];
+    unitBeds.forEach(r => bed(...r));
+    W.placeMany('bikeShelter', sheds);
+    // (2026-11-17) 자전거 보관소 사이 벤치는 보관소와 겹쳐 뺐다
+    // 화단 (배치도의 '녹지 · 화단'): 동 뒤 방음벽 앞 띠, 동 사이 뒤쪽, 서쪽 띠, 동쪽 띠, 103-104 · 104-105 사이, 107동 동쪽(분리수거장 뒤)
+    const greens = [[15.6, 95.6, 186, 99], [54.2, 99, 59.6, 112.4], [88.4, 99, 113.6, 107.3], [142.4, 99, 166, 117.4], [180, 99, 185.6, 117.4], [166, 99, 180, 111.4], [181.2, 117.4, 185.6, 120.4],
+      [15.6, 99, 18.3, 242.9], [15.6, 242.9, 186, 245.1], [53.7, 229.3, 75.6, 242.9], [75.6, 239.6, 104.4, 242.9], [104.4, 229.3, 125.6, 242.9], [125.6, 239.6, 154.4, 242.9],
+      [154.4, 230.2, 185.6, 242.9], [18.3, 148, 31.4, 162.4], [18.3, 193.6, 31.4, 206.4]];
+    greens.forEach(r => bed(...r));
     const free = p => !W.blocked(p.x, p.z), row = (a, b, step) => { const out = []; for (let v = a; v <= b + .01; v += step) out.push(v); return out; };
+    // 벽돌 맨바닥: 단지 안에서 길 · 주차칸 · 놀이터(가로지르는 길은 남김)를 뺀 곳을 0.25 격자로 칠해 줄 단위로 합친다. 걷는 높이도 같은 기준
+    function groundRaster(){ const S = .25, X0 = 13, Z0 = 93, nx = Math.round((186 - X0) / S), nz = Math.round((246 - Z0) / S); let prev = new Map();
+      const flush = (runs, zEnd) => runs.forEach(r => P.add('pav', flatXZ(X0 + r.a * S, Z0 + r.z0 * S, X0 + r.b * S, Z0 + zEnd * S, PV), 0xffffff));
+      for (let j = 0; j <= nz; j++) { const cur = new Map();
+        if (j < nz) { let a = -1; for (let i = 0; i <= nx; i++) { const on = i < nx && !low(X0 + (i + .5) * S, Z0 + (j + .5) * S); if (on && a < 0) a = i; if (!on && a >= 0) { const k = a + ':' + i, p = prev.get(k); cur.set(k, {a, b:i, z0:p ? p.z0 : j}); if (p) prev.delete(k); a = -1; } } }
+        flush([...prev.values()], j); prev = cur; } }
     const bare = [[], [], [], []], pine = [[], [], []], T = (v, x, z, s = .9) => bare[v].push({x, z, rot:R() * 6, s}), Pn = (v, x, z) => pine[v % 3].push({x, z, rot:R() * 6});
+    [[22, 152], [27.5, 158], [23, 197.5], [28.5, 203]].forEach(([x, z], i) => T(i % 4, x, z, .9));     // 103-104 · 104-105 사이 나무
+    [[96, 103], [106, 103], [57, 106], [64, 236], [115, 236], [160, 236], [172, 236]].forEach(([x, z], i) => T((i + 1) % 4, x, z, .85));
     [145.5, 153, 160.5, 168, 186, 193.5].forEach(z => T(1, 48.4, z, .8));                               // 104동 앞 띠
     const gap = (x, list) => list.some(([a, b]) => x > a - 1 && x < b + 1);
     row(66, 176, 10).filter(x => !gap(x, [[100, 106], [165.5, 171.5]])).forEach(x => T(0, x, 140.05, .82));   // 북측 보행통로 가로수
     row(66, 176, 10).filter(x => !gap(x, [[113, 118], [165.5, 171.5]])).forEach(x => T(0, x, 196.95, .82));   // 남측 보행통로 가로수
     [151, 161, 171, 187].forEach(z => T(3, 133, z, .95));                                              // 광장
-    [147, 155, 163, 171, 184.5, 190.5].forEach(z => T(2, 182.6, z));                                   // 동쪽 녹지 바깥 줄
-    [103, 111, 119, 211, 219, 227, 235].forEach((z, i) => Pn(i, 182.6, z)); T(0, 182.6, 126.5);
+    [155, 163, 171].forEach(z => T(2, 182.6, z));   // 이름 벽 자리(z 146 ~ 151, 186 ~ 191)는 비움                                   // 동쪽 녹지 바깥 줄
+    [103, 111, 119, 235].forEach((z, i) => Pn(i, 182.6, z));   // (2026-11-17) 107동 → 후문 쪽 화단은 보도로 바꿔 나무를 뺌 T(0, 182.6, 126.5);
     [56.9, 94.5, 101, 107.5, 149, 157, 165].forEach((x, i) => Pn(i, x, 104));                           // 북쪽 방음벽 앞
     [58, 64.5, 71, 109, 115, 121, 161, 169, 177].forEach((x, i) => Pn(i, x, 234.5));                    // 남쪽 방음벽 앞
     bare.forEach((list, v) => W.placeMany('bareTree', list.filter(free), {v}));
@@ -217,12 +258,12 @@ export default {
     const balls = v => list => W.placeMany('shrubBall', list.map(([x, z]) => ({x, z, rot:R() * 6})).filter(free), {v});
     balls(1)([147, 155, 163, 171, 184.5, 190.5].map(z => [174.5, z]));
     balls(0)([...[151, 159, 167, 187.5].map(z => [178.5, z]), ...[143.5, 147, 150.5, 154, 157.5].map(x => [x, 162.5]), ...[149.2, 156.8, 164.2, 189.8].map(z => [48.4, z])]);
-    balls(2)([[22, 100], [178, 240], [22, 241]]);
+    balls(2)([[22, 100], [178, 240], [22, 241], ...unitBeds.flatMap(([x0, z0, x1, z1]) => [[(x0 * 2 + x1) / 3, (z0 + z1) / 2], [(x0 + x1 * 2) / 3, (z0 + z1) / 2]])]);
     [[171.5, 145.6, 0], [171.5, 172.4, 0], [171.5, 183.6, 0], [171.5, 191.4, 0]].forEach(([x, z, rot]) => W.place('shrubCluster', {x, z, rot}));
 
     // ── 가로등: 보행통로는 가로수 사이, 현관 앞 보도는 현관 사이 ──
     const lamps = [...row(71, 151, 20).flatMap(x => [{x, z:143.3}, {x, z:193.7}]), {x:180, z:142.2}, {x:180, z:194.8},
-      ...[57, 74, 103, 128, 147].map(x => ({x, z:121.3})), ...[60, 90, 113, 140, 160].map(x => ({x, z:215.8})),
+      ...[57, 74, 103, 128, 147].map(x => ({x, z:124.1})), ...[60, 90, 113, 140, 160].map(x => ({x, z:212.9})),   // (2026-11-17) 현관 쪽이 아니라 주차장 쪽 보도 끝
       ...[149, 164.5, 189.5].map(z => ({x:46.5, z})), {x:119.4, z:146}, {x:119.4, z:191}, {x:65, z:173.5}, {x:65, z:182.5}, {x:145, z:162}, {x:145, z:192.5}];
     W.placeMany('parkLamp', lamps.filter(free));
 
@@ -233,10 +274,15 @@ export default {
       {x:111.6, z:198.7}, {x:119.4, z:198.7, rot:.2}, {x:111.8, z:205.3, rot:-.3}, {x:119.2, z:205.3}, {x:164.6, z:198.7}, {x:172.6, z:205.3, rot:.3}].filter(p => !inBay(p) && free(p)));
 
     // ── 게시판, 현수막 게시대 ──
-    W.place('noticeBoard', {x:126, z:144.6}); W.place('noticeBoard', {x:45.6, z:137.4, rot:PI / 2}); W.place('noticeBoard', {x:106, z:217.5, rot:PI});
+    W.place('noticeBoard', {x:126, z:144.6});
     W.place('bannerBoard', {x:186.9, z:148.5, rot:PI / 2}); W.place('bannerBoard', {x:186.9, z:189, rot:PI / 2});
 
     // 바닥 메쉬
-    [['asp', asphaltMaterial()], ['pav', brickPaveMaterial()], ['bed', bedMaterial()], ['con', concreteMaterial()], ['lin', roadPaintMaterial()]].forEach(([k, m]) => root.add(P.mesh(k, m, {cast:k === 'con'})));
+    // 정문 · 후문 앞: 단지 앞 보도를 가로지르는 횡단보도 (차 길은 끊기지 않고, 사람은 보도 선을 따라 건넌다)
+    [[NR[1], NR[3]], [SR[1], SR[3]]].forEach(([z0, z1]) => { for (let z = z0 + .45; z < z1 - .4; z += 1.05) line(188.6, z, 192.6, z + .55, 0xf1f3f4);
+      W.placeMany('tactileStrip', [{x:190.6, z:z0 - .45, y:PV + .005}, {x:190.6, z:z1 + .45, y:PV + .005}], {cols:8, rows:2}); });
+    groundRaster();
+    const asp = antiTile(asphaltMaterial().clone()); asp.polygonOffset = true; asp.polygonOffsetFactor = -1; asp.polygonOffsetUnits = -2;   // 벽돌 맨바닥보다 앞에 그린다
+    [['asp', asp], ['pav', brickPaveMaterial()], ['bed', bedMaterial()], ['con', concreteMaterial()], ['lin', roadPaintMaterial()]].forEach(([k, m]) => root.add(P.mesh(k, m, {cast:k === 'con'})));
   },
 };

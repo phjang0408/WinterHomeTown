@@ -25,18 +25,6 @@ export function building(x0, z0, x1, z1, h, o){
   return m;
 }
 
-// 아파트 동: props/buildings.js의 입체 아파트를 세우고 충돌·미니맵을 등록한다. face는 베란다(남향 면)가 보는 방향.
-export function apartment(x0, z0, x1, z1, h, o){
-  const ew = o.face === 'e' || o.face === 'w', rot = {s:0, e:Math.PI / 2, n:Math.PI, w:-Math.PI / 2}[o.face || 's'];
-  const obj = buildProp('apartment', {w:ew ? z1 - z0 : x1 - x0, d:ew ? x1 - x0 : z1 - z0, h, label:o.label, accent:o.accent});
-  const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, c = Math.cos(rot), s = Math.sin(rot), tx = (dx, dz) => [cx + dx * c + dz * s, cz - dx * s + dz * c];
-  obj.position.set(cx, 0, cz); obj.rotation.y = rot; root.add(obj);
-  W.blockers.push(obj.userData.body); W.rect(x0, z0, x1, z1);
-  for (const r of obj.userData.colliders) { const a = tx(r[0], r[1]), b = tx(r[2], r[3]); W.rect(Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])); }
-  W.mmRect(x0, z0, x1, z1, '#d9cdb8'); if (o.label) W.mmLabel(cx, cz, o.label, 13);
-  return obj;
-}
-
 // 판상형 아파트 동(props/aptTower.js)을 (cx, cz)에 rot만큼 돌려 세우고 충돌·미니맵·카메라 가림을 등록한다.
 export function tower(cx, cz, rot, o){
   const obj = buildProp(o.shape === 'L' ? 'aptTowerL' : 'aptTower', o);

@@ -21,7 +21,7 @@ export function trackPrints(w, moved, now){
   w.fpD = (w.fpD || 0) + moved; if (w.fpD <= .85) return; w.fpD = 0;
   if (noPrints.some(f => f(w.x, w.z))) return;
   const i = fp.i = (fp.i + 1) % N, sd = w.fpS = -(w.fpS || 1);
-  fp.x[i] = w.x + Math.cos(w.r) * sd * .16; fp.z[i] = w.z - Math.sin(w.r) * sd * .16; fp.y[i] = W.groundY(fp.x[i], fp.z[i]) + .06; fp.r[i] = w.r; fp.t[i] = now; set(i, 1);
+  fp.x[i] = w.x + Math.cos(w.r) * sd * .16; fp.z[i] = w.z - Math.sin(w.r) * sd * .16; fp.y[i] = W.groundY(fp.x[i], fp.z[i], w.y) + .06; fp.r[i] = w.r; fp.t[i] = now; set(i, 1);
 }
 export function agePrints(now){
   if (now - fp.tick < 500) return; fp.tick = now;
