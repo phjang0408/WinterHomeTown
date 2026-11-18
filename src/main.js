@@ -21,10 +21,12 @@ import './props/street.js';
 import './props/stationery.js';
 import './props/shopTowers.js';
 import './props/bigShops.js';
+import './props/smallGoods.js';
 import './props/aptBike.js';
 import './props/utilityPole.js';
 import './props/aptStreet.js';
 import { W } from './world/world.js';
+import { initPerf } from './ui/perf.js';
 const FAR = {snowDrift:110, grassTuft:90, reedClump:150, tactileStrip:90, wheelStop:90, laneDelineator:120, noParkingSign:100, foodWasteBin:100, shrubBall:150, shrubCluster:150,
   planterIsland:150, hedgeRow:180, parkLamp:220, roadFence:200, railFence:160, bench:150, bikeShelter:170, carSedan:220, carSUV:220, carMini:220, truck1t:220, deliveryVan:220,
   bareTree:330, pineTree:330, signFascia:160, signVertical:160};
@@ -116,6 +118,7 @@ async function boot(){
   dressMe(); drawMiniBase(); bindUi();
   onFrame(frame);
   onFrame(() => W.cull(camera.position), 95);   // 거리 숨김 (카메라가 자리 잡은 뒤)
+  onFrame(initPerf(), 99);   // 성능 창 (P 키)
   start();
   if (location.search.includes('debug')) window.__town = {S, me, W, findAction, renderer, scene, usedProps, propNames};   // 개발용: 콘솔에서 상태를 들여다본다
   window.__townReady = true;

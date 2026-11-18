@@ -48,9 +48,13 @@ export function movePlayer(dt, speedMul = 1){
   if (onIce) { const k = Math.min(1, dt * (len ? 1.1 : .35)); me.vx += (ix * sp - me.vx) * k; me.vz += (iz * sp - me.vz) * k; }
   else { me.vx = ix * sp; me.vz = iz * sp; }
   if (Math.abs(me.vx) + Math.abs(me.vz) < .02) { me.vx = me.vz = 0; return 0; }
-  const ox = me.x, oz = me.z, nx = me.x + me.vx * dt, nz = me.z + me.vz * dt;
-  if (!W.blocked(nx, me.z, me.y)) me.x = nx; else me.vx = 0;
-  if (!W.blocked(me.x, nz, me.y)) me.z = nz; else me.vz = 0;
+  // (2026-11-17) 한 번에 0.25씩 나눠 움직인다: 빨리 달리거나 프레임이 늦으면 얇은 난간 · 울타리를 건너뛰어 끼이던 것
+  const ox = me.x, oz = me.z, n = Math.max(1, Math.ceil(Math.hypot(me.vx, me.vz) * dt / .25)), sx = me.vx * dt / n, sz = me.vz * dt / n;
+  for (let i = 0; i < n; i++) {
+    if (sx && !W.blocked(me.x + sx, me.z, me.y)) me.x += sx; else if (sx) me.vx = 0;
+    if (sz && !W.blocked(me.x, me.z + sz, me.y)) me.z += sz; else if (sz) me.vz = 0;
+    if (me.y !== undefined) me.y = Math.max(me.y, Math.min(W.groundY(me.x, me.z, me.y), me.y + .6));   // 오르막(계단)에서 발 높이가 늦게 따라와 난간 높이 판정이 어긋나지 않게
+  }
   if (len) me.r = wrapA(lerpAngle(me.r, Math.atan2(ix, iz), Math.min(1, dt * (onIce ? 5 : 12))));
   if (onIce && !me.iceHint) { me.iceHint = true; flash('미끄러워요'); }
   return Math.hypot(me.x - ox, me.z - oz);

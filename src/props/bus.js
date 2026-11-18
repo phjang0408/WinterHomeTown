@@ -38,7 +38,7 @@ function atlas(){
     led(...R_.rear, () => { g.textAlign = 'center'; g.font = '104px ' + FONT_D; g.fillText('01', 256, 228); });
     // 노란 영업용 번호판 (2000년대 두 줄 번호판)
     { const [x, y] = R_.plate; g.fillStyle = '#efe7b8'; g.fillRect(x, y, 384, 192); g.fillStyle = '#f1c21b'; g.fillRect(x + 7, y + 7, 370, 178);
-      g.fillStyle = '#1d2a4a'; g.textAlign = 'center'; g.font = '62px ' + FONT_D; g.fillText('경기 70', x + 192, y + 50); g.font = '96px ' + FONT_D; g.fillText('자 3108', x + 192, y + 128);
+      g.fillStyle = '#1d2a4a'; g.textAlign = 'center'; g.font = '62px ' + FONT_D; g.fillText('동화 70', x + 192, y + 50); g.font = '96px ' + FONT_D; g.fillText('자 3108', x + 192, y + 128);
       [[28, 26], [356, 26]].forEach(([a, b]) => { g.fillStyle = '#c8b25a'; g.beginPath(); g.arc(x + a, y + b, 7, 0, 7); g.fill(); }); }
     // 옆 노선 안내판: 흰 판에 노선 번호와 경유지
     { const [x, y, w, h] = R_.side; g.fillStyle = '#f7f7f2'; g.fillRect(x, y, w, h); g.fillStyle = '#1f6a45'; g.fillRect(x, y, 230, h);

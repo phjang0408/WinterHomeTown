@@ -33,8 +33,10 @@ export function buildTerrain(){
   // 땅 한 장 (낮춘 공원 자리는 비운다)
   [[-800, -800, 1400, PIT.z0], [-800, PIT.z1, 1400, RSIDE], [-800, PIT.z0, PIT.x0, PIT.z1], [PIT.x1, PIT.z0, 1400, PIT.z1]].forEach(r => flat(r[0], r[1], r[2], r[3], G(0xf4f7fa), 0));
   const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute([-800,0,RSIDE, 1400,0,RSIDE, -800,BANK,RSIDE + 5, 1400,BANK,RSIDE + 5], 3));
-  g.setIndex([0,2,1, 1,2,3]); g.computeVertexNormals();
+  // 사면: 둔치 계단(x 177 · 451) 자리는 비운다 (2026-11-17: 계단 디딤판이 사면 판에 묻혀 안 보이던 것)
+  const pos = [], idx = []; [[-800, 177 - 2.4], [177 + 2.4, 451 - 2.4], [451 + 2.4, 1400]].forEach(([a, b], k) => {
+    pos.push(a, 0, RSIDE, b, 0, RSIDE, a, BANK, RSIDE + 5, b, BANK, RSIDE + 5); const o = k * 4; idx.push(o, o + 2, o + 1, o + 1, o + 2, o + 3); });
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
   const slope = new THREE.Mesh(g, M(0xeef2f1)); slope.receiveShadow = true; root.add(slope);
   flat(-800,RSIDE + 5,1400,342.5,G(0xeef3ef),BANK);
   box(-800,342,1400,342.5,.8,M(0xd2dbe2),BANK - .8);

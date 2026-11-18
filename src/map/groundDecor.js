@@ -78,11 +78,11 @@ export function decorateGround(regions, curbs, trees){
   [[ROAD.z0 + .5], [ROAD.z1 - .5], [NROAD.z0 + .45], [NROAD.z1 - .45], [LOOP.zN + .4], [LOOP.zN + 6.6], [LOOP.zS + .4], [LOOP.zS + 6.6]].forEach(([z]) => edgeSnow(z < 100 || z > 250 ? -60 : LOOP.x0 + 7, z < 100 || z > 250 ? 700 : LOOP.x1 - 7, z, .033));
   [LOOP.x0 + .4, LOOP.x0 + 6.6, LOOP.x1 - .4, LOOP.x1 - 6.6].forEach(x => edgeSnow(90, ROAD.z0, x, .033, 'z'));
   // 3D 눈 더미: 경계석을 따라 군데군데, 나무 밑
-  for (const [x0, z0, x1, z1, h] of curbs) { const along = Math.abs(x1 - x0) > Math.abs(z1 - z0), L = along ? Math.abs(x1 - x0) : Math.abs(z1 - z0); if (L < 3) continue;
+  for (const [x0, z0, x1, z1, h, cy] of curbs) { const along = Math.abs(x1 - x0) > Math.abs(z1 - z0), L = along ? Math.abs(x1 - x0) : Math.abs(z1 - z0); if (L < 3) continue;
     const a0 = along ? Math.max(Math.min(x0, x1), -60) : Math.min(z0, z1), a1 = along ? Math.min(Math.max(x0, x1), 700) : Math.max(z0, z1);
-    for (let t = a0 + rr(0, 8); t < a1; t += rr(6, 16)) { const x = along ? t : (x0 + x1) / 2 + rr(-.4, .4), z = along ? (z0 + z1) / 2 + rr(-.4, .4) : t, gy = W.groundY(x, z);
+    for (let t = a0 + rr(0, 8); t < a1; t += rr(6, 16)) { const x = along ? t : (x0 + x1) / 2 + rr(-.4, .4), z = along ? (z0 + z1) / 2 + rr(-.4, .4) : t, gy = W.groundY(x, z, cy || 0);   // 육교 밑 경계석의 눈 더미가 육교 위로 올라가지 않게 (경계석 높이 기준)
       drifts[Math.floor(R() * 4)].push({x, z, y:gy + h * .2, rot:along ? rr(-.3, .3) : Math.PI / 2 + rr(-.3, .3), s:rr(.6, 1.2)}); } }
-  trees.bare.forEach(list => list.forEach(t => { if (R() < .35) drifts[Math.floor(R() * 4)].push({x:t.x + rr(-.6, .6), z:t.z + rr(-.6, .6), y:(t.y ?? W.groundY(t.x, t.z)) + .1, rot:R() * 6, s:rr(.5, .8)}); }));
+  trees.bare.forEach(list => list.forEach(t => { if (R() < .35) drifts[Math.floor(R() * 4)].push({x:t.x + rr(-.6, .6), z:t.z + rr(-.6, .6), y:(t.y ?? W.groundY(t.x, t.z, 0)) + .1, rot:R() * 6, s:rr(.5, .8)}); }));
   tufts.forEach((list, v) => W.placeMany('grassTuft', list, {v, collide:false}));
   drifts.forEach((list, v) => W.placeMany('snowDrift', list, {v, collide:false}));
   // 얼룩 판 그리기

@@ -43,8 +43,7 @@ defineProp('communityCenter', {label:'주민센터', category:'건물', isNewSty
     P.add('mat', box(-.9, .306, Z + .2, .9, .32, Z + .8, .006), 0x39453f);
     // 간판 받침, 세로 간판, 게시판, 실외기, 홈통, 벽등
     P.add('mat', box(-3.22, 3.52, Z + .0, 3.22, 4.14, Z + .07, .01), 0x1f3b59);
-    P.add('mat', box(-6.9, .5, Z + 1.55, -4.3, 1.75, Z + 1.63, .01), 0x6f5b46); [-6.75, -4.45].forEach(x => P.add('mat', box(x - .05, 0, Z + 1.55, x + .05, 1.95, Z + 1.63), 0x5d4c3b)); P.add('mat', box(-7.0, 1.93, Z + 1.45, -4.2, 1.99, Z + 1.75), 0x5d4c3b);
-    P.add('snw', ridge(Array.from({length:7}, (_, i) => V(-6.95 + i * .45, 1.99, Z + 1.6)), .28, .07));
+    // (2026-11-17) 앞마당 나무 게시판은 없애고, 그 자리에 단지 안내 게시판(noticeBoard)을 따로 세운다
     [[-X - .5, -1.0], [-X - .5, .4]].forEach(([x, z]) => { P.add('mat', box(x - .38, .12, z - .45, x + .38, .92, z + .45, .03), 0xd4d8da); P.add('mat', xf(new THREE.CylinderGeometry(.28, .28, .02, 20), {rz:Math.PI / 2, x:x - .385, y:.52, z}), 0x30363b); P.add('mat', box(x - .3, 0, z - .4, x + .3, .12, z + .4), 0x8a9093);
       P.add('snw', box(x - .36, .9, z - .43, x + .36, 1.0, z + .43, .04)); });
     [[-X - .06, Z - .3], [X + .06, Z - .3], [-X - .06, -Z + .3], [X + .06, -Z + .3]].forEach(([x, z]) => met(tube([V(x, .1, z), V(x, H + .1, z)], .045, {radial:8}), 0x9aa3a8));
@@ -58,18 +57,15 @@ defineProp('communityCenter', {label:'주민센터', category:'건물', isNewSty
 const gateTex = () => once('gate', () => decalMaterial(canvasTex(1024, 256, (g, W, H) => { g.clearRect(0, 0, W, H); g.fillStyle = '#2b3a4a'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '150px ' + FONT_D; g.fillText('동화아파트', 560, 120);
   g.strokeStyle = '#3f6fa8'; g.lineWidth = 14; g.lineCap = 'round'; for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; g.beginPath(); g.moveTo(110, 118); g.lineTo(110 + Math.cos(a) * 70, 118 + Math.sin(a) * 70); g.stroke(); }
   g.fillStyle = '#5f6b75'; g.font = '800 36px ' + FONT_B; g.fillText('DONGHWA APARTMENT', 560, 222); }), {alpha:true, rough:.6}));
-// (2026-11-17) 이름 벽은 문주에서 떼어 'aptNameWall'로: 보도를 막지 않고 옆 화단 위에 따로 세운다
-defineProp('aptGate', {label:'단지 정문 문주', category:'경계', isNewStyle:true, usage:"W.place('aptGate', {x: 186, z: 137.5, rot: Math.PI / 2});  // 기둥 사이 7.6m. 이름 벽은 aptNameWall",
-  colliders:[{r:[-4.5 * U, -.5 * U, -3.6 * U, .5 * U]}, {r:[3.6 * U, -.5 * U, 4.5 * U, .5 * U]}, {c:[3.2 * U, 1.2 * U, .3 * U]}], build(){
-    const P = new Parts(), con = (g, c) => P.add('con', g, c);
-    [-4.05, 4.05].forEach(x => { con(box(x - .45, 0, -.45, x + .45, 3.3, .45, .03), 0xb9b4a8); con(box(x - .52, 0, -.52, x + .52, .4, .52, .02), 0x8f9193); con(box(x - .55, 3.3, -.55, x + .55, 3.48, .55, .03), 0xd4d7d8);
-      [.9, 1.7, 2.5].forEach(y => con(box(x - .46, y, -.46, x + .46, y + .03, .46), 0x9d988d)); P.add('mat', lathe([[.1, 3.48], [.2, 3.56], [.22, 3.8], [.12, 3.9], [0, 3.92]].map(([r, y]) => [r, y]), 14).translate(x, 0, 0), 0xfff3d2);
-      P.add('snw', xf(blob(.5, .14, .5, {seed:3, bump:.06}), {x, y:3.46})); P.add('snw', xf(blob(.2, .07, .2, {seed:5, bump:.05, seg:10}), {x, y:3.9})); });
-    // 차단기
-    P.add('mat', box(2.95, 0, .95, 3.45, 1.05, 1.45, .03), 0xe8a020); P.add('mat', box(2.9, 1.05, .9, 3.5, 1.1, 1.5, .02), 0x30363b); P.add('snw', box(2.92, 1.09, .92, 3.48, 1.17, 1.48, .035));
-    for (let i = 0; i < 8; i++) P.add('mat', box(2.9 - (i + 1) * .7, .88, 1.16, 2.9 - i * .7, .98, 1.22), i % 2 ? 0xf2f2ee : 0xd0312a);
-    bakeAO(P.geo('con'), (p, n) => .76 + .24 * Math.min(1, p.y / .5));
-    return assemble(P, [['con', concreteMaterial()], ['mat', matteMaterial()], ['snw', snowMaterial({seed:47})]], [9.2, 3.95, 1.6]); }});
+// (2026-11-17 2차) 문주 기둥을 없애고 차단기만 둔다: 노란 함 + 빨강 · 흰 줄 차단봉 (길을 가로질러 6.3m)
+defineProp('aptGate', {label:'단지 입구 차단기', category:'경계', isNewStyle:true, usage:"W.place('aptGate', {x: 186, z: 137.5, rot: Math.PI / 2});  // 함은 +x 끝, 봉은 -x 쪽으로 6.3m. 이름 벽은 aptNameWall",
+  colliders:[{r:[2.85 * U, .85 * U, 3.55 * U, 1.55 * U]}], build(){
+    const P = new Parts();
+    P.add('con', box(2.8, 0, .8, 3.6, .12, 1.6, .02), 0x9a9c9c);                                                                     // 받침
+    P.add('mat', box(2.95, .12, .95, 3.45, 1.05, 1.45, .03), 0xe8a020); P.add('mat', box(2.9, 1.05, .9, 3.5, 1.1, 1.5, .02), 0x30363b); P.add('snw', box(2.92, 1.09, .92, 3.48, 1.17, 1.48, .035));
+    P.add('mat', box(2.9, .5, .92, 2.96, .7, 1.1, .01), 0x30363b);                                                                    // 점검 문
+    for (let i = 0; i < 9; i++) P.add('mat', box(2.9 - (i + 1) * .7, .88, 1.16, 2.9 - i * .7, .98, 1.22), i % 2 ? 0xf2f2ee : 0xd0312a);
+    return assemble(P, [['con', concreteMaterial()], ['mat', matteMaterial()], ['snw', snowMaterial({seed:47})]], [7, 1.3, 1]); }});
 
 defineProp('aptNameWall', {label:'단지 이름 벽', category:'경계', isNewStyle:true, usage:"W.place('aptNameWall', {x, z, rot, y: .21});  // 길이 5.1m, 양면에 단지 이름. 화단 위에 둔다",
   colliders:[{r:[-2.6 * U, -.3 * U, 2.6 * U, .3 * U]}], build(){
@@ -110,7 +106,7 @@ defineProp('guardHouse', {label:'경비실', category:'건물', isNewStyle:true,
     met(box(.74, .1, Z - .02, 1.81, 2.26, Z + .05), FR); gls(box(.82, .52, Z + .04, 1.73, 2.14, Z + .058), 0x3b5067); met(box(.82, .16, Z + .04, 1.73, .5, Z + .062), 0xd6dbdf);
     met(tube([V(.95, 1.0, Z + .1), V(.95, 1.45, Z + .1)], .014, {radial:8}), 0xd6dbdf); con(box(.55, 0, Z, 2.0, .1, Z + .75, .012), 0xb1b5b8); mat(box(.8, .1, Z + .1, 1.75, .115, Z + .6, .005), 0x39453f);
     // 차양
-    mat(box(-2.4, 2.34, Z, 2.05, 2.46, Z + .9, .02), 0x9a5a48); [-2.2, -.2, 1.85].forEach(x => mat(prism([[0, 2.34], [.7, 2.34], [0, 2.02]], x - .03, x + .03).rotateY(-Math.PI / 2).translate(0, 0, Z), 0x7d463a));
+    mat(box(-2.4, 2.34, Z, 2.05, 2.46, Z + .9, .02), 0x9a5a48); [-2.2, -.2, 1.85].forEach(x => mat(prism([[0, 2.34], [.7, 2.34], [0, 2.02]], -x - .03, -x + .03).rotateY(-Math.PI / 2).translate(0, 0, Z), 0x7d463a));   // (2026-11-17) 돌리면 x가 뒤집혀서 -x로 만든다: 받침대가 차양 밑 제자리에 (시계와 겹치지 않게)
     P.add('snw', box(-2.36, 2.44, Z + .02, 2.01, 2.56, Z + .86, .05));
     // 옆 창 (+x), 실외기 (-x)
     met(box(X - .02, 1.0, -1.16, X + .05, 2.16, .56), FR); gls(box(X + .04, 1.06, -1.1, X + .058, 2.1, .5), GL); met(box(X + .05, 1.06, -.33, X + .075, 2.1, -.27), FR); con(box(X, .9, -1.26, X + .12, .98, .66, .01), 0xdcdfe0);

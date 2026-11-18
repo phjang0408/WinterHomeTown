@@ -161,7 +161,7 @@ defineProp('parkingSign', {label:'주차장 표지', category:'큰 가게', isNe
 // ───────── 간판 · 앞 물건 (몸체 원점 기준 미터, 여섯째 값은 회전) ─────────
 export const BIG_SIGNS = {
   meat:[['signFascia', {text:'솔밭 숯불갈비', sub:'생갈비 · 양념갈비 · 삼겹살', bg:'#2b2420', fg:'#f4e3c3', accent:[3, 7, '#ffb74d'], w:9.5, h:1.0}, -3.6, 3.45, 5.12],
-    ['signFascia', {text:'점심 특선', bg:'#b71c1c', fg:'#ffffff', w:1.8, h:.5}, -6.8, 2.2, 4.92], ['foodWasteBin', {}, 7.6, 0, 6.2], ['parkingSign', {}, -8.4, 0, 6.6]],
+    ['signFascia', {text:'점심 특선', bg:'#b71c1c', fg:'#ffffff', w:1.8, h:.5}, -6.8, 2.2, 4.92], ['foodWasteBin', {}, 7.6, 0, 6.2]],   // 주차장 표지는 뒤 주차장 입구(강변도로 쪽)에 둔다
   mart:[['signFascia', {text:'우리동네 마트', sub:'신선식품 · 생활용품 · 배달', bg:'#1d5fb8', fg:'#ffffff', accent:[0, 4, '#ffeb3b'], w:13, h:1.7}, 0, 4.85, 5.56],
     ['signFascia', {text:'24시', bg:'#ffeb3b', fg:'#1d5fb8', w:1.6, h:1.0}, 8.4, 5.2, 5.56],
     ['fruitStand', {}, -5.2, 0, 6.6], ['fruitStand', {}, -7.4, 0, 6.6], ['cartCorral', {}, 3.8, 0, 7.0, Math.PI / 2], ['shoppingCart', {}, 6.4, 0, 6.6, -.4], ['drinkFridge', {}, 8.6, 0, 6.2], ['drinkFridge', {}, 9.5, 0, 6.2]],
@@ -185,19 +185,20 @@ export const BATH = {W:14, D:10, G:3.6, H:7.2, chim:{x:3.2, z:-2.6, r:.75, h:15.
 const GUNG = '"Gungsuh","궁서","GungsuhChe","Song Myung",serif';
 const bathMat = kind => once('bath' + kind, () => decalMaterial(canvasTex(...(kind === 'sign' ? [1024, 192] : kind === 'chim' ? [128, 640] : kind === 'mark' ? [128, 128] : [256, 128]), g => {
   if (kind === 'sign') { g.fillStyle = '#f3efe6'; g.fillRect(0, 0, 1024, 192); g.strokeStyle = '#6b6f73'; g.lineWidth = 10; g.strokeRect(5, 5, 1014, 182);
-    g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '700 132px ' + GUNG; const t = '동네목욕탕', col = ['#2d4a8a', '#2d4a8a', '#a8322d', '#a8322d', '#a8322d'];
-    let x = 512 - 2.1 * 180; [...t].forEach((c, i) => { g.fillStyle = col[i]; g.fillText(c, x + i * 180, 102); }); }
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '700 132px ' + GUNG; const t = '동화목욕탕', col = ['#2d4a8a', '#2d4a8a', '#a8322d', '#a8322d', '#a8322d'];   // (2026-11-17) 이름은 '동화 목욕탕': 동화(파랑) · 목욕탕(빨강) 사이를 조금 띄운다
+    [...t].forEach((c, i) => { g.fillStyle = col[i]; g.fillText(c, 512 - 2 * 172 + i * 172 + (i < 2 ? -24 : 24), 102); }); }
   else if (kind === 'chim') { g.clearRect(0, 0, 128, 640); g.fillStyle = '#f4efe6'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '700 92px ' + GUNG; ['목', '욕', '탕'].forEach((c, i) => g.fillText(c, 64, 92 + i * 150)); g.font = '700 84px ' + GUNG; g.fillText('湯', 64, 560); }
   else if (kind === 'mark') { g.fillStyle = '#f3efe6'; g.fillRect(0, 0, 128, 128); g.strokeStyle = '#3a3f44'; g.lineWidth = 6; g.strokeRect(4, 4, 120, 120); g.fillStyle = '#a8322d'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '80px sans-serif'; g.fillText('♨', 64, 70); }
   else { g.clearRect(0, 0, 256, 128); g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '700 78px ' + GUNG; g.fillStyle = kind === 'men' ? '#2f5fb0' : '#c0392b'; g.fillText(kind === 'men' ? '남탕' : '여탕', 128, 66); }
 }), {alpha:kind !== 'sign' && kind !== 'mark', rough:.6}));
-defineProp('bathhouse', {label:'동네 목욕탕 (몸체 · 간판 · 굴뚝)', category:'큰 가게', isNewStyle:true, blocksCamera:true, minimap:'#d9cdb4', mmSize:5,
+defineProp('bathhouse', {label:'동화 목욕탕 (몸체 · 간판 · 굴뚝)', category:'큰 가게', isNewStyle:true, blocksCamera:true, minimap:'#d9cdb4', mmSize:5,
   colliders:[{r:[-7.1 * U, -5.1 * U, 7.1 * U, 5.4 * U]}, {c:[3.2 * U, -2.6 * U, .8 * U]}],
   usage:"W.place('bathhouse', {x, z, rot});  // 14m × 10m 2층 + 굴뚝 15.5m. 앞 평상은 BIG_SIGNS.bath", build(){
     const {W, D, G, H, chim} = BATH, hw = W / 2, hd = D / 2, P = new Parts(), R = mulberry(23), extra = [];
     const wall = (g, c = 0xeee4cc) => P.add('wall', g, c), con = (g, c = 0xd9d3c4) => P.add('con', g, c), met = (g, c = 0x8f9aa2) => P.add('met', g, c);
-    // 몸통: 아래 1.3m 하늘색, 위 크림색 (헌 칠 얼룩은 정점 색)
-    wall(box(-hw, 0, -hd, hw, 1.3, hd), 0xbcd3d6); wall(box(-hw, 1.3, -hd, hw, H, hd));
+    // 몸통: 아래 1.3m 하늘색, 위 크림색. (2026-11-17) 앞면은 가운데 입구(폭 3.6m, 높이 2.6m, 깊이 .6m)를 비워 들어가는 문이 보이게
+    const DW = 1.8, DH = 2.6, DR = .6, body = (x0, x1, y0, y1, z1) => { if (y1 > y0 && x1 > x0) { if (y0 < 1.3) wall(box(x0, y0, -hd, x1, Math.min(1.3, y1), z1), 0xbcd3d6); if (y1 > 1.3) wall(box(x0, Math.max(1.3, y0), -hd, x1, y1, z1)); } };
+    body(-hw, -DW, 0, H, hd); body(DW, hw, 0, H, hd); body(-DW, DW, DH, H, hd); body(-DW, DW, 0, DH, hd - DR);
     // 기둥(양 끝 · 문 양옆) 과 층 사이 처마 띠, 지붕 처마
     [-hw, -2.1, 2.1, hw].forEach((x, i) => { const a = i === 0 ? x - .12 : i === 3 ? x - .48 : x - .24, b = a + .6; con(box(a, 0, hd - .02, b, H + .1, hd + .22), 0xf0e8d4); });
     con(box(-hw - .5, G, hd - .02, hw + .5, G + .22, hd + .65), 0xe9e2d0); con(box(-hw - .5, G - .06, hd + .55, hw + .5, G, hd + .65), 0xcfc8b6);
@@ -211,13 +212,17 @@ defineProp('bathhouse', {label:'동네 목욕탕 (몸체 · 간판 · 굴뚝)', 
     win(-hw + 1.3, -3.4, 4.5, 6.1, 2, 1); win(-1.1, 1.1, 4.5, 6.1, 2, 1); win(3.4, hw - 1.3, 4.5, 6.1, 3, 1);
     P.add('int', box(4.6, 4.55, hd - .03, 5.4, 6.05, hd + .03), 0x2b2f33);   // 열어 둔 창 한 칸
     // 가운데 문: 미닫이 두 짝 (위 유리 · 아래 철 살), 위 ♨ 표지
-    const dz = hd - .25; con(box(-2.1, 0, dz, 2.1, .12, hd + .6), 0xc9c3b4); P.add('int', box(-1.8, .12, dz - .1, 1.8, 2.6, dz), 0x30353a);
+    const dz = hd - DR + .02; con(box(-2.3, 0, dz - .02, 2.3, .14, hd + 1.1, .02), 0xc9c3b4); con(box(-2.6, 0, hd + 1.1, 2.6, .07, hd + 1.6, .02), 0xbab4a6);   // 디딤판 두 단
+    P.add('int', box(-1.75, .14, dz - .08, 1.75, 2.55, dz - .02), 0x30353a);
+    con(box(-2.4, DH + .1, hd, 2.4, DH + .28, hd + 1.4, .03), 0xe6dfcd); P.add('snw', box(-2.35, DH + .28, hd + .05, 2.35, DH + .38, hd + 1.35, .04));   // 입구 차양
+    [-2.25, 2.25].forEach(x => met(box(x - .05, .14, hd + 1.25, x + .05, DH + .1, hd + 1.35), 0x8f9aa2));                                       // 차양 기둥
+    P.add('int', box(-1.2, .14, hd + .1, 1.2, .16, hd + .9, .01), 0x3b4a3f);                                                                   // 발판
     [-1, 1].forEach(s => { const a = s < 0 ? -1.75 : .02, b = s < 0 ? -.02 : 1.75;
       P.add('gls', box(a, 1.1, dz, b, 2.45, dz + .04), 0x52616b); met(box(a, .12, dz, b, 1.1, dz + .05), 0x9aa3a8);
       for (let x = a + .12; x < b - .05; x += .14) met(box(x - .015, .2, dz + .05, x + .015, 1.02, dz + .07), 0x7d878e);
       [[a, a + .06], [b - .06, b]].forEach(([u, v]) => met(box(u, .12, dz - .01, v, 2.5, dz + .06), 0x7d878e)); met(box(a, 2.45, dz - .01, b, 2.52, dz + .06), 0x7d878e);
       extra.push(new THREE.Mesh(quadZ(a + .15, 1.45, b - .15, 2.05, dz + .045, [0, 0, 1, 1]), bathMat(s < 0 ? 'men' : 'women'))); });
-    met(box(-.3, 2.62, hd - .02, .3, 3.12, hd + .04), 0x3a3f44); extra.push(new THREE.Mesh(quadZ(-.27, 2.65, .27, 3.09, hd + .045, [0, 0, 1, 1]), bathMat('mark')));
+    met(box(-.3, 2.98, hd - .02, .3, 3.48, hd + .04), 0x3a3f44); extra.push(new THREE.Mesh(quadZ(-.27, 3.01, .27, 3.45, hd + .045, [0, 0, 1, 1]), bathMat('mark')));   // 입구 차양 위로
     // 간판: 처마 띠 위 가운데
     con(box(-3.4, G + .25, hd + .2, 3.4, G + 1.45, hd + .32), 0x6b6f73); extra.push(new THREE.Mesh(quadZ(-3.32, G + .3, 3.32, G + 1.4, hd + .325, [0, 0, 1, 1]), bathMat('sign')));
     // 환기구 · 실외기 · 배관
@@ -252,9 +257,9 @@ defineProp('woodenPlatform', {label:'평상', category:'큰 가게', isNewStyle:
     P.add('mat', box(-.1, .43, -.6, 1.05, .47, .55, .02), 0xb9a77a); P.add('mat', box(.1, .47, -.5, .9, .5, .45, .02), 0xc8b78a);
     P.add('snw', box(-1.15, .43, -.7, -.25, .46, .7, .02));
     return assemble(P, [['wood', woodMaterial({seed:29})], ['mat', matteMaterial({rough:.9})], ['snw', snowMaterial({seed:85}), false]], [2.4, .6, 1.5]); }});
-BIG_SIGNS.bath = [['woodenPlatform', {}, 4.6, 0, 6.6]];
+BIG_SIGNS.bath = [['bananaMilk', {n:2, s:2}, 4.7, .5, 6.4, .3], ['bananaMilk', {n:1, straw:true, s:2}, 5.35, .5, 6.95, -.4], ['woodenPlatform', {}, 4.6, 0, 6.6]];   // 평상 방석(높이 0.5m) 위 바나나우유. 평상보다 먼저 놓아야 바닥 높이에 평상이 더해지지 않는다
 BIG_PROP.bath = 'bathhouse';
-defineProp('bathhouseSet', {label:'동네 목욕탕 (평상 조립 예시)', category:'큰 가게', isNewStyle:true, blocksCamera:true,
+defineProp('bathhouseSet', {label:'동화 목욕탕 (평상 조립 예시)', category:'큰 가게', isNewStyle:true, blocksCamera:true,
   usage:"placeBig(W, 'bath', x, z, rot);", build(){
     const g = new THREE.Group(); let draws = 0;
     [['bathhouse', {}, 0, 0, 0, 0], ...BIG_SIGNS.bath].forEach(([name, o, x, y, z, r]) => { const m = buildProp(name, o); m.position.set(x * U, y * U, z * U); m.rotation.y = r || 0; draws += m.userData.info.draws; g.add(m); });

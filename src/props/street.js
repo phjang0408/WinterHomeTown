@@ -114,11 +114,10 @@ const stripeMat = () => barMats.get('_s') || (barMats.set('_s', decalMaterial(ca
 defineProp('barricade', {label:'바리케이드 (통행 금지)', category:'도로', isNewStyle:true, colliders:[{r:[-.95 * UNIT, -.25 * UNIT, .95 * UNIT, .25 * UNIT]}],
   usage:"W.place('barricade', {x, z, rot, text:'통행 금지'});  // 폭 1.8m", build(o = {}){
     const P = new Parts(), extra = [];
-    [-.8, .8].forEach(x => { P.add('leg', box(x - .04, 0, -.22, x + .04, 1.1, -.14, .01), 0x6f777e); P.add('leg', box(x - .04, 0, .14, x + .04, 1.1, .22, .01), 0x6f777e);
-      P.add('foot', box(x - .12, 0, -.3, x + .12, .08, .3, .02), 0x2b2e31); });
+    // (2026-11-17) 기둥은 양쪽에 하나씩(굵은 각관 7cm)만: 판을 꿰어 잡는다. 판과 면이 겹치지 않게 기둥 면은 판보다 2cm 바깥
+    [-.78, .78].forEach(x => { P.add('leg', box(x - .05, 0, -.05, x + .05, 1.08, .05, .012), 0x6f777e); P.add('foot', box(x - .14, 0, -.32, x + .14, .08, .32, .02), 0x2b2e31); });
     [.45, .8].forEach(y => { P.add('bd', box(-.9, y, -.03, .9, y + .16, .03, .01), 0xf5f5f2); extra.push(new THREE.Mesh(quadZ(-.9, y, .9, y + .16, .031, [0, 0, 1, 1]), stripeMat())); });
-    // 안내판은 윗판 위에 바로 얹고 뒤에서 두 쇠붙이로 잡는다 (떠 보이지 않게)
+    // 안내판은 윗판 위에 바로 얹는다 (떠 보이지 않게)
     P.add('bd', box(-.55, .96, -.02, .55, 1.24, .02, .01), 0xfbfbf8); extra.push(new THREE.Mesh(quadZ(-.54, .97, .54, 1.23, .021, [0, 0, 1, 1]), barText(o.text || '통행 금지')));
-    [-.4, .4].forEach(x => P.add('leg', box(x - .03, .7, -.05, x + .03, 1.2, -.02, .005), 0x6f777e));
     [[-.9, -.55], [.55, .9]].forEach(([a, b]) => P.add('snw', box(a, .96, -.03, b, .99, .03)));
     return assemble(P, [['leg', metalMaterial({rough:.4})], ['foot', matteMaterial()], ['bd', plasticMaterial({rough:.5})], ['snw', snowMaterial({seed:97}), false]], [1.9, 1.3, .6], extra); }});

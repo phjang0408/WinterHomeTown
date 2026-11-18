@@ -248,7 +248,7 @@ defineProp('parkLamp', {label:'단지 가로등', category:'조경', isNewStyle:
   const P = new Parts();
   P.add('mat', lathe([[.1, 0], [.1, .22], [.07, .28], [.05, 1.2], [.042, 3.5], [.06, 3.56], [.06, 3.6]], 12), 0x3b444b);
   P.add('mat', lathe([[.05, 3.6], [.15, 3.66], [.185, 3.9]], 16), 0xfff3d2); P.add('mat', lathe([[.2, 3.9], [.23, 3.93], [.2, 3.98], [.06, 4.06], [0, 4.07]], 16), 0x3b444b);
-  P.add('mat', box(-.06, 1.9, .045, .06, 2.02, .055), 0xdfe3e5);
+  // (2026-11-18 3차) 기둥 가운데 흰 번호판은 없앴다
   P.add('snw', xf(blob(.19, .07, .19, {seed:6, bump:.06, seg:12}), {y:4.0})); P.add('snw', xf(blob(.2, .06, .2, {seed:8, bump:.08, seg:10}), {}));
   ao(P.m.mat[0], .4, .7);
   return assemble(P, [['mat', matteMaterial()], ['snw', snowMaterial({seed:36})]], [.46, 4.1, .46]); }});

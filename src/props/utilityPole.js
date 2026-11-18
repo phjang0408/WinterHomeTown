@@ -11,8 +11,8 @@ import { UNIT, FONT_B } from '../config.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z), U = UNIT;
 export const POLE = {H:11, r0:.2, r1:.12};
-// 전선이 걸리는 자리 [x, y, 굵기(m), 색]: 고압 셋, 저압 둘, 통신 둘(굵은 검정 다발)
-export const POLE_WIRES = [[-1.05, 10.45, .012, 0x2b2e31], [0, 10.85, .012, 0x2b2e31], [1.05, 10.45, .012, 0x2b2e31],
+// 전선이 걸리는 자리 [x, y, 굵기(m), 색]: 고압 둘(완금 양 끝), 저압 둘, 통신 둘(굵은 검정 다발). (2026-11-17) 맨 꼭대기 가운데 줄은 없앴다
+export const POLE_WIRES = [[-1.05, 10.45, .012, 0x2b2e31], [1.05, 10.45, .012, 0x2b2e31],
   [-.6, 9.25, .014, 0x1e2023], [.6, 9.25, .014, 0x1e2023], [.32, 6.7, .03, 0x15171a], [-.32, 6.4, .022, 0x15171a]];
 const rAt = y => POLE.r0 + (POLE.r1 - POLE.r0) * y / POLE.H;
 let plate = null;
@@ -33,8 +33,8 @@ defineProp('utilityPole', {label:'전봇대', category:'도로', isNewStyle:true
     const arm = (y, w) => { met(box(-w, y - .05, -.04, w, y + .05, .04)); [-1, 1].forEach(s => met(tube([V(0, y - .6, 0), V(s * w * .55, y - .04, 0)], .012, {radial:4}))); };
     arm(10.3, 1.25); arm(9.1, .8);
     const ins = (x, y, big) => { P.add('ins', xf(lathe([[0, 0], [.05, 0], [big ? .07 : .055, .04], [.04, .07], [big ? .065 : .05, .1], [.035, .14], [0, .16]], 10), {x, y}), big ? 0xd9dde0 : 0x6f6a64); };
-    POLE_WIRES.slice(0, 3).forEach(([x, y]) => ins(x, y - .17, true)); met(box(-.04, 10.35, -.04, .04, 10.68, .04));   // 가운데 애자 받침
-    POLE_WIRES.slice(3, 5).forEach(([x, y]) => ins(x, y - .17, false));
+    POLE_WIRES.slice(0, 2).forEach(([x, y]) => ins(x, y - .17, true));
+    POLE_WIRES.slice(2, 4).forEach(([x, y]) => ins(x, y - .17, false));
     // 통신선 받침과 감아 둔 여유선
     met(box(-.42, 6.55, -.03, .42, 6.6, .03)); P.add('cab', xf(new THREE.TorusGeometry(.28, .025, 6, 18), {x:.36, y:5.9, rx:Math.PI / 2 * .1}), 0x15171a);
     // 번호판

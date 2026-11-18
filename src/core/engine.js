@@ -38,14 +38,15 @@ window.addEventListener('resize', resize); resize();
 
 const tasks = [];
 // order가 작을수록 먼저 실행된다. (입력 0 → 이동 10 → 놀이 20 → 효과 30 → 카메라 90)
+export const frameStats = {cpu:0};   // 한 프레임 CPU 시간(ms): 성능 창이 읽는다
 export function onFrame(fn, order = 50){ tasks.push({fn, order}); tasks.sort((a, b) => a.order - b.order); }
 export function start(){
   let last = performance.now();
   function frame(now){
     requestAnimationFrame(frame);
-    const dt = Math.min(.05, (now - last) / 1000); last = now;
+    const dt = Math.min(.05, (now - last) / 1000); last = now; const t0 = performance.now();
     for (const t of tasks) t.fn(dt, now);
-    renderer.render(scene, camera);
+    renderer.render(scene, camera); frameStats.cpu = performance.now() - t0;
   }
   requestAnimationFrame(frame);
 }

@@ -27,7 +27,7 @@ export const CATALOG = [
     ['공원 안', ['parkStair', 'bench', 'parkLamp', 'snowman']],
     ['순환 도로', ['roadHump', 'tactileStrip', 'townBus']],
     ['큰 가게 (공원 아래)', ['meatHouseSet', 'martBuildingSet', 'meatHouse', 'martBuilding', 'shoppingCart', 'cartCorral', 'parkingSign']],
-    ['목욕탕 (남쪽 줄 가운데)', ['bathhouseSet', 'bathhouse', 'woodenPlatform']],
+    ['목욕탕 (남쪽 줄 가운데)', ['bathhouseSet', 'bathhouse', 'woodenPlatform', 'bananaMilk']],
   ]},
   {title:'학교', open:true, note:'학교는 닫음 (방학 중). 학교 앞 동쪽 줄의 문구점 · 근린상가', cats:[
     ['학교 앞 문구점', [{n:'stationeryCorner', note:'문구점 부품을 맞춘 조립 예시'}, 'stationeryShop', 'shopAwning', 'gachaRow', 'miniArcade', 'iceFreezer', 'drinkFridge', 'kidStool', 'hulaHoops']],
@@ -42,7 +42,7 @@ export const CATALOG = [
   ]},
   {title:'기타', open:true, note:'도로 · 강변 · 차량 · 나무처럼 맵 전체에 쓰는 것', cats:[
     ['도로', ['trafficLight', 'pedSignal', 'laneDelineator', 'utilityPole', 'barricade']],
-    ['경계', ['brickWall', 'roadFence']],
+    ['경계', ['brickWall', 'roadFence', 'schoolWall']],
     ['차량', ['carSedan', 'carSUV', 'carMini', 'truck1t', 'deliveryVan']],
     ['나무', ['bareTree', 'pineTree']],
     ['강변', ['reedClump']],

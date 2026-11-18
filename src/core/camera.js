@@ -30,6 +30,8 @@ export function updateCamera(dt, now){
   if (follow && C.blend >= 1) { camPos.copy(want); camLook.copy(look); }
   else { const k = Math.min(1, dt * (S.mode === 'intro' ? 1.5 : 2 + 14 * C.blend * C.blend)); camPos.lerp(want, k); camLook.lerp(look, k); }
   camera.position.copy(camPos); camera.lookAt(camLook);
+  // (2026-11-17) 멀리서 볼수록 가까운 면(near)을 밀어 깊이 정밀도를 높인다: 첫 화면(높은 하늘 시점)에서 바닥 층이 깜빡이던 것
+  { const nn = Math.min(8, Math.max(.3, camPos.distanceTo(camLook) * .02)); if (Math.abs(camera.near - nn) > .02) { camera.near = nn; camera.updateProjectionMatrix(); } }
   if (sky) sky.position.copy(camPos);
   const sx = S.mode === 'intro' ? INTRO.x : camLook.x, sz = S.mode === 'intro' ? INTRO.z : camLook.z;
   sun.target.position.set(sx, 0, sz); sun.position.set(sx + SUN_OFF.x, SUN_OFF.y, sz + SUN_OFF.z);

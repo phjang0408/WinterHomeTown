@@ -3,12 +3,15 @@ import * as THREE from '../lib/three.js';
 import { root } from '../core/engine.js';
 import { RAD } from '../config.js';
 import { buildProp, getProp } from '../props/registry.js';
+// 소품별 집계 (2026-11-18): 놓은 개수와 한 개 삼각형 수. 성능 창(P 키)이 많이 쓰는 소품 순으로 보여 준다
+const tally = (st, name, n, obj) => { const t = st[name] || (st[name] = {n:0, tris:0, cast:0}); let tr = 0, ca = 0;
+  obj.traverse(m => { if (m.isMesh) { const g = m.geometry, k = (g.index ? g.index.count : g.getAttribute('position').count) / 3; tr += k; if (m.castShadow) ca += k; } }); t.n += n; t.tris += tr * n; t.cast += ca * n; };
 
 export const W = {
   rects: [], circles: [], blockers: [], animated: [], cullers: [],
   heights: [], slippery: [], bounds: () => true,
   mm: {shapes: [], labels: []},
-  trees: [], pines: [], lamps: [],
+  trees: [], pines: [], lamps: [], stats: {},
 
   // 지면 높이: 먼저 등록된 함수부터 물어보고, 숫자를 돌려준 첫 함수의 값을 쓴다.
   // prio: 클수록 먼저 묻는다. 보도처럼 넓게 덮는 높이는 prio -1로 맨 뒤에 둬서, 계단 · 테라스 같은 소품 높이가 이긴다.
@@ -53,6 +56,7 @@ export const W = {
     }
     if (def.height) { const c = Math.cos(rot), s = Math.sin(rot); this.addHeight((px, pz, py) => { const dx = px - x, dz = pz - z; const h = def.height((dx * c - dz * s) / k, (dx * s + dz * c) / k, py === undefined ? undefined : (py - obj.position.y) / k); return h === null || h === undefined ? h : h * k + obj.position.y; }); }   // 올라설 수 있는 소품 (정자 마루 등)
     if (def.minimap) this.mmCircle(x, z, def.mmSize || 1.6, def.minimap);
+    tally(this.stats, name, 1, obj);
     if (def.update) this.animated.push({obj, update:def.update});
     if (def.blocksCamera) this.blockers.push(obj);
     return obj;
@@ -62,6 +66,7 @@ export const W = {
   placeMany(name, list, opts = {}){
     if (!list.length) return null;
     const def = getProp(name), tinted = list.some(i => i.color !== undefined), proto = buildProp(name, tinted ? {...opts, color:0xffffff} : opts), group = new THREE.Group();
+    tally(this.stats, name, list.length, proto);
     const M = list.map(i => new THREE.Matrix4().compose(new THREE.Vector3(i.x, i.y === undefined ? this.groundY(i.x, i.z) : i.y, i.z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), i.rot || 0), new THREE.Vector3(1, 1, 1).multiplyScalar(i.s || 1)));
     const m4 = new THREE.Matrix4(), col = new THREE.Color(); proto.updateMatrixWorld(true);
     // 그리기 부담 (2026-11-16): 넓게 흩어진 목록은 CELL 칸으로 나눠 칸마다 인스턴스를 만든다 → 화면 밖 칸은 통째로 빠진다.

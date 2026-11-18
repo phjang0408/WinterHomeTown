@@ -153,7 +153,7 @@ const FB = FOOTBRIDGE, FBL = FB.deck / 2 + FB.run;
 // 충돌 (2026-11-15): 계단 낮은 쪽(높이 2m 아래)은 누구나 막고, 그 위 난간은 위에 선 사람만 막는다. 밑을 지나는 사람은 기둥과 낮은 계단 밑 입구에만 막힌다.
 const FB_LOW = FB.run * 2 / FB.rise, FB_UP = 1.9 * UNIT;
 const FB_COLLIDERS = [-1, 1].flatMap(s => { const xa = s < 0 ? -(FB.hw + .14) : FB.hw, xb = s < 0 ? -FB.hw : FB.hw + .14;
-  return [{r:[xa * U, -FBL * U, xb * U, (-FBL + FB_LOW) * U]}, {r:[xa * U, (FBL - FB_LOW) * U, xb * U, FBL * U]}, {r:[xa * U, (-FBL + FB_LOW) * U, xb * U, (FBL - FB_LOW) * U], y0:FB_UP}]; })
+  return [{r:[xa * U, -FBL * U, xb * U, (-FBL + FB_LOW) * U]}, {r:[xa * U, (FBL - FB_LOW) * U, xb * U, FBL * U]}, {r:[xa * U, (-FBL + FB_LOW) * U, xb * U, (FBL - FB_LOW) * U], y0:1}]; })   // (2026-11-17) 난간은 발 높이 1 이상이면 막는다: 계단을 오르며 높이가 늦게 따라와도 난간을 뚫고 떨어지지 않게
   .concat([-1, 1].map(s => ({r:[-FB.hw * U, (s * (FBL - FB_LOW) - .15) * U, FB.hw * U, (s * (FBL - FB_LOW) + .15) * U], y1:1})))
   .concat(FB.piers.flatMap(z => [-1, 1].map(s => ({r:[(s * (FB.hw + .22) - .25) * U, (z - .25) * U, (s * (FB.hw + .22) + .25) * U, (z + .25) * U], y1:1}))));
 export function footBridgeHeight(xm, zm){                                   // 다리 위 높이 (미터, 다리 밖이면 null)
