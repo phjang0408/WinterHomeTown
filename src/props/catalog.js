@@ -24,7 +24,7 @@ export const CATALOG = [
     ['단지 상가', [{n:'shopComplex', note:'상가 부품을 맞춘 조립 예시'}, 'shopBuilding', 'shopStairs', 'signFascia', 'signVertical', 'signRoof']],
   ]},
   {title:'공원', open:true, note:'낮춘 공원 · 둘레 순환 도로 · 공원 아래 큰 가게', cats:[
-    ['공원 안', ['parkStair', 'bench', 'parkLamp', 'snowman']],
+    ['공원 안', ['parkStair', 'bench', 'parkLamp', {n:'snowmanCoop', status:'placed', note:'놀이가 공원 눈밭 가운데에 놓는다 (단계 · 녹음 변형)'}, {n:'snowman', status:'replaced', note:'함께 만드는 눈사람으로 교체 (2026-11-19)'}]],
     ['순환 도로', ['roadHump', 'tactileStrip', 'townBus']],
     ['큰 가게 (공원 아래)', ['meatHouseSet', 'martBuildingSet', 'meatHouse', 'martBuilding', 'shoppingCart', 'cartCorral', 'parkingSign']],
     ['목욕탕 (남쪽 줄 가운데)', ['bathhouseSet', 'bathhouse', 'woodenPlatform', 'bananaMilk']],

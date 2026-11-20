@@ -1,3 +1,5 @@
 node_modules/
 *.png
 .DS_Store
+10_WinterTown.zip
+.env

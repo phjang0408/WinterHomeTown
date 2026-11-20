@@ -9,6 +9,7 @@ import { initInput, turnCamera, freeMove } from './core/input.js';
 import { coarse, reduceMotion, COLORS, ADJ, NOUN, FONTS_TO_LOAD } from './config.js';
 import './props/basic.js';
 import './props/parkBench.js';
+import './props/snowmanCoop.js';
 import './props/aptTower.js';
 import './props/cars.js';
 import './props/aptSite.js';

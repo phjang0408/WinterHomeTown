@@ -78,6 +78,11 @@ export function snowMaterial({seed = 31} = {}){
   });
 }
 
+// 정점 색(가짜 AO)을 받는 눈 재질. 눈사람 · 눈덩이처럼 눈 자체가 몸통인 소품에 쓴다.
+export function snowAOMaterial({seed = 33} = {}){
+  return once('snowAO' + seed, () => { const m = snowMaterial({seed}).clone(); m.name = 'snowAO'; m.vertexColors = true; return m; });
+}
+
 // ───────── 추가 재질 (단지 소품용) ─────────
 // 정점 색을 그대로 쓰는 무광 재질. 플라스틱·고무·잎·도색 부품을 한 번에 그릴 때 쓴다.
 export function matteMaterial({rough = .85, metal = 0} = {}){

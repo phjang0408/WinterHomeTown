@@ -2,11 +2,11 @@
 // 받은 값은 다른 사람이 보낸 것이므로 전부 범위를 확인하고 고친다.
 import { clamp } from '../core/util.js';
 import { COLORS, ADJ, NOUN } from '../config.js';
-import { WORLD, SLOTS } from '../map/layout.js';
+import { WORLD } from '../map/layout.js';
 
 export function encode(me){
   return {x:+me.x.toFixed(2), z:+me.z.toFixed(2), r:+me.r.toFixed(2), st:me.st, c:me.ci, a:me.a, n:me.n,
-    em:me.em, th:me.th, ball:+me.ballR.toFixed(2), sm:me.sm, sl:me.slot, sc:me.sc};
+    em:me.em, th:me.th, ball:+me.ballR.toFixed(2), sw:me.sw, sc:me.sc};
 }
 const num = (v, a, b, d) => (typeof v === 'number' && isFinite(v)) ? clamp(v, a, b) : d;
 const int = (v, a, b, d) => Number.isInteger(v) && v >= a && v <= b ? v : d;
@@ -15,10 +15,20 @@ export function decode(p){
   if (!p || typeof p !== 'object') return null;
   const x = num(p.x, WORLD.x0, WORLD.x1, null), z = num(p.z, WORLD.z0, WORLD.z1, null);
   if (x === null || z === null) return null;
-  const em = arr(p.em, 2), th = arr(p.th, 3), sm = arr(p.sm, 2), sc = arr(p.sc, 3);
+  const em = arr(p.em, 2), th = arr(p.th, 3), sc = arr(p.sc, 3);
   return {x, z, r:num(p.r, -10, 10, 0), st:int(p.st, 0, 31, 0),
     c:int(p.c, 0, COLORS.length - 1, 0), a:int(p.a, 0, ADJ.length - 1, 0), n:int(p.n, 0, NOUN.length - 1, 0),
     em:[em[0] | 0, em[1] | 0], th:[th[0] | 0, num(th[1], WORLD.x0, WORLD.x1, 0), num(th[2], 0, 10, 0)],
-    ball:num(p.ball, 0, 1.5, 0), sm:[num(sm[0], 0, 1.5, 0), num(sm[1], 0, 1.5, 0)], sl:int(p.sl, 0, SLOTS.length - 1, 0),
+    ball:num(p.ball, 0, 1.5, 0), sw:snowman(p.sw),
     sc:[int(sc[0], 0, 100, 0), int(sc[1], 0, 7, 0), int(sc[2], 0, 100, 0)]};
+}
+
+// 함께 만드는 눈사람 상태: [시작 시각, 완성 시각(없으면 0), 사람 번호, 보탠 개수, 사람 번호, 보탠 개수, ...] (최대 8명)
+function snowman(v){
+  if (!Array.isArray(v) || v.length < 2 || v.length > 18) return null;
+  const t0 = v[0], tc = v[1];
+  if (typeof t0 !== 'number' || !isFinite(t0) || t0 <= 0 || typeof tc !== 'number' || !isFinite(tc) || tc < 0) return null;
+  const c = [];
+  for (let i = 2; i + 1 < v.length; i += 2) { const u = int(v[i], 1, 2147483647, 0), n = int(v[i + 1], 1, 8, 0); if (u && n) c.push([u, n]); }
+  return {t0, tc, c};
 }

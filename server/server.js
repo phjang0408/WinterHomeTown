@@ -1,5 +1,4 @@
 // 겨울 동네 WebSocket 서버 (선택). 공개 서비스로 열 때 사용한다.
-// 실행: cd server && npm install && npm start
 // 클라이언트: src/config.js 에서 NET = {kind:'websocket', url:'wss://내-서버-주소'}
 import { WebSocketServer } from 'ws';
 

@@ -1,6 +1,6 @@
 // 게임 전역 설정. 숫자만 바꿔도 되는 값은 전부 여기에 둔다.
 export const SPEED = 7;          // 걷기 속도 (월드 단위/초)
-export const RUN = 3;            // 달리기 배율 (Shift, 테스트하기 쉽게 3배)
+export const RUN = 1.5;            // 달리기 배율 (Shift, 테스트하기 쉽게 3배 -> 1.5로 원래조정)
 export const RAD = 0.45;         // 캐릭터 충돌 반지름
 export const UNIT = 1 / 0.85;    // 1미터 = 약 1.18 게임 단위 (게임 1단위 ≈ 0.85m). 소품은 미터로 만들고 이 값을 곱한다.
 // 글꼴 (Google Fonts, 무료). 간판·제목은 굵은 견고딕 느낌의 블랙한산스, 작은 글씨·본문은 돋움 느낌의 나눔고딕.
@@ -18,10 +18,10 @@ export const COLORS = [
   {j:0x8a6f5a,h:0xe9b84e,css:'#8a6f5a'},{j:0x5a6b7d,h:0xd9695c,css:'#5a6b7d'}];
 
 // 캐릭터 상태 코드. 네트워크로 숫자가 오가므로 기존 값은 바꾸지 말고 뒤에 추가한다.
-export const ST = {WALK:0, BENCH:1, SWING:2, TARGET:3, TTAKJI:4, SNOW:5, SLED:6, SLIDE:7};
+export const ST = {WALK:0, BENCH:1, SWING:2, TARGET:3, TTAKJI:4, SNOW:5, SLED:6, SLIDE:7, CARRY:8};
 
 // 멀티플레이 연결 방식: 'claude-room'(아티팩트 공유 기능) 또는 'websocket'(직접 띄운 서버)
-export const NET = {kind:'claude-room', url:'wss://example.com'};
+export const NET = {kind:'websocket', url:'ws://localhost:8080'};
 
 export const reduceMotion = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 export const coarse = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
