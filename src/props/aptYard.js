@@ -136,14 +136,21 @@ defineProp('springRider', {label:'흔들 놀이기구', category:'놀이터', is
   P.add('mat', box(-.16, 0, -.24, .16, .03, .08, .008), 0x4a5157); P.add('snw', xf(blob(.09, .04, .22, {seed:2, bump:.1, seg:10}), {y:Y + .25, z:-.1}));
   return assemble(P, [['pla', plasticMaterial()], ['mat', matteMaterial()], ['snw', snowMaterial({seed:43})]], [.5, 1.02, 1.1]); }});
 
-// ── 시소 ──
-defineProp('seesaw', {label:'시소', category:'놀이터', isNewStyle:true, colliders:[{r:[-1.7 * U, -.3 * U, 1.7 * U, .3 * U]}], build(){
-  const P = new Parts(), tilt = .13, T = g => { g.rotateZ(tilt); g.translate(0, .52, 0); return g; };
-  P.add('pla', T(box(-1.6, -.035, -.07, 1.6, .035, .07, .02)), 0xd24a3a);
-  [-1, 1].forEach(s => { P.add('pla', T(box(s * 1.42 - .18, .035, -.15, s * 1.42 + .18, .075, .15, .02)), s < 0 ? 0x2f6fb5 : 0xf0b429); P.add('pla', T(box(s * 1.6 - .02, .03, -.15, s * 1.6 + .02, .26, .15, .015)), s < 0 ? 0x2f6fb5 : 0xf0b429);
-    P.add('mat', T(tube(fillet([V(s * 1.1, .03, -.12), V(s * 1.1, .28, -.12), V(s * 1.1, .28, .12), V(s * 1.1, .03, .12)], .05, 3), .014, {radial:6})), 0x30363b);
-    P.add('mat', xf(new THREE.TorusGeometry(.2, .075, 8, 16, Math.PI), {ry:Math.PI / 2, x:s * 1.45, y:0}), 0x1d1f22); });
-  [-.1, .1].forEach(z => P.add('pla', box(-.1, 0, z - .015, .1, .6, z + .015, .01), 0x4f9e5a)); P.add('mat', xf(new THREE.CylinderGeometry(.03, .03, .26, 10), {rx:Math.PI / 2, y:.52}), 0x30363b); P.add('mat', box(-.2, 0, -.16, .2, .03, .16), 0x4a5157);
-  P.add('snw', T(xf(blob(.14, .035, .1, {seed:3, bump:.1, seg:10}), {x:1.42, y:.075})));
+// ── 시소 ──  (2026-11-20) 탈 수 있게 받침(part:'base')과 판(part:'beam')을 나눴다. 판은 원점이 축(높이 PIVOT)이고 기울지 않은 채로 만든다.
+export const SEESAW_M = {pivot:.52, seat:1.42, seatY:.075, tilt:.21};   // 축 높이, 앉는 자리 x, 판 위 앉는 높이, 한쪽이 땅(타이어)에 닿는 기울기
+defineProp('seesaw', {label:'시소', category:'놀이터', isNewStyle:true, colliders:[{r:[-1.7 * U, -.3 * U, 1.7 * U, .3 * U]}],
+  variants:[{label:'받침', opts:{part:'base'}}, {label:'판', opts:{part:'beam'}}], build(o = {}){
+  const P = new Parts(), base = o.part !== 'beam', beam = o.part !== 'base';
+  const tilt = o.part ? 0 : .13, T = g => { g.rotateZ(tilt); g.translate(0, o.part ? 0 : SEESAW_M.pivot, 0); return g; };
+  if (beam) {
+    P.add('pla', T(box(-1.6, -.035, -.07, 1.6, .035, .07, .02)), 0xd24a3a);
+    [-1, 1].forEach(s => { P.add('pla', T(box(s * 1.42 - .18, .035, -.15, s * 1.42 + .18, .075, .15, .02)), s < 0 ? 0x2f6fb5 : 0xf0b429); P.add('pla', T(box(s * 1.6 - .02, .03, -.15, s * 1.6 + .02, .26, .15, .015)), s < 0 ? 0x2f6fb5 : 0xf0b429);
+      P.add('mat', T(tube(fillet([V(s * 1.1, .03, -.12), V(s * 1.1, .28, -.12), V(s * 1.1, .28, .12), V(s * 1.1, .03, .12)], .05, 3), .014, {radial:6})), 0x30363b); });
+    P.add('snw', T(xf(blob(.14, .035, .1, {seed:3, bump:.1, seg:10}), {x:1.42, y:.075})));
+  }
+  if (base) {
+    [-1, 1].forEach(s => P.add('mat', xf(new THREE.TorusGeometry(.2, .075, 8, 16, Math.PI), {ry:Math.PI / 2, x:s * 1.45, y:0}), 0x1d1f22));
+    [-.1, .1].forEach(z => P.add('pla', box(-.1, 0, z - .015, .1, .6, z + .015, .01), 0x4f9e5a)); P.add('mat', xf(new THREE.CylinderGeometry(.03, .03, .26, 10), {rx:Math.PI / 2, y:.52}), 0x30363b); P.add('mat', box(-.2, 0, -.16, .2, .03, .16), 0x4a5157);
+  }
   return assemble(P, [['pla', plasticMaterial()], ['mat', matteMaterial()], ['snw', snowMaterial({seed:43})]], [3.4, .9, .5]); }});
 // 대형 미끄럼틀은 두 바퀴 도는 나선 미끄럼틀(props/aptStreet.js의 spiralSlide)로 바뀌었다.

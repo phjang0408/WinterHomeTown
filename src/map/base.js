@@ -13,7 +13,7 @@ import { layTrack } from '../props/railway.js';
 import { poleWires } from '../props/utilityPole.js';
 import { decorateGround } from './groundDecor.js';
 import { FONT_D, UNIT as U } from '../config.js';
-import { BANK, ROAD, NROAD, RAILS, SIDING, PLAT, DOCK, BRIDGE, BRIDGE2, BRIDGES, RSIDE, STATION_X, LOOP, PATHS, SLED, BENCHES, CROSS_N, CROSS_S, BIG, SCHOOL } from './layout.js';
+import { WALK, BANK, ROAD, NROAD, RAILS, SIDING, PLAT, DOCK, BRIDGE, BRIDGE2, BRIDGES, RSIDE, STATION_X, LOOP, PATHS, SLED, BENCHES, CROSS_N, CROSS_S, BIG, SCHOOL, PHONES } from './layout.js';
 
 const PI = Math.PI, R = mulberry(77);
 // ── 바닥판 모음: 재질 키별로 모았다가 마지막에 한 번에 그린다 ──
@@ -90,7 +90,7 @@ export function buildRailway(){
   const fen = []; for (let x = PLAT.x0 + 3.6 + 1.18; x < PLAT.x1 - 3.6; x += 2 * U) if (Math.abs(x - B2) > 2.4) fen.push({x, z:53.58, y:.5 * U}); W.placeMany('railFence', fen, {collide:false});
   W.place('stationSign', {x:250, z:50.7});
   // (2026-11-18 2차) 공중전화 부스: 승강장 위, 서쪽 대합 지붕 맨 서쪽 기둥(x 262.35, z 53.3)에 등을 붙이고 열린 쪽이 승강장 가운데(북쪽)를 본다
-  W.place('phoneBooth', {x:262.35, z:52.5, rot:PI}); W.place('stationSign', {x:224.6, z:53, rot:PI / 2});
+  W.place('phoneBooth', PHONES[5]); W.place('stationSign', {x:224.6, z:53, rot:PI / 2});
   W.place('platformModule', {x:(DOCK.x0 + DOCK.x1) / 2, z:(DOCK.z0 + DOCK.z1) / 2, y:0, len:(DOCK.x1 - DOCK.x0) / U, wid:(DOCK.z1 - DOCK.z0) / U, h:1, ramp:2});
   [[244, 53], [254, 53], [300, 53], [314, 53], [336, 53], [358, 53], [380, 53], [402, 53],   /* (2026-11-17) 승강장 가로등은 의자 줄(남쪽 난간 앞)로, 의자 사이에 */  /* 대합 지붕(x 262~292 · 416~440) 아래는 가로등을 두지 않는다 */ ].forEach(([x, z]) => lamps.push({x, z, y:W.groundY(x, z)}));   // (2026-11-18) 육교 발치 가로등 넷은 없앰
   // 육교 (북쪽 계단 → 도로 위 → 남쪽 육교 마당)
@@ -250,6 +250,9 @@ export function buildRiverside(){
   run(20, 620, 40).filter(c => !near(c, [177, 451], 10)).forEach(c => [c - 3.2, c + 3.2].forEach(x => BENCHES.push({x, z:BK[0] + 1.75, f:1})));
   // 걷는 끝(x 6.5 · 633.5): 벤치 마당 · 자전거 도로를 바리케이드로 막는다 (길은 맵 끝까지 보인다)
   [[8.2, PI / 2], [631.8, -PI / 2]].forEach(([x, r]) => [[285.8, '보행로 끝'], [289.6, '자전거도로 끝'], [BM, '자전거도로 끝'], [295.1, '자전거도로 끝']].forEach(([z, text]) => W.place('barricade', {x, z, y:by, rot:r, text})));   // 앞면이 맵 안쪽을 본다
+  // (2026-11-21) 맵 동 · 서 끝: 자전거 도로 바리케이드와 나란히, 썰매장 눈밭 띠 · 물가 길까지 이어서 막는다 (맵 밖으로 못 나가게)
+  { const ends = []; for (let z = 298.3; z < WALK.zRiver - .5; z += 1.95) [[8.2, PI / 2], [631.8, -PI / 2]].forEach(([x, r]) => ends.push({x, z, y:by, rot:r}));
+    W.placeMany('barricade', ends, {text:'통행 금지'}); }
   // (2026-11-18) 강변 보도(RG) · 학교 남쪽 보도(SS) 동쪽 끝도 막는다
   [273.35, 275.5, 277.65, 242.5, 246.4, 250.3, 254.2].forEach(z => W.place('barricade', {x:631.8, z, rot:-PI / 2, text:'보도 끝'}));
   const P = new Parts(), lin = (x0, z0, x1, z1, c = 0xf2f4f5) => P.add('lin', flatXZ(x0, z0, x1, z1, by + .045), c);
@@ -275,15 +278,14 @@ export function buildRiverside(){
   // 산책로 가로등 · 물가 쪽 나무
   /* (2026-11-17) 물가 길 · 갈대 쪽 나무(z 330)는 없앴다 */
   run(20, 120, 14).forEach((x, i) => pine(x, i % 2 ? 299.6 : 330.6, i));   // 눈밭 가장자리 (가운데는 눈덩이 과녁 마당)
-  // 얼음 썰매장: 평평한 얼음판(미끄럽다), 둘레 판자 벽(위 파란 띠), 북쪽 출입구 둘, 둘레 조명
+  // 얼음 썰매장: 평평한 얼음판(미끄럽다), 둘레 조명. (2026-11-20 2차) 판자 벽은 없애고 낮은 고무 테두리(밟고 지나간다)만 둔다
   { const S = SLED, yI = by + .06, H = .95 * U, T = .25;
     slab('ice', S.x0, S.z0, S.x1, S.z1, yI); W.addSlippery((x, z) => x > S.x0 && x < S.x1 && z > S.z0 && z < S.z1); W.addHeight((x, z) => x > S.x0 && x < S.x1 && z > S.z0 && z < S.z1 ? yI : null, 1);
-    const board = (x0, z0, x1, z1) => { GROUND.add('board', box(x0, by, z0, x1, by + H, z1, .03), 0xf4f6f7); GROUND.add('board', box(x0 - .02, by + H - .14, z0 - .02, x1 + .02, by + H, z1 + .02, .02), 0x2f6fb5);
-      GROUND.add('board', box(x0 - .02, by, z0 - .02, x1 + .02, by + .16, z1 + .02, .02), 0xd83a2e); W.rect(x0, z0, x1, z1); };
-    let a = S.x0; [...S.gates, [S.x1, S.x1]].forEach(([g0, g1]) => { if (g0 > a) board(a, S.z0, g0, S.z0 + T); a = g1; });
-    board(S.x0, S.z1 - T, S.x1, S.z1); board(S.x0, S.z0 + T, S.x0 + T, S.z1 - T); board(S.x1 - T, S.z0 + T, S.x1, S.z1 - T);
+    const edge = (x0, z0, x1, z1) => GROUND.add('board', box(x0, by, z0, x1, by + .09, z1, .03), 0x2f6fb5);
+    edge(S.x0, S.z0, S.x1, S.z0 + T); edge(S.x0, S.z1 - T, S.x1, S.z1); edge(S.x0, S.z0 + T, S.x0 + T, S.z1 - T); edge(S.x1 - T, S.z0 + T, S.x1, S.z1 - T);
     run(S.x0 + 10, S.x1 - 10, 23).forEach(x => { lamps.push({x, z:S.z0 - 1.6, y:by}); lamps.push({x, z:S.z1 + 1.6, y:by}); });
-    W.mmRect(S.x0, S.z0, S.x1, S.z1, '#d6e8f2'); W.mmLabel((S.x0 + S.x1) / 2, S.zc, '얼음 썰매장', 13); }
+    W.mmRect(S.x0, S.z0, S.x1, S.z1, '#d6e8f2'); W.mmLabel((S.x0 + S.x1) / 2, S.zc, '얼음 썰매장', 13);
+}
 }
 
 // 마지막에 바닥 · 나무 · 가로등을 한 번에 그린다 (구역 파일이 GROUND · TREES에 더한 것까지)

@@ -11,7 +11,23 @@ export function sfx(f0, f1, dur, type, vol){
     o.type = type || 'sine'; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
     g.gain.setValueAtTime(vol || .07, t); g.gain.exponentialRampToValueAtTime(.001, t + dur); o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + dur); } catch (e) {}
 }
-export function flash(text){ const f = document.getElementById('flash'); f.textContent = text; f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
+// (2026-11-21) 가운데 큰 글: 자동 줄바꿈을 끄고(left:50% 때문에 화면 절반 폭에서 꺾이던 문제),
+// 화면 폭에 안 들어가는 글만 미리 띄어쓰기 자리에서 \n으로 나눈다. 모바일에서 '후~ 다 먹었다. 속까지 따뜻해!' 같은 글.
+const emW = t => [...t].reduce((w, c) => w + (c.charCodeAt(0) > 0x2e80 ? 1 : .56), 0);
+function wrapLines(text, maxEm){
+  if (text.includes('\n') || emW(text) <= maxEm) return text;
+  const cut = []; for (let i = 1; i < text.length - 1; i++) if (text[i] === ' ') cut.push(i);
+  if (!cut.length) return text;
+  let best = cut[0], bw = Infinity;
+  for (const i of cut) { const w = Math.max(emW(text.slice(0, i)), emW(text.slice(i + 1))) + (text[i - 1] === '·' || text[i + 1] === '·' ? -.8 : 0); if (w < bw) { bw = w; best = i; } }
+  const a = text.slice(0, best).replace(/\s*·$/, ''), b = text.slice(best + 1).replace(/^·\s*/, '');
+  return wrapLines(a, maxEm) + '\n' + wrapLines(b, maxEm);
+}
+export function flash(text){
+  const f = document.getElementById('flash'); f.style.whiteSpace = 'pre'; f.style.textAlign = 'center';
+  const fs = parseFloat(getComputedStyle(f).fontSize) || 34, maxEm = (Math.min(innerWidth, 900) - 48) / (fs * 1.04);
+  f.textContent = wrapLines(String(text), maxEm); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+}
 
 const tiny = new THREE.SphereGeometry(.12,6,5), puffs = [], balls = [], timers = [];
 export function puff(x, y, z, n){

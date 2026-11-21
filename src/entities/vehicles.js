@@ -8,6 +8,7 @@ import { buildProp } from '../props/registry.js';
 import { LOOP, ROAD, NROAD } from '../map/layout.js';
 
 const list = [];
+export const townBus = () => list[0];   // 탈 수 있는 마을버스 (activities/bus.js)
 function makePath(pts){ const cum = [0]; for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])); return {pts, cum, len:cum[cum.length - 1]}; }
 function pathAt(P, s){ s = ((s % P.len) + P.len) % P.len; const c = P.cum; let i = 1; while (i < c.length - 1 && c[i] < s) i++;
   const a = P.pts[i - 1], b = P.pts[i], L = c[i] - c[i - 1], u = (s - c[i - 1]) / L; return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, (b[0] - a[0]) / L, (b[1] - a[1]) / L]; }

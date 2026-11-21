@@ -13,10 +13,10 @@ let saved = {}; try { saved = JSON.parse(sessionStorage.getItem('winter-town') |
 const pick = (v, n) => Number.isInteger(v) ? v % n : rnd(n);
 
 export const me = S.me = {
-  x:SPAWN.x0, z:SPAWN.z, y:0, r:0, st:0, vx:0, vz:0, ci:pick(saved.c, COLORS.length), a:pick(saved.a, ADJ.length), n:pick(saved.n, NOUN.length),
+  x:SPAWN.x, z:SPAWN.z, y:0, r:0, st:0, vx:0, vz:0, ci:pick(saved.c, COLORS.length), a:pick(saved.a, ADJ.length), n:pick(saved.n, NOUN.length),
   em:[0, 0],     // [보낸 횟수, 감정 코드] 다른 사람에게 감정 표현을 알리는 카운터
   th:[0, 0, 0],  // 눈덩이 던진 횟수와 조준점
-  uid:1 + Math.floor(Math.random() * 2147483646), sw:[], ballR:0, sc:[0, 0, 0], char:null, iceHint:false,
+  uid:1 + Math.floor(Math.random() * 2147483646), sw:[], ballR:0, mg:[0, 0], kt:[0], sa:[0], it:[0, 0, 0], tk:[9, 0, 0, 0, 0, 0], sitT:0, sitHold:false, seatAct:null, sc:[0, 0, 0], char:null, iceHint:false,
   onStand:null,  // 앉아 있을 때 일어나는 방법 (벤치·그네가 넣는다)
 };
 
@@ -30,13 +30,20 @@ export function dressMe(){
 }
 export const extrasHooks = [];   // 캐릭터에 붙는 소품(썰매 등)을 만드는 함수들
 
-export function standUp(){ if (me.onStand) { me.onStand(); me.onStand = null; } me.st = 0; }
+export function standUp(){ if (me.onStand) { me.onStand(); me.onStand = null; } me.st = 0; me.seatAct = null; me.seatAlt = null; }
 export function wave(){ if (S.mode === 'intro' || me.st === 2) return false; me.em = [me.em[0] + 1, 1]; return true; }
 
 export function movePlayer(dt, speedMul = 1){
   const K = S.keys, joy = S.joy;
   let f = (K.up ? 1 : 0) - (K.down ? 1 : 0), s = (K.right ? 1 : 0) - (K.left ? 1 : 0), mag = 1;
   if (!f && !s && joy && joy.m > .15) { s = joy.vx; f = -joy.vy; mag = Math.min(1, joy.m); }
+  // (2026-11-20) 걸어가다 타면 바로 내려지던 것: 탄 뒤 0.6초 동안, 그리고 탈 때 누르고 있던 이동 입력을 한 번 뗄 때까지 이동을 받지 않는다
+  if (me.st !== 0 && me.onStand) {
+    const t = performance.now();
+    if (!me.sitT) { me.sitT = t; me.sitHold = !!(f || s); }
+    if (!f && !s) me.sitHold = false;
+    if (t - me.sitT < 600 || me.sitHold) f = s = 0;
+  } else me.sitT = 0;
   const len = Math.hypot(f, s), onIce = W.isSlippery(me.x, me.z);
   let ix = 0, iz = 0, sp = 0;
   if (len) {

@@ -3,7 +3,9 @@
 // 2026-11-18: 네 변을 높은 학교 담(schoolWall)으로 두르고, 학교 안 나무는 없앴다.
 //   옛 방식 나무 · 가로등을 새 소품(겨울 나무 · 단지 가로등)으로 바꿨다. 북쪽 담장은 북쪽 도로 울타리가 대신한다.
 import * as THREE from '../../lib/three.js';
-import { M, box, mesh, pillSprite, flat } from '../../core/gfx.js';
+import { M, box, mesh, pillSprite, flat, canvasTex } from '../../core/gfx.js';
+import { FONT_D } from '../../config.js';
+const PI = Math.PI;
 import { root } from '../../core/engine.js';
 import { W } from '../../world/world.js';
 import { zone, solid, building } from '../../world/builders.js';
@@ -35,7 +37,10 @@ export default {
     for (let q = gz - 4.2; q < gz + 4.4; q += .45) mesh(new THREE.CylinderGeometry(.04, .04, 2.5, 6), M(0x5f7387), x0 + .25, 1.25, q);
     box(x0 + .15, gz - 4.4, x0 + .35, gz + 4.6, .1, M(0x5f7387), 2.45); box(x0 + .15, gz - 4.4, x0 + .35, gz + 4.6, .1, M(0x5f7387), .2);
     solid(x0 - .8, gz - 5.8, x0 + .8, gz - 4.4, 3.1, 0xc9d3de); solid(x0 - .8, gz + 4.4, x0 + .8, gz + 5.8, 3.1, 0xc9d3de);
-    const s = pillSprite('학교 · 방학 중 출입 금지', 'rgba(255,255,255,.92)', '#2b3f55', 1); s.position.set(x0, 3.9, gz); root.add(s);
+    // (2026-11-20 3차) 교문에 붙인 안내판. 시작 자리(교문 앞)에서 화면을 가리지 않게 낮게, 문에 붙인다
+    { const t = canvasTex(512, 160, (g, W, H) => { g.fillStyle = '#f7f3ea'; g.fillRect(0, 0, W, H); g.strokeStyle = '#b23a2c'; g.lineWidth = 10; g.strokeRect(5, 5, W - 10, H - 10);
+        g.fillStyle = '#b23a2c'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '74px ' + FONT_D; g.fillText('방학 중 출입 금지', W / 2, H / 2 + 4); });
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(1.6, .5), new THREE.MeshLambertMaterial({map:t})); m.rotation.y = -PI / 2; m.position.set(x0 - .22, 1.35, gz); root.add(m); }
     [[527, 234], [539, 234]].forEach(p => { mesh(new THREE.CylinderGeometry(.1, .1, 2.4, 8), M(0xf8fbfd), p[0], 1.2, z(p[1])); W.circle(p[0], z(p[1]), .15); });
     box(527, z(233.9), 539, z(234.1), .2, M(0xf8fbfd), 2.3);
     // (2026-11-18) 학교 안(운동장 둘레) 나무는 없앴다

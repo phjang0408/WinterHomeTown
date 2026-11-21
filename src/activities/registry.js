@@ -28,13 +28,16 @@ export const current = () => ACTS.find(a => a.id === S.mode) || null;
 export function begin(a, game){ setMode(a.id); S.game = game || {}; if (a.st !== undefined) me.st = a.st; hud.prompt(''); }
 export function stopActivity(){ const a = current(); if (a && a.quit) a.quit(); setMode('walk'); S.game = null; me.st = 0; hud.hideGame(); }
 
+// 두 번째 동작 (2026-11-20 4차): R 키 또는 화면의 R 버튼. 놀이가 alt()를 주거나(연 돌려주기), 탄 것이 me.seatAlt를 준다(엉덩이로 밀기)
+export function findAlt(){ const a = current(); if (a) return a.alt ? a.alt() : null; return me.st !== 0 && me.onStand ? me.seatAlt || null : null; }
+export function doAlt(){ const f = findAlt(); if (f) f.run(); }
 export function findAction(){
   const a = current();
   if (a) return a.prompt ? a.prompt() : null;
   if (S.mode !== 'walk') return null;
-  if (me.st !== 0 && me.onStand) return {label:'일어나기', run:standUp};
+  if (me.st !== 0 && me.onStand) return me.seatAct || {label:'일어나기', run:standUp};
   let best = null, bd = 1e9;
-  const offer = (d, lim, label, run) => { if (d < lim && d < bd) { bd = d; best = {label, run}; } };
+  const offer = (d, lim, label, run, tone) => { if (d < lim && d < bd) { bd = d; best = {label, run, tone}; } };   // tone: 버튼 색 ('food')
   for (const x of ACTS) if (x.offer) x.offer(offer);
   return best;
 }

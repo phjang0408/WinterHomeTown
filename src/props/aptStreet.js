@@ -63,33 +63,53 @@ defineProp('swingSeat', {label:'그네 앉는 판', category:'놀이터', isNewS
     const g = seatGeo(), P = new Parts(); P.add('pla', g.pla); P.add('mat', g.mat);
     return assemble(P, [['pla', plasticMaterial()], ['mat', matteMaterial()]], [.5, SWING.L, .2]); }});
 
-// ── 나선 미끄럼틀: 3.6m 탑에서 기둥을 두 바퀴 돌아 내려온다. 계단과 탑 바닥은 걸어 올라갈 수 있고(height), 미끄럼 길은 놀이(activities/slide.js)가 쓴다 ──
-//   배치(미터): 가운데 기둥이 원점. 탑 바닥은 x -2.05~-0.25, z 0.1~1.9. 계단은 +z 쪽(z 1.9~6.76)에서 올라오고, 미끄럼판은 -z 쪽으로 나간다.
-export const SPIRAL = {H:3.6, R:1.15, hw:.42, y1:.34, turns:2, out:1.7, deck:[-2.05, .1, -.25, 1.9], stair:[-1.65, 1.9, -.65, 6.76]};
-// 미끄럼 길의 가운데 선: [x, y, z] (미터). 탑 가장자리 → 나선 두 바퀴 → 곧은 끝.
-export function spiralPath(n = 160){
-  const S = SPIRAL, pts = [], lenH = S.turns * 2 * PI * S.R, total = lenH + S.out;
-  for (let i = 0; i <= n; i++) { const d = total * i / n;
-    if (d <= lenH) { const ph = d / S.R, a = PI + ph; pts.push(V(Math.cos(a) * S.R, S.H - (S.H - S.y1) * d / lenH, Math.sin(a) * S.R)); }
-    else { const k = (d - lenH) / S.out; pts.push(V(-S.R, S.y1 - (S.y1 - .2) * k, -(d - lenH))); } }
-  return pts;
+// ── 미끄럼틀 (2026-11-21 2차: U턴 하나 · 탑 3.2m로 줄였다. 아래는 4차 설명): 놀이터 북쪽 칸의 동쪽 절반을 차지한다. 5.4m 탑에서 출발해 앞뒤좌우로 크게 굽이치며
+//    가팔랐다 완만했다 하고, 굽이마다 안쪽으로 기울어(뱅크) 돌다가 서쪽 끝 착지 매트로 내려온다 (길이 약 60m).
+//    탑과 계단은 걸어 올라갈 수 있고(height), 미끄럼 길은 놀이(activities/slide.js)가 쓴다. 입구(탑 · 출발 부분 · 계단)를 넓혔다.
+//   배치(미터): 원점은 놀이 칸 가운데. 탑 바닥 deck = [x0, z0, x1, z1], 계단 stair는 탑의 +z 쪽에서 +z로 내려간다. 미끄럼판은 탑의 -z 쪽으로 나간다.
+//   WAY: 미끄럼 길이 지나는 점 [x, 높이, z]. 위에서 내려다볼 때 서로 겹치는 곳은 높이 차가 2.5m 넘게 둔다.
+// (2026-11-21 2차) U턴 하나로 줄이고 낮췄다 (탑 3.2m): 북쪽으로 내려가다 서쪽으로 한 번 돌아 남쪽으로 내려온다 (길이 약 21m)
+const WAY = [[7.7, 3.2, -.9], [7.7, 2.75, -3.8], [7.4, 2.35, -6.6], [6.3, 2.0, -8.5], [4.5, 1.7, -9.2], [2.7, 1.42, -8.6], [1.6, 1.12, -6.9], [1.4, .75, -4.0], [1.4, .36, -1.2]];
+export const SPIRAL = {H:3.2, hw:.5, flare:.78, y1:.36, deck:[6.4, -.9, 9.0, 1.0], stair:[6.9, 1.0, 8.5, 1.0 + 3.2 * 1.35], WAY};
+// 미끄럼 길의 가운데 선: [x, y, z] (미터), 고르게 n등분. 높이에 잔물결을 더해 롤러코스터처럼 출렁인다
+export function spiralPath(n = 360){
+  const c = new THREE.CatmullRomCurve3(WAY.map(([x, y, z]) => V(x, y, z)), false, 'centripetal'), pts = c.getSpacedPoints(n);
+  return pts;   // (2026-11-21) 출렁임(잔물결)은 뺐다
 }
-defineProp('spiralSlide', {label:'나선 미끄럼틀 (두 바퀴)', category:'놀이터', isNewStyle:true,
+// i번째 점에서 안쪽으로 기우는 정도 (굽은 정도에 비례, 끝 1.5m는 0)
+export function spiralBank(pts, i){
+  const n = pts.length - 1, a = pts[Math.max(0, i - 3)], b = pts[i], c = pts[Math.min(n, i + 3)];
+  const t1 = b.clone().sub(a).setY(0).normalize(), t2 = c.clone().sub(b).setY(0).normalize(), t = t1.clone().add(t2).normalize(), lat = V(-t.z, 0, t.x);
+  const curv = t2.clone().sub(t1).dot(lat) / Math.max(.05, a.distanceTo(c) / 2), fade = Math.min(1, i / 8, (n - i) / 12);
+  return -Math.max(-.2, Math.min(.2, curv * .6)) * fade;   // (2026-11-21) 기울기도 절반쯤으로
+}
+defineProp('spiralSlide', {label:'U자 미끄럼틀', category:'놀이터', isNewStyle:true,
   height:(x, z) => { const mx = x / U, mz = z / U, S = SPIRAL, D = S.deck, T = S.stair; if (mx >= D[0] && mx <= D[2] && mz >= D[1] && mz <= D[3]) return S.H * U;
     return mx >= T[0] && mx <= T[2] && mz > T[1] && mz <= T[3] ? S.H * (1 - (mz - T[1]) / (T[3] - T[1])) * U : null; },
-  colliders:[[-1.77, 1.9, -1.65, 6.76], [-.65, 1.9, -.53, 6.76], [-2.17, .1, -2.05, 1.9], [-.25, .1, -.13, 1.9], [-2.05, 1.84, -1.65, 1.96], [-.65, 1.84, -.25, 1.96], [-2.05, 0, -.25, .1],
-    [-.13, -1.6, 1.62, 1.62], [-1.62, -1.6, -.13, 0]].map(r => ({r:r.map(v => v * U)})),
-  usage:"W.place('spiralSlide', {x: 97, z: 156, rot: 0});  // 3.7m × 8.5m (계단 +z, 나가는 곳 -z)", build(){
-    const P = new Parts(), S = SPIRAL, H = S.H, pl = (g, c) => P.add('pla', g, c), mt = (g, c) => P.add('mat', g, c), pts = spiralPath(176), n = pts.length;
-    // 미끄럼판: U자 단면을 길 따라 이어 붙인다 (옆 방향은 기둥에서 바깥으로)
-    const sec = [[-.44, -.04], [.44, -.04], [.44, .4], [.39, .4], [.35, .02], [-.35, .02], [-.39, .4], [-.44, .4]], rings = [], rimO = [], rimI = [];
-    for (let i = 0; i < n; i++) { const p = pts[i], t = pts[Math.min(n - 1, i + 1)].clone().sub(pts[Math.max(0, i - 1)]).setY(0).normalize(), lat = V(-t.z, 0, t.x);
-      rings.push(sec.map(([u, v]) => V(p.x + lat.x * u, p.y + v, p.z + lat.z * u))); rimO.push(V(p.x + lat.x * .415, p.y + .41, p.z + lat.z * .415)); rimI.push(V(p.x - lat.x * .415, p.y + .41, p.z - lat.z * .415)); }
+  colliders:(() => { const S = SPIRAL, D = S.deck, T = S.stair;
+    return [[T[0] - .12, T[1], T[0], T[3]], [T[2], T[1], T[2] + .12, T[3]], [D[0] - .12, D[1], D[0], D[3]], [D[2], D[1], D[2] + .12, D[3]], [D[0], D[3] - .06, T[0], D[3] + .06], [T[2], D[3] - .06, D[2], D[3] + .06]]
+      .map(r => ({r:r.map(v => v * U)})).concat([{r:[D[0], D[1] - .14, D[2], D[1] + .02].map(v => v * U), y0:(S.H - 1.2) * U}]); })(),   // (2026-11-21) 탑 앞(미끄럼판 쪽)은 탑 위에서만 막는다: 걸어 나가다 떨어지지 않게
+  usage:"W.place('spiralSlide', {x: 106, z: 159, rot: 0});  // 약 9m × 15m (탑은 동쪽, 계단 +z, U턴 하나)", build(){
+    const P = new Parts(), S = SPIRAL, H = S.H, pl = (g, c) => P.add('pla', g, c), mt = (g, c) => P.add('mat', g, c), pts = spiralPath(420), n = pts.length;
+    // 미끄럼판: U자 단면을 길 따라 이어 붙인다. 출발 2m는 넓게 벌어진 입구(flare)
+    const sec = [[-1, -.04], [1, -.04], [1, .4], [.89, .4], [.8, .02], [-.8, .02], [-.89, .4], [-1, .4]], rings = [], rimO = [], rimI = [];
+    let dist = 0;
+    for (let i = 0; i < n; i++) { const p = pts[i]; if (i) dist += p.distanceTo(pts[i - 1]);
+      const t = pts[Math.min(n - 1, i + 1)].clone().sub(pts[Math.max(0, i - 1)]).setY(0).normalize(), lat = V(-t.z, 0, t.x), b = spiralBank(pts, i);
+      const w = S.hw + (S.flare - S.hw) * Math.max(0, 1 - dist / 2.2);
+      // 뱅크: 단면을 길 방향 축으로 b만큼 돌린다
+      const at = (u, v) => V(p.x + lat.x * (u * Math.cos(b) - v * Math.sin(b)), p.y + v * Math.cos(b) + u * Math.sin(b), p.z + lat.z * (u * Math.cos(b) - v * Math.sin(b)));
+      rings.push(sec.map(([u, v]) => at(u * w, v))); rimO.push(at(w * .94, .41)); rimI.push(at(-w * .94, .41)); }
     pl(loft(rings), YEL); [rimO, rimI].forEach(r => pl(tube(r.filter((_, i) => i % 2 === 0), .035, {radial:6}), RED));
-    pl(box(-S.R - .46, .1, -S.out - .12, -S.R + .46, .44, -S.out + .1, .08), RED); mt(box(-S.R - .9, 0, -S.out - 2.1, -S.R + .9, .035, -S.out - .1, .012), 0x5f9a6b);   // 끝 턱과 착지 매트
-    // 가운데 기둥과 받침 팔
-    pl(lathe([[.26, 0], [.26, .05], [.17, .1], [.16, H + 1.0], [.2, H + 1.03], [.2, H + 1.1], [0, H + 1.16]], 16), BLUE);
-    for (let i = 6; i < n - 12; i += 11) { const p = pts[i], d = Math.hypot(p.x, p.z); pl(tube([V(0, p.y - .12, 0), V(p.x * (S.R - .3) / d, p.y - .07, p.z * (S.R - .3) / d)], .04, {radial:8}), BLUE); }
+    // 받침 다리: 1.6m마다 양옆 두 개 (낮은 끝은 생략)
+    dist = 0; let next = 1.2;
+    for (let i = 1; i < n - 4; i++) { const p = pts[i]; dist += p.distanceTo(pts[i - 1]); if (dist < next || p.y < .5) continue; next = dist + 1.6;
+      const t = pts[i + 1].clone().sub(pts[i - 1]).setY(0).normalize(), lat = V(-t.z, 0, t.x);
+      [-1, 1].forEach(k => pl(tube([V(p.x + lat.x * k * (S.hw + .05), 0, p.z + lat.z * k * (S.hw + .05)), V(p.x + lat.x * k * (S.hw + .05), p.y - .03, p.z + lat.z * k * (S.hw + .05))], .04, {radial:8}), BLUE)); }
+    // 끝 턱과 착지 매트 (마지막 진행 방향으로)
+    { const e = pts[n - 1], d = e.clone().sub(pts[n - 6]).setY(0).normalize(), ang = Math.atan2(d.x, d.z);
+      const pad = box(-.9, 0, .05, .9, .035, 2.1, .012); pad.rotateY(ang); pad.translate(e.x, 0, e.z); mt(pad, 0x5f9a6b);
+      const lip = box(-S.hw - .04, .1, -.1, S.hw + .04, .42, .12, .08); lip.rotateY(ang); lip.translate(e.x, 0, e.z); pl(lip, RED); }
     // 탑: 기둥 넷, 바닥, 가림판, 손잡이 봉, 뾰족지붕
     const [dx0, dz0, dx1, dz1] = S.deck, cx = (dx0 + dx1) / 2, cz = (dz0 + dz1) / 2;
     [[dx0, dz0], [dx1, dz0], [dx0, dz1], [dx1, dz1]].forEach(([x, z]) => pl(tube([V(x, 0, z), V(x, H + 2.15, z)], .055, {radial:10}), BLUE));
@@ -100,14 +120,14 @@ defineProp('spiralSlide', {label:'나선 미끄럼틀 (두 바퀴)', category:'�
     pl(xf(new THREE.ConeGeometry(1.55, .95, 4), {ry:PI / 4, x:cx, y:H + 2.6, z:cz}), RED); P.add('snw', xf(new THREE.ConeGeometry(1.42, .9, 4), {ry:PI / 4, x:cx, y:H + 2.72, z:cz}));
     pl(xf(new THREE.SphereGeometry(.09, 10, 8), {x:cx, y:H + 3.2, z:cz}), YEL);
     // 계단: 디딤판 18장, 옆판, 난간
-    const [sx0, sz0, sx1, sz1] = S.stair, N = 18, run = (sz1 - sz0) / N, rise = H / N;
+    const [sx0, sz0, sx1, sz1] = S.stair, N = Math.round(H / .2), run = (sz1 - sz0) / N, rise = H / N;
     for (let k = 1; k <= N; k++) mt(box(sx0 + .04, H - k * rise - .04, sz0 + (k - 1) * run - .02, sx1 - .04, H - k * rise, sz0 + k * run, .008), WOOD);
     [sx0, sx1].forEach(x => { const g = new THREE.BoxGeometry(.05, .26, Math.hypot(sz1 - sz0, H)); g.rotateX(Math.atan2(H, sz1 - sz0)); g.translate(x, H / 2 - .06, (sz0 + sz1) / 2); pl(g, BLUE);
       pl(tube(fillet([V(x, 0, sz1), V(x, 1.0, sz1), V(x, H + 1.05, sz0 + .02)], .12, 4), .032, {radial:8}), RED); pl(tube([V(x, .52, sz1), V(x, H + .55, sz0)], .018, {radial:6}), RED);
       for (let i = 1; i <= 7; i++) { const t = i / 8, z = sz1 - (sz1 - sz0) * t, y = H * t; pl(tube([V(x, y, z), V(x, y + 1.0, z)], .016, {radial:6}), RED); } });
-    [[.9, -2.3, .7], [-2.6, 4.2, .6], [.4, 3.2, .55]].forEach(([x, z, r], i) => P.add('snw', xf(blob(r, r * .42, r * .8, {seed:i + 3, bump:.1}), {x, z})));
+    [[-3.5, -3.2, .8], [4.0, 4.5, .6], [-6.2, -6.5, .55], [-1.5, 6.0, .6]].forEach(([x, z, r], i) => P.add('snw', xf(blob(r, r * .42, r * .8, {seed:i + 3, bump:.1}), {x, z})));
     P.bake('pla', groundAO(.4, .82)); P.bake('mat', groundAO(.1, .85));
-    return assemble(P, [['pla', plasticMaterial()], ['mat', matteMaterial()], ['snw', snowMaterial({seed:43})]], [3.9, 6.9, 10.6]); }});
+    return assemble(P, [['pla', plasticMaterial()], ['mat', matteMaterial()], ['snw', snowMaterial({seed:43})]], [9, 6.6, 15]); }});
 
 // ── 공중전화 부스: 옥색 알루미늄 틀, 유리 세 면, 앞은 열려 있다. 머리 간판, 전화기, 선반, 무늬 강판 바닥 ──
 const boothTex = () => once('booth', () => decalMaterial(canvasTex(512, 512, (g, W, H) => { g.fillStyle = '#f3f5f4'; g.fillRect(0, 0, W, H);

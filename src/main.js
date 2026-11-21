@@ -1,15 +1,19 @@
 // 진입점: 맵 → 놀이 → 반복 소품 → 캐릭터 → 네트워크 순서로 준비하고 메인 루프를 돌린다.
+import { updateAlt } from './ui/alt.js';
 import { onFrame, start, shadowRange, canvas, renderer, scene, camera } from './core/engine.js';
 import { getProp, usedProps, propNames } from './props/registry.js';
 import { S, setMode } from './core/state.js';
 import { PI, rnd } from './core/util.js';
-import { audio, sfx, flash, updateFx } from './core/fx.js';
+import { audio, sfx, flash, updateFx, after } from './core/fx.js';
 import { updateCamera, camLook } from './core/camera.js';
 import { initInput, turnCamera, freeMove } from './core/input.js';
 import { coarse, reduceMotion, COLORS, ADJ, NOUN, FONTS_TO_LOAD } from './config.js';
 import './props/basic.js';
 import './props/parkBench.js';
 import './props/snowmanCoop.js';
+import './props/kite.js';
+import './props/parkFountain.js';
+import './props/goguma.js';
 import './props/aptTower.js';
 import './props/cars.js';
 import './props/aptSite.js';
@@ -66,10 +70,13 @@ function fillRoster(){
 }
 function enter(){
   if (S.mode !== 'intro') return;
-  setMode('walk'); me.x = SPAWN.x0 + Math.random() * (SPAWN.x1 - SPAWN.x0); me.z = SPAWN.z; me.r = 0; S.cam.yaw = PI; S.cam.pitch = .38; me.char.visible = true;
+  // (2026-11-20 2차) 학교 정문 앞에서 시작: 방학식이 막 끝나 교문을 나선 순간. 종이 울리고, 서쪽(동네)을 본다
+  setMode('walk'); me.x = SPAWN.x + (Math.random() - .5) * 1.2; me.z = SPAWN.z + (Math.random() - .5) * SPAWN.w; me.r = SPAWN.r; S.cam.yaw = SPAWN.r + PI; S.cam.pitch = .32; me.char.visible = true;
+  [[659, 0], [523, .45], [587, .9], [392, 1.35], [392, 2.1], [587, 2.55], [659, 3.0], [523, 3.45]].forEach(([f, t]) => after(t * 1000, () => sfx(f, f * .998, .5, 'sine', .06)));   // 딩동댕동 · 댕동딩동
+  after(600, () => flash('겨울방학 시작! 동네로 놀러 가자'));
   shadowRange(75);
-  $('intro').hidden = true; ['top','mini','help','dock'].forEach(id => $(id).hidden = false); sfx(392, 588, .3, 'triangle'); canvas.focus();
-  if (coarse) flash('왼쪽을 끌어 이동');
+  $('intro').hidden = true; ['top','mini','help','dock'].forEach(id => $(id).hidden = false); canvas.focus();
+  if (coarse) after(3400, () => flash('왼쪽을 끌어 이동'));
 }
 function doWave(){ if (wave()) { emote(me.char, 1); sfx(620, 760, .1); } }
 function bindUi(){
@@ -103,8 +110,8 @@ function frame(dt, now){
   updateVehicles(dt); W.updateAnimated(dt, now); agePrints(now);
   updateSnow(dt, now, camLook);
   const hide = !!(current() && current().hideLabels);
-  spotLabels.forEach((s, i) => { s.visible = !hide; if (!reduceMotion) s.position.y = s.userData.y + Math.sin(now / 600 + i) * .15; });
-  const act = findAction(); hud.prompt(act ? act.label : '');
+  spotLabels.forEach(s => { s.visible = !hide; });   // (2026-11-21) 장소 이름표는 위아래로 흔들지 않고 가만히 떠 있다
+  const act = findAction(); hud.prompt(act ? act.label : '', act && act.tone); updateAlt();
   updateCamera(dt, now); netTick(now);
   if (S.mode !== 'intro' && ++miniTick % 6 === 0) drawMini();
 }

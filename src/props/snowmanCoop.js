@@ -3,18 +3,18 @@
 // 갤러리는 defineProp('snowmanCoop')으로 본다.
 //
 // 사양
-//   치수: 완성 시 폭 약 1.4m(팔 포함 약 2.1m) × 높이 약 1.85m. 몸통 반지름 0.62m, 머리 0.40m.
+//   치수: 완성 시 폭 약 1.9m(팔 포함 약 2.9m) × 높이 약 2.55m. 몸통 반지름 0.85m, 머리 0.55m. (2026-11-20 키움)
 //   부품: 몸통(울퉁불퉁한 구, 바닥 평평) · 머리 · 얼굴(숯 눈 2, 숯 입 5, 당근 코) · 나뭇가지 팔 2
 //   재질 2개(눈 AO, 무광 정점색) · 그리기 4회(몸통, 머리, 얼굴, 팔) · 삼각형 약 3,500
 //   크기: 눈덩이를 하나 보탤 때마다 부피가 늘어난다 (반지름 = 최대 × 세제곱근(비율))
 import * as THREE from '../lib/three.js';
 import { defineProp } from './registry.js';
-import { lathe, tube, bakeAO, Parts } from '../core/meshkit.js';
-import { snowAOMaterial, matteMaterial } from '../core/texkit.js';
+import { lathe, tube, box, bakeAO, groundAO, Parts } from '../core/meshkit.js';
+import { snowAOMaterial, matteMaterial, plasticMaterial, snowMaterial } from '../core/texkit.js';
 import { mulberry } from './kit.js';
 import { UNIT } from '../config.js';
 
-export const SNOWMAN = {RB:.62, RH:.40, BALL:.36};   // 몸통 · 머리 최대 반지름, 다 굴린 눈덩이 반지름 (미터)
+export const SNOWMAN = {RB:.85, RH:.55, BALL:.5};   // (2026-11-20 키움) 몸통 · 머리 최대 반지름, 다 굴린 눈덩이 반지름 (미터)   // 몸통 · 머리 최대 반지름, 다 굴린 눈덩이 반지름 (미터)
 const FLAT_B = -.8, FLAT_H = -.86;                     // 단위 구의 바닥을 이 높이에서 평평하게 자른다 (놓인 면 · 몸통과 맞닿는 면)
 
 // 울퉁불퉁한 단위 구. flat이 있으면 그 아래를 평평하게 눌러 바닥에 앉게 한다.
@@ -100,7 +100,56 @@ defineProp('snowmanCoop', {
   build(o = {}){
     const r = snowmanRig(); r.set(o.b ?? 1, o.h ?? 1, o.deco ?? true, o.melt || 0);
     let tris = 0; r.obj.traverse(m => { if (m.isMesh && m.visible) tris += m.geometry.index.count / 3; });
-    r.obj.userData.info = {tris, draws:4, materials:2, sizeMeters:[1.4, 1.85, 1.24]};
+    r.obj.userData.info = {tris, draws:4, materials:2, sizeMeters:[1.9, 2.55, 1.7]};
     return r.obj;
   },
 });
+
+// ── 눈사람 눈밭 둘레 표시 (2026-11-20) ──
+// 낮은 나무 말뚝(빨강 · 흰 띠)을 약 6m마다 박고 처진 줄로 잇는다. 모서리 말뚝에는 세모 깃발. 변 가운데는 드나드는 자리로 비운다.
+// 미터 단위, 원점은 눈밭 가운데. o.w · o.d: 폭 · 깊이(미터), o.gap: 변 가운데 비우는 폭. 줄은 충돌하지 않는다 (밟고 지나가는 느낌).
+// 재질 3개(말뚝 · 깃발 플라스틱, 줄 무광) · 그리기 2회
+defineProp('snowFieldFence', {label:'눈밭 둘레 말뚝 줄', category:'겨울', isNewStyle:true,
+  usage:"W.place('snowFieldFence', {x, z, w: 60, d: 36});  // 미터", build(o = {}){
+    const W2 = (o.w || 20) / 2, D2 = (o.d || 12) / 2, GAP = o.gap ?? 4, H = .55, P = new Parts();
+    const stake = (x, z, corner) => {
+      P.add('pla', box(x - .045, 0, z - .045, x + .045, H, z + .045, .015), 0xf2f0ea);
+      [.12, .32].forEach(y => P.add('pla', box(x - .049, y, z - .049, x + .049, y + .09, z + .049, .012), 0xd04a3a));
+      if (corner) { P.add('pla', box(x - .02, H, z - .02, x + .02, H + .55, z + .02, .008), 0xf2f0ea);
+        const sh = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(.32, -.1), new THREE.Vector2(0, -.22)]);
+        const g = new THREE.ExtrudeGeometry(sh, {depth:.01, bevelEnabled:false}); g.translate(x, H + .52, z - .005); P.add('pla', g, 0xe4572e); }
+    };
+    // 한 변: a → b 를 따라 말뚝과 줄. 가운데 GAP은 비운다
+    const side = (ax, az, bx, bz) => {
+      const L = Math.hypot(bx - ax, bz - az), half = (L - GAP) / 2, n = Math.max(1, Math.round(half / 6));
+      [[0, half], [L - half, L]].forEach(([t0, t1]) => {
+        const pts = []; for (let i = 0; i <= n; i++) { const t = (t0 + (t1 - t0) * i / n) / L; pts.push([ax + (bx - ax) * t, az + (bz - az) * t]); }
+        pts.forEach(([x, z], i) => stake(x, z, (i === 0 && t0 === 0)));
+        for (let i = 0; i < n; i++) { const [x0, z0] = pts[i], [x1, z1] = pts[i + 1], c = [];
+          for (let k = 0; k <= 6; k++) { const t = k / 6; c.push(new THREE.Vector3(x0 + (x1 - x0) * t, H - .06 - Math.sin(t * Math.PI) * .14, z0 + (z1 - z0) * t)); }
+          P.add('mat', tube(c, .012, {radial:5}), 0xc9b48a); }
+      });
+    };
+    side(-W2, -D2, W2, -D2); side(W2, -D2, W2, D2); side(W2, D2, -W2, D2); side(-W2, D2, -W2, -D2);
+    P.bake('pla', groundAO(.25, .7));
+    const g = new THREE.Group(), inner = new THREE.Group(); inner.scale.setScalar(UNIT); g.add(inner);
+    [['pla', plasticMaterial()], ['mat', matteMaterial()]].forEach(([k, m]) => { if (P.has(k)) { const me = new THREE.Mesh(P.geo(k), m); me.castShadow = true; me.receiveShadow = true; inner.add(me); } });
+    g.userData.info = {draws:inner.children.length, materials:inner.children.length, sizeMeters:[W2 * 2, H + .6, D2 * 2]};
+    return g; }});
+
+// ── 눈사람 자리 (2026-11-20 3차): 멀리서도 보이게 낮은 눈 단(높이 0.14m), 가장자리 빨강 · 흰 띠, 둘레 깃발 말뚝 여덟 ──
+// 미터 단위, 원점은 단 가운데. o.r: 단 반지름(미터). 재질 2개(눈, 플라스틱) · 그리기 2회
+defineProp('snowmanStage', {label:'눈사람 자리 (눈 단)', category:'겨울', isNewStyle:true,
+  usage:"놀이(activities/snowman.js)가 눈사람 자리에 놓는다", build(o = {}){
+    const R = o.r || 2.3, P = new Parts();
+    P.add('snw', lathe([[0, .14], [R - .4, .14], [R - .18, .11], [R - .04, .04], [R + .06, 0]], 56));
+    const n = 16; for (let i = 0; i < n; i++) { const g = new THREE.TorusGeometry(R - .12, .05, 6, 6, Math.PI * 2 / n * .96); g.rotateX(-Math.PI / 2); g.rotateY(i / n * Math.PI * 2); g.translate(0, .1, 0); P.add('pla', g, i % 2 ? 0xf2f0ea : 0xd04a3a); }
+    for (let i = 0; i < 8; i++) { const a = (i + .5) / 8 * Math.PI * 2, x = Math.cos(a) * (R + .3), z = Math.sin(a) * (R + .3);
+      P.add('pla', box(x - .04, 0, z - .04, x + .04, .95, z + .04, .012), 0xf2f0ea); [.25, .6].forEach(y => P.add('pla', box(x - .044, y, z - .044, x + .044, y + .1, z + .044, .01), 0xd04a3a));
+      const sh = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(.34, -.1), new THREE.Vector2(0, -.22)]), f = new THREE.ExtrudeGeometry(sh, {depth:.01, bevelEnabled:false});
+      f.rotateY(-a + Math.PI / 2); f.translate(x, .95, z); P.add('pla', f, [0xe4572e, 0x2f6fb5, 0xf0b429, 0x3c9a5a][i % 4]); }
+    P.bake('pla', groundAO(.25, .72));
+    const g = new THREE.Group(), inner = new THREE.Group(); inner.scale.setScalar(UNIT); g.add(inner);
+    [['snw', snowMaterial({seed:48})], ['pla', plasticMaterial()]].forEach(([k, m]) => { const me = new THREE.Mesh(P.geo(k), m); me.castShadow = k === 'pla'; me.receiveShadow = true; inner.add(me); });
+    g.userData.info = {draws:2, materials:2, sizeMeters:[R * 2 + .7, 1.2, R * 2 + .7]};
+    return g; }});

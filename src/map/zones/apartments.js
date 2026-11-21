@@ -9,14 +9,14 @@
 import * as THREE from '../../lib/three.js';
 import { root } from '../../core/engine.js';
 import { W } from '../../world/world.js';
-import { zone, tower } from '../../world/builders.js';
+import { zone, tower, spotLabel } from '../../world/builders.js';
 import { flatXZ, box, loft, Parts } from '../../core/meshkit.js';
 import { asphaltMaterial, roadPaintMaterial, concreteMaterial, brickPaveMaterial, bedMaterial, decalMaterial , antiTile } from '../../core/texkit.js';
 import { canvasTex, flat, G } from '../../core/gfx.js';
 import { quadY, mulberry } from '../../props/kit.js';
 import { SHOP_LAYOUT } from '../../props/shops.js';
 import { UNIT as U, FONT_D } from '../../config.js';
-import { SLIDE } from '../layout.js';
+import { SLIDE, PHONES } from '../layout.js';
 
 const PI = Math.PI, A = .045, PV = .15;                        // A: 아스팔트 높이, PV: 보도 높이 (2026-11-16: 길보다 한 단 높게)
 const BW = 2.5 * U, BD = 5 * U;                                // 주차 칸 2.5m × 5m
@@ -118,6 +118,8 @@ export default {
     // ── 주차 줄: 길 가장자리에서 칸이 바깥으로 이어진다 ──
     // axis 'x': x0부터 동쪽으로 n칸, 칸 깊이는 z0에서 dir 쪽으로. axis 'z': z0부터 남쪽으로 n칸, 깊이는 x0에서 dir 쪽으로.
     const stops = [], cars = {}, islands = [], bays = LOW.bays, car = (name, v, it) => (cars[name + '/' + v] || (cars[name + '/' + v] = [])).push(it);
+    // 절반쯤은 후면주차(앞이 길 쪽). 기존 난수 순서를 흐트리지 않게 위치로 따로 정한다.
+    const backIn = (x, z) => { const h = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453; return h - Math.floor(h) < .5; };
     function bayRow({x0, z0, n, axis, dir, dis = [], fill = .5}){
       const along = (i, t = .5) => axis === 'x' ? [x0 + (i + t) * BW, z0 + dir * BD / 2] : [x0 + dir * BD / 2, z0 + (i + t) * BW];
       const rot = axis === 'x' ? (dir > 0 ? 0 : PI) : (dir > 0 ? PI / 2 : -PI / 2), d0 = Math.min(axis === 'x' ? z0 : x0, (axis === 'x' ? z0 : x0) + dir * BD), d1 = d0 + BD, s0 = axis === 'x' ? x0 : z0;
@@ -133,7 +135,7 @@ export default {
         const [x, z] = along(i), hd = (BD / 2 - 1.05 * U) * dir;
         stops.push(axis === 'x' ? {x, z:z + hd, rot:0} : {x:x + hd, z, rot:PI / 2});
         if (R() > fill) continue;                                                              // 빈 칸
-        const k = R(), jit = (R() - .5) * .3, it = {x:x + (axis === 'x' ? jit : -dir * .3), z:z + (axis === 'x' ? -dir * .3 : jit), rot:rot + (R() - .5) * .05, color:PAINT[Math.floor(R() * PAINT.length)]};
+        const k = R(), jit = (R() - .5) * .3, it = {x:x + (axis === 'x' ? jit : -dir * .3), z:z + (axis === 'x' ? -dir * .3 : jit), rot:rot + (R() - .5) * .05 + (backIn(x, z) ? PI : 0), color:PAINT[Math.floor(R() * PAINT.length)]};
         if (k < .42) car('carSedan', Math.floor(R() * 3), it); else if (k < .66) car('carSUV', Math.floor(R() * 2), it);
         else if (k < .9) car('carMini', Math.floor(R() * 3), {...it, color:R() < .35 ? 0xd9a520 : it.color}); else car('truck1t', 0, {...it, color:[0x2e5fa3, 0xe6e8e9][Math.floor(R() * 2)]});
       }
@@ -205,14 +207,15 @@ export default {
     SHOP_LAYOUT.forEach(([name, o, x, y, z, r]) => W.place(name, {...o, x:SX + (x * sc + z * ss) * U, y:y * U, z:SZ + (-x * ss + z * sc) * U, rot:SR_ + (r || 0)}));
     W.mmRect(149.9, 164.6, 163.4, 191.4, '#c9c3b5'); W.mmLabel(157, 170, '동화상가', 11);
     // (2026-11-18 2차) 공중전화 부스 셋: 상가 뒤(서쪽) 벽에 붙여 나란히, 열린 쪽이 서쪽. 가운데 통로 · 뒤 계단(z 175.8 ~ 180.2)은 비움
-    W.placeMany('phoneBooth', [185.45, 186.6, 187.75].map(z => ({x:152.1, z, rot:-PI / 2})));
+    W.placeMany('phoneBooth', PHONES.slice(0, 3));
 
     // ── 놀이터·공터 ──
     { const m = flat(PLAY[0], PLAY[1], PLAY[2], PLAY[3], G(0xf3ecdc).clone(), .02); m.material.polygonOffset = true; m.material.polygonOffsetUnits = -4; W.mmRect(PLAY[0], PLAY[1], PLAY[2], PLAY[3], '#efe5d0'); }   // 아래 땅(y 0)과 깜빡이지 않게 W.mmLabel(80, 150, '놀이터', 13); W.mmLabel(106, 188, '공터', 11);
     const PS = 1.55;   // 놀이기구 배율: 나선 미끄럼틀(높이 3.6m)과 어울리게
-    W.place('playSet', {x:78, z:154, s:PS}); W.place('spiralSlide', {x:SLIDE.x, z:SLIDE.z, rot:SLIDE.rot}); W.place('pavilion', {x:111.5, z:152});
-    W.place('seesaw', {x:80, z:168.5, rot:.05, s:PS}); W.place('merryGoRound', {x:100.5, z:168.5, s:PS});
-    W.place('springRider', {x:70.5, z:168, rot:.4, s:1.8}); W.place('springRider', {x:90, z:169, rot:-.3, color:0xd24a3a, s:1.8});
+    W.place('spiralSlide', {x:SLIDE.x, z:SLIDE.z, rot:SLIDE.rot}); 
+    spotLabel('아파트 놀이터', (PLAY[0] + PLAY[2]) / 2 - 6, 7.2, (PLAY[1] + PLAY[3]) / 2);   // (2026-11-21) 놀이기구마다 붙이지 않고 놀이터에 하나만
+
+    // 시소 · 흔들 오리 · 뺑뺑이는 탈 수 있게 놀이(activities/playground.js)가 놓는다. 자리는 layout.js의 SEESAW · DUCKS · MERRY
     // 놀이터 둘레 생울타리: 변마다 두 줄, 드나드는 자리는 비운다
     [144.7, 192.3].forEach(z => [[77.5, 21], [106.5, 21]].forEach(([x, len]) => W.place('hedgeRow', {x, z, len:len / U})));
     [65.5, 118.6].forEach(x => [[159.5, 28], [187, 9.5]].forEach(([z, len]) => W.place('hedgeRow', {x, z, len:len / U, rot:PI / 2})));

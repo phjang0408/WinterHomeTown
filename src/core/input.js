@@ -3,11 +3,13 @@ import * as THREE from '../lib/three.js';
 import { canvas, camera } from './engine.js';
 import { S } from './state.js';
 import { clamp, wrapA } from './util.js';
-import { current, doAction, stopActivity } from '../activities/registry.js';
+import { current, doAction, doAlt, stopActivity } from '../activities/registry.js';
 import { hud } from '../ui/hud.js';
 
 const KEYMAP = {KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',KeyD:'right',ArrowLeft:'camL',ArrowRight:'camR',ShiftLeft:'run',ShiftRight:'run'};
 export const freeMove = () => S.mode === 'walk' || !!(current() && current().free);
+// 시점 돌리기 · 화면 조이스틱을 쓸 수 있는지 (자유 이동이거나, 놀이가 ctl을 켰을 때: 썰매)
+export const camFree = () => freeMove() || !!(current() && current().ctl);
 
 export function initInput({onEnter, onWave, onEscape}){
   window.addEventListener('keydown', e => {
@@ -15,6 +17,7 @@ export function initInput({onEnter, onWave, onEscape}){
     if (S.mode === 'intro') { if (e.code === 'Enter') onEnter(); return; }
     if (KEYMAP[e.code]) { S.keys[KEYMAP[e.code]] = true; e.preventDefault(); }
     else if (e.code === 'KeyE' || e.code === 'Space' || e.code === 'Enter') { if (!e.repeat && !hud.modalOpen()) doAction(); if (e.code === 'Space') e.preventDefault(); }
+    else if (e.code === 'KeyR') { if (!e.repeat && !hud.modalOpen()) doAlt(); }
     else if (e.code === 'Digit1') onWave();
     else if (e.code === 'Escape') { if (!onEscape() && S.game) stopActivity(); }
   });
@@ -25,13 +28,13 @@ export function initInput({onEnter, onWave, onEscape}){
   canvas.addEventListener('pointerdown', e => {
     if (S.mode === 'intro') return;
     try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
-    if (e.pointerType === 'touch' && freeMove() && !S.joy && e.clientX < window.innerWidth * .45) {
+    if (e.pointerType === 'touch' && camFree() && !S.joy && e.clientX < window.innerWidth * .45) {
       S.joy = {id:e.pointerId, sx:e.clientX, sy:e.clientY, vx:0, vy:0, m:0};
       joyEl.style.left = e.clientX + 'px'; joyEl.style.top = e.clientY + 'px'; knob.style.transform = ''; joyEl.hidden = false; return;
     }
     ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY, sx:e.clientX, sy:e.clientY, t:performance.now()});
     if (ptrs.size === 2) { const a = [...ptrs.values()]; pinch = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); }
-    if (freeMove()) canvas.classList.add('drag');
+    if (camFree()) canvas.classList.add('drag');
   });
   canvas.addEventListener('pointermove', e => {
     const J = S.joy;
@@ -40,7 +43,7 @@ export function initInput({onEnter, onWave, onEscape}){
     const p = ptrs.get(e.pointerId); if (!p) return;
     const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
     if (ptrs.size === 2 && pinch) { const a = [...ptrs.values()], d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); S.cam.dist = clamp(S.cam.dist * pinch / d, 3, 18); pinch = d; return; }
-    if (freeMove()) { const k = e.pointerType === 'touch' ? .008 : .006; S.cam.yaw = wrapA(S.cam.yaw - dx * k); S.cam.pitch = clamp(S.cam.pitch + dy * k * .8, .05, 1.2); }
+    if (camFree()) { const k = e.pointerType === 'touch' ? .008 : .006; S.cam.yaw = wrapA(S.cam.yaw - dx * k); S.cam.pitch = clamp(S.cam.pitch + dy * k * .8, .05, 1.2); }
   });
   const end = e => { if (S.joy && e.pointerId === S.joy.id) { S.joy = null; joyEl.hidden = true; return null; }
     const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = 0; if (!ptrs.size) canvas.classList.remove('drag'); return p; };
@@ -54,4 +57,4 @@ export function initInput({onEnter, onWave, onEscape}){
   canvas.addEventListener('wheel', e => { S.cam.dist = clamp(S.cam.dist * (e.deltaY > 0 ? 1.1 : .9), 3, 18); e.preventDefault(); }, {passive:false});
 }
 // 방향키 ←→ 로 시점 돌리기
-export function turnCamera(dt){ if (freeMove()) S.cam.yaw = wrapA(S.cam.yaw + ((S.keys.camL ? 1 : 0) - (S.keys.camR ? 1 : 0)) * 1.9 * dt); }
+export function turnCamera(dt){ if (camFree()) S.cam.yaw = wrapA(S.cam.yaw + ((S.keys.camL ? 1 : 0) - (S.keys.camR ? 1 : 0)) * 1.9 * dt); }

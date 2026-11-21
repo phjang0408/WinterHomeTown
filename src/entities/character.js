@@ -54,6 +54,7 @@ export function animChar(ch, dt, moved, st, now){
     else u.em = null;
   }
   u.armR.rotation.z += (rz - u.armR.rotation.z) * Math.min(1, dt * 14);
+  u.armL.rotation.z += (-.18 - u.armL.rotation.z) * Math.min(1, dt * 14);   // (2026-11-20) 놀이가 바꾼 왼팔도 제자리로
 }
 // 감정 표현 코드: 1 손 흔들기, 2 내려치기, 3 던지기, 4 딱지 성공
 export const emote = (ch, k) => { ch.userData.em = {k, t0:performance.now()}; };

@@ -17,6 +17,7 @@ export const CATALOG = [
     ['입구 · 경계', ['aptGate', 'aptNameWall', 'noiseBarrier']],
     ['단지 도로 · 주차', ['speedBump', 'fireLane', 'wheelStop', 'planterIsland', 'disabledBay', 'noParkingSign']],
     ['안내', ['noticeBoard', 'bannerBoard', 'phoneBooth']],
+    ['군고구마', [{n:'gogumaCart', status:'placed', note:'학교 정문 북쪽 보도 (2026-11-20 2차)'}, {n:'goguma', status:'placed', note:'사면 손에 들린다'}, {n:'hotteokStall', status:'placed', note:'윗길 북쪽 보도 화단 사이 (2026-11-20 4차)'}, {n:'hotteok', status:'placed', note:'사면 손에 들린다'}]],
     ['놀이터', ['playSet', 'spiralSlide', 'merryGoRound', 'swingSet', 'swingSeat', 'springRider', 'seesaw']],
     ['쉼터 · 자전거', ['pavilion', 'bikeShelter']],
     ['분리수거', ['recycleStation', 'foodWasteBin']],
@@ -24,7 +25,7 @@ export const CATALOG = [
     ['단지 상가', [{n:'shopComplex', note:'상가 부품을 맞춘 조립 예시'}, 'shopBuilding', 'shopStairs', 'signFascia', 'signVertical', 'signRoof']],
   ]},
   {title:'공원', open:true, note:'낮춘 공원 · 둘레 순환 도로 · 공원 아래 큰 가게', cats:[
-    ['공원 안', ['parkStair', 'bench', 'parkLamp', {n:'snowmanCoop', status:'placed', note:'놀이가 공원 눈밭 가운데에 놓는다 (단계 · 녹음 변형)'}, {n:'snowman', status:'replaced', note:'함께 만드는 눈사람으로 교체 (2026-11-19)'}]],
+    ['공원 안', ['parkStair', 'bench', 'parkLamp', {n:'parkFountain', status:'placed', note:'공원 가운데 분수 광장 (2026-11-20 2차)'}, {n:'snowmanCoop', status:'placed', note:'놀이가 공원 눈밭 가운데에 놓는다 (단계 · 녹음 변형)'}, {n:'snowFieldFence', status:'placed', note:'눈사람 눈밭 둘레 (2026-11-20)'}, {n:'snowman', status:'replaced', note:'함께 만드는 눈사람으로 교체 (2026-11-19)'}]],
     ['순환 도로', ['roadHump', 'tactileStrip', 'townBus']],
     ['큰 가게 (공원 아래)', ['meatHouseSet', 'martBuildingSet', 'meatHouse', 'martBuilding', 'shoppingCart', 'cartCorral', 'parkingSign']],
     ['목욕탕 (남쪽 줄 가운데)', ['bathhouseSet', 'bathhouse', 'woodenPlatform', 'bananaMilk']],
@@ -45,7 +46,7 @@ export const CATALOG = [
     ['경계', ['brickWall', 'roadFence', 'schoolWall']],
     ['차량', ['carSedan', 'carSUV', 'carMini', 'truck1t', 'deliveryVan']],
     ['나무', ['bareTree', 'pineTree']],
-    ['강변', ['reedClump']],
+    ['강변', ['reedClump', {n:'kiteStall', status:'placed', note:'썰매장 서쪽 연 가게 (2026-11-20)'}, {n:'bangpaeKite', status:'placed', note:'연날리기 놀이가 띄운다'}]],
     ['바닥 꾸밈', ['snowDrift', 'grassTuft']],
   ]},
 ];
