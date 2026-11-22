@@ -17,7 +17,7 @@ import { S } from '../core/state.js';
 import { sfx } from '../core/fx.js';
 import { defineActivity, seatTaken } from './registry.js';
 import { SEESAWS, DUCKS, MERRY } from '../map/layout.js';
-import { PUMP, pumpStart, pumpStop, pumpFrame } from './pump.js';
+import { PUMP, pumpStart, pumpStop, pumpFrame, phaser } from './pump.js';
 
 const V = new THREE.Vector3(), atLocal = (obj, x, y, z) => { obj.updateMatrixWorld(true); return obj.localToWorld(V.set(x, y, z)).clone(); };
 const yawToward = (fx, fz, tx, tz) => Math.atan2(tx - fx, tz - fz);
@@ -54,7 +54,7 @@ defineActivity({
 
 // ── 흔들 오리 (2026-11-20 2차: 넷). 타면 E(발 구르기)를 앞으로 기울 때 누를수록 크게 흔들리고 머리가 끄덕인다 (게이지) ──
 const ducks = [], dkBusy = [];
-const DKW = 3.4, dkPhase = (i, now) => now / 1000 * DKW + i;
+const dkPhase = phaser(3.4, .7, 1);   // (2026-11-22) 세게 밀수록 빨리 흔들린다
 const dkAmp = w => w === me ? PUMP.amp : (w.sa === undefined ? .3 : w.sa);
 const dkSeat = i => atLocal(ducks[i], 0, .63 * UNIT, -.1 * UNIT);
 const dkNearest = (x, z) => DUCKS.reduce((b, d, i) => Math.hypot(x - d.x, z - d.z) < Math.hypot(x - DUCKS[b].x, z - DUCKS[b].z) ? i : b, 0);
@@ -65,21 +65,21 @@ defineActivity({
     SIT.set(ST.DUCK, {arm:-1.1, y:.06});
     POSES.set(ST.DUCK, (w, ch, now) => {
       const i = w === me ? me.seat : dkNearest(w.x, w.z), p = dkSeat(i), o = ducks[i];
-      dkBusy[i] = Math.sin(dkPhase(i, now)) * (.08 + .3 * dkAmp(w));
-      ch.position.set(p.x, p.y - .5, p.z); ch.rotation.order = 'YXZ'; ch.rotation.set(o.rotation.x * 1.2, DUCKS[i].rot, Math.sin(dkPhase(i, now) * .5) * .08 * dkAmp(w)); w.y = p.y - .5;
+      const da = dkAmp(w); dkBusy[i] = Math.sin(dkPhase(i, now, da)) * (.08 + .3 * da);
+      ch.position.set(p.x, p.y - .5, p.z); ch.rotation.order = 'YXZ'; ch.rotation.set(o.rotation.x * 1.2, DUCKS[i].rot, Math.sin(dkPhase(i, now, da) * .5) * .08 * da); w.y = p.y - .5;
     });
   },
   offer(offer){
     const i = dkNearest(me.x, me.z), d = DUCKS[i], dd = Math.hypot(me.x - d.x, me.z - d.z);
     if (dd < 2.6 && !seatTaken(d.x, d.z, ST.DUCK)) offer(dd, 2.6, '오리 타기', () => { me.st = ST.DUCK; me.seat = i; me.x = d.x; me.z = d.z;
-      pumpStart(.2, () => Math.sin(dkPhase(i, performance.now())) > .78, '오리', '오리가 앞으로 숙일 때 밀어요.');
+      pumpStart(.2, () => Math.sin(dkPhase(i, performance.now(), PUMP.amp)) > .78, '오리', '오리가 앞으로 숙일 때 밀어요.');
       me.onStand = () => { me.x = d.x + Math.cos(d.rot) * 1.6; me.z = d.z - Math.sin(d.rot) * 1.6; me.y = undefined; if (me.char) me.char.rotation.order = 'XYZ'; pumpStop(); }; });
   },
   frame(dt, now){
     ducks.forEach((o, i) => { o.rotation.x = dkBusy[i] !== false ? dkBusy[i] : o.rotation.x * (1 - Math.min(1, dt * 3)); dkBusy[i] = false; });
-    if (me.st === ST.DUCK) pumpFrame(dt, Math.max(0, Math.sin(dkPhase(me.seat, now))));
+    if (me.st === ST.DUCK) pumpFrame(dt, Math.max(0, Math.sin(dkPhase(me.seat, now, PUMP.amp))));
   },
-  remoteFrame(R){ if (R.st !== ST.DUCK && R.char && R.char.rotation.order !== 'XYZ') R.char.rotation.order = 'XYZ'; },
+  remoteFrame(R){ if (R.st !== ST.DUCK && R.st !== ST.SPIN && R.char && R.char.rotation.order !== 'XYZ') R.char.rotation.order = 'XYZ'; },
 });
 
 // ── 뺑뺑이 ──
@@ -122,7 +122,9 @@ defineActivity({
     MG.ang += MG.w * dt; MG.obj.rotation.y = MG.ang;
     // 미는 사람: 두 팔을 앞으로, 밀 때마다 몸을 숙인다
     const lean = c => { const e = (performance.now() - (c.pushT || 0)) / 1000; return e < .25 ? .35 * Math.sin(e / .25 * PI) : 0; };
-    if (me.st === ST.SPIN && me.char) { const u = me.char.userData; u.armL.rotation.x = u.armR.rotation.x = -1.35; me.char.rotation.x = lean(me); }
+    // (2026-11-22) 미는 사람이 등으로 미는 것처럼 보이던 것: 기울기를 세계 x축이 아니라 몸 기준(YXZ)으로 줘서 얼굴 쪽(앞)으로 숙인다
+    if (me.st === ST.SPIN && me.char) { const u = me.char.userData; u.armL.rotation.x = u.armR.rotation.x = -1.35; me.char.rotation.order = 'YXZ'; me.char.rotation.x = lean(me); }
+    else if (me.char && me.st !== ST.DUCK && me.char.rotation.order !== 'XYZ') me.char.rotation.order = 'XYZ';
     else if (me.st === ST.RIDE && me.char) { const u = me.char.userData; u.armL.rotation.x = u.armR.rotation.x = -1.1; }
   },
   remote(R, p){
@@ -132,7 +134,7 @@ defineActivity({
   },
   remoteFrame(R){
     if (!R.char) return; const u = R.char.userData;
-    if (R.st === ST.SPIN) { u.armL.rotation.x = u.armR.rotation.x = -1.35; const e = (performance.now() - (R.pushT || 0)) / 1000; R.char.rotation.x = e < .25 ? .35 * Math.sin(e / .25 * PI) : 0; }
+    if (R.st === ST.SPIN) { u.armL.rotation.x = u.armR.rotation.x = -1.35; const e = (performance.now() - (R.pushT || 0)) / 1000; R.char.rotation.order = 'YXZ'; R.char.rotation.x = e < .25 ? .35 * Math.sin(e / .25 * PI) : 0; }
     else if (R.st === ST.RIDE) u.armL.rotation.x = u.armR.rotation.x = -1.1;
   },
 });

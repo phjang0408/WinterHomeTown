@@ -5,6 +5,15 @@ import { me } from '../entities/player.js';
 import { sfx } from '../core/fx.js';
 
 export const PUMP = {amp:0, good:null, name:''};
+// (2026-11-22) 세기가 클수록 빨리 왔다 갔다: 자리마다 위상을 적분한다 (주기가 바뀌어도 튀지 않게). W0 = 기본 각속도, gain = 세기 1일 때 더 빨라지는 비율
+export function phaser(W0, gain, off){
+  const ph = [], last = [];
+  return (i, now, a = 0) => {
+    if (last[i] === undefined) { ph[i] = now / 1000 * W0 + i * off; last[i] = now; }
+    else if (now > last[i]) { ph[i] += Math.min(.1, (now - last[i]) / 1000) * W0 * (1 + gain * a); last[i] = now; }
+    return ph[i];
+  };
+}
 let ui = null;
 function makeUI(){
   ui = document.createElement('div'); ui.id = 'pumpui'; ui.hidden = true;

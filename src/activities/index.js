@@ -9,4 +9,5 @@ import './phone.js';
 import './kite.js';
 import './goguma.js';
 import './bus.js';
+import './arcade.js';   // (2026-11-22) 문방구 앞 오락기 · 가위바위보
 export { ACTS, current, findAction, doAction, stopActivity } from './registry.js';

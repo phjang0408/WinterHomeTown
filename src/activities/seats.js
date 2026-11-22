@@ -9,7 +9,7 @@ import { me } from '../entities/player.js';
 import { SIT, POSES } from '../entities/character.js';
 import { defineActivity, seatTaken } from './registry.js';
 import { BENCHES, SW, BIG, PAVILION } from '../map/layout.js';
-import { PUMP, pumpStart, pumpStop, pumpFrame } from './pump.js';
+import { PUMP, pumpStart, pumpStop, pumpFrame, phaser } from './pump.js';
 import { flash } from '../core/fx.js';
 import { BATH } from '../props/bigShops.js';
 
@@ -28,9 +28,9 @@ defineActivity({
 
 // ── 그네 (2026-11-20 2차): 세 틀 여섯 자리. 타면 E(발 구르기)를 그네가 끝에 다다를 때 누를수록 높이 올라간다 (게이지) ──
 const pivots = [], busy = [];
-const SWW = 2.3, swPhase = (i, now) => now / 1000 * SWW + i * 1.7;
+const swPhase = phaser(2.3, .6, 1.7);   // (2026-11-22) 세게 밀수록 빨리 왔다 갔다
 const swAmp = w => w === me ? PUMP.amp : (w.sa === undefined ? .3 : w.sa);
-const swingAngle = (i, now, a) => Math.sin(swPhase(i, now)) * (.2 + .78 * a);
+const swingAngle = (i, now, a) => Math.sin(swPhase(i, now, a)) * (.2 + .78 * a);
 const nearestSeat = (x, z) => SW.seats.reduce((b, s, i) => Math.hypot(x - s.x, z - s.z) < Math.hypot(x - SW.seats[b].x, z - SW.seats[b].z) ? i : b, 0);
 defineActivity({
   id:'swing', st:ST.SWING,
@@ -40,20 +40,20 @@ defineActivity({
     SIT.set(ST.SWING, {arm:-.45, y:.06});
     POSES.set(ST.SWING, (w, ch, now) => {
       const i = w === me ? me.seat : nearestSeat(w.x, w.z), st = SW.seats[i], th = swingAngle(i, now, swAmp(w));
-      ch.position.set(st.x, SW.top - SW.L * Math.cos(th) - .5, st.z - SW.L * Math.sin(th)); ch.rotation.set(-th * .7, 0, 0); busy[i] = th; w.y = 0;
+      ch.position.set(st.x, SW.top - SW.L * Math.cos(th) - .5, st.z - SW.L * Math.sin(th)); ch.rotation.set(th * .7, 0, 0); busy[i] = th; w.y = 0;   // (2026-11-22) 몸이 기우는 방향을 반대로 (주석이 busy 줄을 삼켜 좌석이 안 움직이던 것 수정)
     });
   },
   offer(offer){
     const i = nearestSeat(me.x, me.z), st = SW.seats[i], d = Math.hypot(me.x - st.x, me.z - st.z);
     if (d < 3.4 && !seatTaken(st.x, st.z, ST.SWING)) offer(d, 3.4, '그네 타기', () => {
       me.st = ST.SWING; me.seat = i; me.x = st.x; me.z = st.z; me.r = 0;
-      pumpStart(.25, () => Math.abs(Math.sin(swPhase(i, performance.now()))) > .78, '그네', '그네가 끝에 다다를 때 밀어요.');
+      pumpStart(.25, () => Math.abs(Math.sin(swPhase(i, performance.now(), PUMP.amp))) > .78, '그네', '그네가 끝에 다다를 때 밀어요.');
       me.onStand = () => { me.z = st.z + 2.6; me.char.rotation.x = 0; pumpStop(); };
     });
   },
   frame(dt, now){
     pivots.forEach((p, i) => { p.rotation.x = busy[i] !== false ? busy[i] : p.rotation.x * (1 - Math.min(1, dt * 3)); busy[i] = false; });
-    if (me.st === ST.SWING) pumpFrame(dt, Math.abs(Math.sin(swPhase(me.seat, now))));
+    if (me.st === ST.SWING) pumpFrame(dt, Math.abs(Math.sin(swPhase(me.seat, now, PUMP.amp))));
   },
   remote(R, p){ R.sa = p.sa[0] / 100; },
 });
@@ -64,7 +64,7 @@ const PLAT = (() => { const cx = BIG.bath.x, cz = BIG.back - BATH.D / 2 * UNIT; 
 const EDGES = [
   {label:'평상에 앉기', r:PI, x:PLAT.x, z:PLAT.z, seats:[-.9, -.25, .35].map(lx => ({x:PLAT.x - lx * UNIT, z:PLAT.z - .62 * UNIT})), out:[0, -1.6],
     // (2026-11-20 4차) 목욕탕 평상에 앉으면 바나나우유를 들고 가끔 한 모금씩 (activities/goguma.js가 손에 그린다)
-    onSit:() => { me.prevIt = me.it; me.it = [2, 1, 0]; flash('목욕 끝엔 역시 바나나우유!'); }, onLeave:() => { if (me.it && me.it[0] === 2) me.it = me.prevIt && me.prevIt[0] !== 2 ? me.prevIt : [0, 0, 0]; }},
+    onSit:() => { me.prevIt = me.it; me.it = [2, 1, 0]; }, onLeave:() => { if (me.it && me.it[0] === 2) me.it = me.prevIt && me.prevIt[0] !== 2 ? me.prevIt : [0, 0, 0]; }},   // (2026-11-22) 앉을 때 알림 글은 뺐다
   // 놀이터 옆 쉼터(정자) 마루 (2026-11-20 2차): 앞(+z) 마루 끝 세 자리
   (() => { const P = PAVILION, k = P.s * UNIT, c = Math.cos(P.rot), s = Math.sin(P.rot), at = (lx, lz) => ({x:P.x + (lx * c + lz * s) * k, z:P.z + (-lx * s + lz * c) * k});
     return {label:'마루에 앉기', r:P.rot, x:P.x, z:P.z, seats:[-.95, 0, .95].map(lx => at(lx, 1.62)), out:[Math.sin(P.rot) * 1.6 * P.s, Math.cos(P.rot) * 1.6 * P.s], reach:4.2 * P.s}; })(),

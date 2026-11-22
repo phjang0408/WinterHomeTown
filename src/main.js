@@ -86,7 +86,7 @@ function bindUi(){
   $('roster-close').onclick = () => { $('roster').hidden = true; };
   $('res-close').onclick = () => { $('result').hidden = true; };
   $('res-again').onclick = () => { $('result').hidden = true; if (S.mode === 'walk' && hud.again) hud.again(); };
-  $('game-quit').onclick = stopActivity; $('slam').onclick = () => current() && current().onAction && current().onAction();
+  $('game-quit').onclick = stopActivity; hud.onTopQuit = stopActivity; $('slam').onclick = () => current() && current().onAction && current().onAction();
   $('prompt').onclick = () => { const a = findAction(); if (a) a.run(); };
   $('wave').onclick = doWave;
   $('snd').onclick = () => { audio.on = !audio.on; $('snd').textContent = audio.on ? '소리 켬' : '소리 끔'; $('snd').setAttribute('aria-pressed', audio.on); };

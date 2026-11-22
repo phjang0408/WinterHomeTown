@@ -84,8 +84,10 @@ export function spiralBank(pts, i){
   return -Math.max(-.2, Math.min(.2, curv * .6)) * fade;   // (2026-11-21) 기울기도 절반쯤으로
 }
 defineProp('spiralSlide', {label:'U자 미끄럼틀', category:'놀이터', isNewStyle:true,
-  height:(x, z) => { const mx = x / U, mz = z / U, S = SPIRAL, D = S.deck, T = S.stair; if (mx >= D[0] && mx <= D[2] && mz >= D[1] && mz <= D[3]) return S.H * U;
-    return mx >= T[0] && mx <= T[2] && mz > T[1] && mz <= T[3] ? S.H * (1 - (mz - T[1]) / (T[3] - T[1])) * U : null; },
+  // (2026-11-22) 발 높이(y)보다 한참 높은 탑 바닥 · 계단은 무시한다: 탑 밑으로 걸어 들어가면 탑 위로 순간이동하던 버그
+  height:(x, z, y) => { const mx = x / U, mz = z / U, S = SPIRAL, D = S.deck, T = S.stair, low = h => y !== undefined && h - y > .8 ? null : h;
+    if (mx >= D[0] && mx <= D[2] && mz >= D[1] && mz <= D[3]) return low(S.H * U);
+    return mx >= T[0] && mx <= T[2] && mz > T[1] && mz <= T[3] ? low(S.H * (1 - (mz - T[1]) / (T[3] - T[1])) * U) : null; },
   colliders:(() => { const S = SPIRAL, D = S.deck, T = S.stair;
     return [[T[0] - .12, T[1], T[0], T[3]], [T[2], T[1], T[2] + .12, T[3]], [D[0] - .12, D[1], D[0], D[3]], [D[2], D[1], D[2] + .12, D[3]], [D[0], D[3] - .06, T[0], D[3] + .06], [T[2], D[3] - .06, D[2], D[3] + .06]]
       .map(r => ({r:r.map(v => v * U)})).concat([{r:[D[0], D[1] - .14, D[2], D[1] + .02].map(v => v * U), y0:(S.H - 1.2) * U}]); })(),   // (2026-11-21) 탑 앞(미끄럼판 쪽)은 탑 위에서만 막는다: 걸어 나가다 떨어지지 않게

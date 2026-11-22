@@ -73,3 +73,50 @@ defineProp('schoolWall', {label:'학교 담', category:'경계', isNewStyle:true
     for (let i = 0; i < n; i++) { const x = -h + (i + .5) * L / n; if (Math.abs(x - h) < .05) continue; P.add('stl', box(x - .011, SW_.cap - .02, -.011, x + .011, SW_.top - .04, .011), STEEL); }   // 세로살
     P.bake('con', groundAO(.35, .7));
     return assemble(P, [['con', concreteMaterial()], ['stl', paintMaterial(0xffffff, {seed:45, gloss:.4, metal:.3})], ['snw', snowMaterial({seed:61}), false]], [L, SW_.top, .3]); }});
+
+// ── 양은 쟁반 (2026-11-22) ──
+//   참고: 사용자 사진(둥근 은색 알루미늄 쟁반, 가운데 모란 꽃다발 인쇄, 위에 '大' 크기 표시). 꽃 그림은 사진을 베끼지 않고 새로 그렸고 상표 · 도장은 넣지 않았다.
+//   정체성: 은색 얕은 원판, 말아 올린 둥근 테두리, 가운데 붉은 · 자주 모란과 초록 잎 꽃다발, 위쪽 '大'.
+//   치수: 大 지름 0.42m · 높이 2.9cm (s:'M'이면 지름 0.34m). 옆모습을 돌린 얇은 판 한 장(안 · 바깥 · 말린 테두리). 재질: 금속(정점 색) + 꽃 그림(투명 바탕) 두 개.
+//   옵션: n 쌓은 개수, lean 벽에 기댄 기울기(라디안, 0이면 눕힘). 기대 놓을 때 앞(+z)이 그림 쪽, 뒤(-z)가 벽 쪽.
+const TRAY = {L:.21, M:.17};
+const trayProfile = R => { const k = R / .21; return [[0, .004], [.172 * k, .004], [.184 * k, .0075], [.197 * k, .0235], [.2015 * k, .0285], [.2065 * k, .029], [.2095 * k, .0255], [.2085 * k, .021], [.2045 * k, .0205], [.192 * k, .006], [.181 * k, 0], [0, 0]]; };
+function peony(g, x, y, r, c1, c2, c3, R){
+  for (let ring = 4; ring >= 0; ring--) { const rr = r * (.35 + ring * .17), n = 7 + ring * 2;
+    for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2 + ring * .4 + R() * .3, px = x + Math.cos(a) * rr * .55, py = y + Math.sin(a) * rr * .45;
+      g.fillStyle = ring > 2 ? c1 : ring > 0 ? c2 : c3; g.beginPath(); g.ellipse(px, py, rr * .42, rr * .3, a + Math.PI / 2, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = 'rgba(255,235,240,.55)'; g.lineWidth = 1.6; g.beginPath(); g.ellipse(px, py, rr * .36, rr * .22, a + Math.PI / 2, Math.PI * 1.1, Math.PI * 1.9); g.stroke(); } }
+}
+function aster(g, x, y, r, c, R){
+  for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2 + R() * .1; g.fillStyle = i % 2 ? c : '#6a3fb8'; g.beginPath(); g.ellipse(x + Math.cos(a) * r * .55, y + Math.sin(a) * r * .55, r * .5, r * .14, a, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = '#f2c51f'; g.beginPath(); g.arc(x, y, r * .25, 0, Math.PI * 2); g.fill();
+}
+function leaf(g, x, y, len, a){
+  g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = '#3f9a3a'; g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(len * .5, -len * .32, len, 0); g.quadraticCurveTo(len * .5, len * .32, 0, 0); g.fill();
+  g.strokeStyle = '#a8dc7a'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(2, 0); g.lineTo(len * .9, 0); g.stroke(); g.restore();
+}
+const trayPrint = () => once('trayPrint', () => { const m = decalMaterial(canvasTex(512, 512, g => {
+  g.clearRect(0, 0, 512, 512); const R = mulberry(23);
+  [[150, 300, 80, -2.6], [360, 320, 90, -.4], [200, 380, 70, 2.2], [330, 200, 70, -1.2], [140, 220, 75, -2.2], [270, 400, 60, 1.6], [400, 250, 60, -.3], [110, 330, 55, 2.8], [250, 150, 55, -1.7]].forEach(([x, y, l, a]) => leaf(g, x, y, l, a));
+  g.strokeStyle = '#3f8a3a'; g.lineWidth = 3; [[230, 300, 300, 140], [260, 300, 380, 200], [240, 310, 160, 180]].forEach(([a, b, c, d]) => { g.beginPath(); g.moveTo(a, b); g.quadraticCurveTo((a + c) / 2 + 20, (b + d) / 2, c, d); g.stroke(); });
+  [[300, 140], [322, 150], [342, 162], [360, 176], [376, 192]].forEach(([x, y]) => { g.fillStyle = '#d8283a'; g.beginPath(); g.ellipse(x, y + 8, 7, 9, 0, 0, Math.PI * 2); g.fill(); });   // 늘어진 붉은 봉오리 줄
+  peony(g, 200, 300, 62, '#b01e34', '#d83a52', '#f07a8c', R);       // 큰 붉은 모란
+  peony(g, 330, 270, 58, '#a2287e', '#c8409a', '#ef8ac8', R);       // 자주 모란
+  peony(g, 175, 190, 36, '#9c1c30', '#c8344a', '#f08a98', R);       // 작은 붉은 모란 (위)
+  peony(g, 300, 395, 30, '#b8309a', '#dc5cba', '#f6a6dc', R);       // 분홍 (아래)
+  aster(g, 280, 175, 26, '#8a5ce0', R); aster(g, 255, 330, 22, '#7d52d6', R);
+  [[245, 285], [262, 300], [238, 305]].forEach(([x, y]) => { g.fillStyle = '#f2b632'; g.beginPath(); g.arc(x, y, 7, 0, Math.PI * 2); g.fill(); });
+  g.fillStyle = '#3a3a3a'; g.font = '700 30px ' + FONT_B; g.textAlign = 'center'; g.fillText('大', 256, 92);
+}), {rough:.55, alpha:true}); m.depthWrite = false; m.polygonOffsetFactor = -4; m.polygonOffsetUnits = -4; return m; });
+defineProp('aluminumTray', {label:'양은 쟁반', category:'큰 가게', isNewStyle:true, small:true, far:60,
+  variants:[{label:'눕힘 (大)', opts:{}}, {label:'세 개 쌓음', opts:{n:3}}, {label:'벽에 기댐', opts:{lean:1.22}}, {label:'中', opts:{s:'M'}}],
+  usage:"W.place('aluminumTray', {x, z, y, rot, n: 1, lean: 0, s: 'L'});  // 지름 0.42m(中 0.34m), 높이 2.9cm. lean이면 뒤(-z)를 벽에 기댄다", build(o = {}){
+    const Rr = TRAY[o.s || 'L'], n = o.n || 1, lean = o.lean || 0, P = new Parts(), prof = trayProfile(Rr);
+    // 기댈 때: 앞 끝이 바닥에 닿도록 들어 올리고, 뒤 끝은 -z로 간다
+    const place = (g, i) => lean ? xf(g, {rx:lean, y:Rr * Math.sin(lean) + .002, z:.004}) : xf(g, {y:i * .009});
+    for (let i = 0; i < n; i++) { const t = lathe(prof, 56); P.add('met', place(t, i), [0xdfe3e6, 0xd4d9dd, 0xe6e9eb][i % 3]); }
+    P.bake('met', groundAO(.03, .78));
+    const pr = new THREE.CircleGeometry(Rr * .78, 40); pr.rotateX(-Math.PI / 2); place(pr, n - 1); pr.translate(0, .0048, 0);   // 맨 위 쟁반 바닥에만 그림
+    if (lean) { pr.translate(0, -.0048, 0); const nrm = new THREE.Vector3(0, 1, 0).applyAxisAngle(new THREE.Vector3(1, 0, 0), lean); pr.translate(nrm.x * .0048, nrm.y * .0048, nrm.z * .0048); }
+    const print = new THREE.Mesh(pr, trayPrint()); print.renderOrder = 2;
+    return assemble(P, [['met', metalMaterial({color:0xffffff, rough:.34})]], [Rr * 2, lean ? Rr * 2 * Math.sin(lean) : .03 + n * .009, Rr * 2], [print]); }});

@@ -28,10 +28,10 @@ export const CATALOG = [
     ['공원 안', ['parkStair', 'bench', 'parkLamp', {n:'parkFountain', status:'placed', note:'공원 가운데 분수 광장 (2026-11-20 2차)'}, {n:'snowmanCoop', status:'placed', note:'놀이가 공원 눈밭 가운데에 놓는다 (단계 · 녹음 변형)'}, {n:'snowFieldFence', status:'placed', note:'눈사람 눈밭 둘레 (2026-11-20)'}, {n:'snowman', status:'replaced', note:'함께 만드는 눈사람으로 교체 (2026-11-19)'}]],
     ['순환 도로', ['roadHump', 'tactileStrip', 'townBus']],
     ['큰 가게 (공원 아래)', ['meatHouseSet', 'martBuildingSet', 'meatHouse', 'martBuilding', 'shoppingCart', 'cartCorral', 'parkingSign']],
-    ['목욕탕 (남쪽 줄 가운데)', ['bathhouseSet', 'bathhouse', 'woodenPlatform', 'bananaMilk']],
+    ['목욕탕 (남쪽 줄 가운데)', ['bathhouseSet', 'bathhouse', 'woodenPlatform', 'bananaMilk', {n:'aluminumTray', note:'양은 쟁반 (2026-11-22, 목욕탕 평상)'}]],
   ]},
   {title:'학교', open:true, note:'학교는 닫음 (방학 중). 학교 앞 동쪽 줄의 문구점 · 근린상가', cats:[
-    ['학교 앞 문구점', [{n:'stationeryCorner', note:'문구점 부품을 맞춘 조립 예시'}, 'stationeryShop', 'shopAwning', 'gachaRow', 'miniArcade', 'iceFreezer', 'drinkFridge', 'kidStool', 'hulaHoops']],
+    ['학교 앞 문구점', [{n:'stationeryCorner', note:'문구점 부품을 맞춘 조립 예시'}, 'stationeryShop', 'shopAwning', 'gachaRow', 'miniArcade', 'iceFreezer', 'drinkFridge', 'kidStool', 'hulaHoops', {n:'rpsMachine', note:'가위바위보 오락기 (2026-11-22, 놀이: activities/arcade.js)'}, {n:'zoneSign', note:'게임존 · 키링존 불 간판 (2026-11-22)'}, {n:'zoneMat', note:'게임존 · 키링존 바닥 매트 (2026-11-22)'}]],
     ['근린상가 (조립 예시)', ['shopTowerBrickSet', 'shopTowerBeigeSet', 'shopTowerGraySet', 'shopTowerGreenSet']],
     ['근린상가 몸체', ['shopTowerBrick', 'shopTowerBeige', 'shopTowerGray', 'shopTowerGreen']],
     ['근린상가 앞 물건', ['barberPole', 'fruitStand', 'deliveryScooter']],

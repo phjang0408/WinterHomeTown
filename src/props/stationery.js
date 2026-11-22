@@ -10,6 +10,7 @@ import { box, tube, lathe, fillet, ridge, blob, xf, groundAO, bakeAO, triCount, 
 import { matteMaterial, snowMaterial, decalMaterial, metalMaterial, concreteMaterial, plasticMaterial, glassMaterial, clearMaterial, brickWallMaterial, paintMaterial, woodMaterial } from '../core/texkit.js';
 import { assemble, quad, quadZ, mulberry } from './kit.js';
 import { UNIT, FONT_D, FONT_B } from '../config.js';
+import { drawRpsFace, RPS_W, RPS_H } from './rpsArt.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z), U = UNIT;
 const once = (() => { const m = new Map(); return (k, f) => { if (!m.has(k)) m.set(k, f()); return m.get(k); }; })();
@@ -198,6 +199,65 @@ defineProp('miniArcade', {label:'작은 오락기', category:'문구점', isNewS
     P.bake('pnt', groundAO(.3, .72));
     return assemble(P, [['pnt', plasticMaterial({rough:.38})], ['pla', plasticMaterial({rough:.3}), false], ['mat', matteMaterial(), false], ['snw', snowMaterial({seed:74}), false]], [w, 1.47, .56], [new THREE.Mesh(D.geo('scr'), arcadeScreen())]); }});
 
+// ───────── 가위바위보 오락기 (2026-11-22): 파란 앞판(원판 · 가운데 LED 손 · 동전 판), 아래 검은 턱에 빨간 버튼 셋, 철제 받침 ─────────
+//   정체성: 파란 판의 큰 노란 제목, 숫자 칸 고리와 가운데 LED 손, 빨간 둥근 버튼 셋, 오른쪽 은색 동전 판. 앞판 그림은 props/rpsArt.js (놀이 화면과 같은 그림)
+//   치수: 폭 0.64m, 높이 1.45m (받침 0.74m + 몸통), 깊이 0.34m. 재질: 칠(받침 · 몸통 · 턱), 플라스틱(버튼 · 동전 판), 눈, 앞판 그림
+const rpsFace = () => once('rpsFace', () => decalMaterial(canvasTex(RPS_W, RPS_H, g => drawRpsFace(g, {hand:1})), {rough:.35}));
+defineProp('rpsMachine', {label:'가위바위보 오락기', category:'문구점', isNewStyle:true, colliders:[{r:[-.33 * U, -.2 * U, .33 * U, .27 * U]}],
+  usage:"W.place('rpsMachine', {x, z, rot});  // 폭 0.64m, 높이 1.45m. 앞(+z)에 서서 버튼을 누른다 (activities/arcade.js)", build(){
+    const P = new Parts(), hw = .32, y0 = .74, y1 = 1.38;
+    P.add('pnt', box(-.25, 0, -.15, .25, .05, .13, .01), 0x5d646b);                                             // 받침 발판
+    [-1, 1].forEach(sx => [-1, 1].forEach(sz => P.add('pnt', box(sx * .2 - .02, .05, sz * .1 - .02, sx * .2 + .02, y0, sz * .1 + .02, .006), 0x8e959b)));   // 받침 다리 넷
+    P.add('pnt', box(-.26, .3, -.14, .26, .33, .12, .006), 0x8e959b);                                           // 다리 사이 선반
+    P.add('pnt', box(-hw, y0, -.17, hw, y1, .15, .02), 0x1f56e6);                                               // 몸통 (파랑)
+    P.add('pnt', box(-hw - .01, y1, -.18, hw + .01, y1 + .035, .16, .01), 0x2b2f35);                            // 윗 갓
+    P.add('pnt', box(-hw, y0 - .02, .12, hw, y0 + .1, .27, .02), 0x15171a);                                     // 아래 검은 턱 (버튼 판)
+    [-.1, 0, .1].forEach(x => { P.add('pla', xf(new THREE.CylinderGeometry(.052, .056, .014, 18), {x, y:y0 + .107, z:.2}), 0x2b2f35);
+      P.add('pla', xf(new THREE.SphereGeometry(.046, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), {x, y:y0 + .112, z:.2, sy:.7}), 0xd91e1e); });   // 빨간 버튼 셋
+    [-.26, .26].forEach(x => P.add('pla', xf(new THREE.SphereGeometry(.026, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), {x, y:y0 + .105, z:.2, sy:.6}), 0x9aa0a6));   // 양끝 나사 손잡이
+    P.add('pla', box(.17, y0 + .3, .15, .28, y0 + .52, .175, .008), 0xb9bec4);                                  // 동전 판 (튀어나옴)
+    P.add('pnt', box(.215, y0 + .44, .174, .235, y0 + .5, .18), 0x2c2f33);                                       // 동전 구멍
+    P.add('snw', box(-hw + .02, y1 + .035, -.16, hw - .02, y1 + .07, .14, .02)); P.add('snw', xf(blob(.12, .03, .08, {seed:3, seg:8}), {x:-.12, y:y1 + .07}));
+    P.bake('pnt', groundAO(.35, .7));
+    const face = new THREE.Mesh(quadZ(-hw + .01, y0 + .1, hw - .01, y1 - .01, .152, [0, 0, 1, 1]), rpsFace());   // 앞판 그림 (600 × 480 비율에 가깝게)
+    return assemble(P, [['pnt', plasticMaterial({rough:.36})], ['pla', plasticMaterial({rough:.22}), false], ['snw', snowMaterial({seed:78}), false]], [.66, 1.45, .45], [face]); }});
+
+// ───────── 구역 표지 (2026-11-22): '게임존' · '키링존' ─────────
+//   zoneSign: 기둥 둘 + 불 들어오는 간판 상자(테두리에 전구). 앞(+z)에 글. 폭 w(기본 2.2m), 높이 2.95m.
+//   zoneMat : 바닥 고무 매트(두께 2cm) + 윗면 글 · 줄무늬 테두리. 폭 w × 깊이 d.
+const zoneFace = (text, sub, bg, fg) => once('zf' + text, () => decalMaterial(canvasTex(1024, 288, g => {
+  g.fillStyle = bg; g.fillRect(0, 0, 1024, 288); g.strokeStyle = fg; g.lineWidth = 10; g.strokeRect(22, 22, 980, 244);
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '150px ' + FONT_D; g.lineJoin = 'round'; g.strokeStyle = '#1b1b1b'; g.lineWidth = 16; g.strokeText(text, 512, 128); g.fillStyle = fg; g.fillText(text, 512, 128);
+  g.font = '700 40px ' + FONT_B; g.fillStyle = '#ffffff'; g.fillText(sub, 512, 236);
+}), {rough:.4}));
+defineProp('zoneSign', {label:'구역 표지 (불 간판)', category:'문구점', isNewStyle:true, colliders:[{c:[-1, 0, .08 * U]}, {c:[1, 0, .08 * U]}],
+  variants:[{label:'게임존', opts:{text:'게임존'}}, {label:'키링존', opts:{text:'키링존', bg:'#c2185b', sub:'가위바위보 · 뽑기'}}],
+  usage:"W.place('zoneSign', {x, z, rot, text:'게임존', sub:'오락기 · 딱지', bg:'#1f4fd0', fg:'#ffd23f', w:2.2});  // 높이 2.95m, 앞(+z)에 글", build(o = {}){
+    const w = o.w || 2.2, hw = w / 2, y0 = 2.15, y1 = 2.8, P = new Parts(), text = o.text || '게임존', sub = o.sub || '오락기 · 딱지', bg = o.bg || '#1f4fd0', fg = o.fg || '#ffd23f';
+    [-1, 1].forEach(sx => P.add('pnt', box(sx * (hw - .12) - .035, 0, -.035, sx * (hw - .12) + .035, y0 + .05, .035, .008), 0x5d646b));          // 기둥 둘
+    P.add('pnt', box(-hw, y0, -.08, hw, y1, .07, .015), 0x2b2f35);                                                                     // 간판 상자
+    P.add('pnt', box(-hw - .02, y1, -.09, hw + .02, y1 + .04, .08, .01), 0x1b1d21);
+    for (let i = 0; i <= 14; i++) [y0 + .03, y1 - .03].forEach(y => P.add('glow', xf(new THREE.SphereGeometry(.022, 8, 6), {x:-hw + .05 + i * (w - .1) / 14, y, z:.075}), i % 2 ? 0xffe9a0 : 0xffffff));   // 전구 줄
+    [0, 1, 2, 3].forEach(i => [-1, 1].forEach(sx => P.add('glow', xf(new THREE.SphereGeometry(.022, 8, 6), {x:sx * (hw - .03), y:y0 + .12 + i * .14, z:.075}), 0xffe9a0)));
+    P.add('snw', box(-hw + .02, y1 + .04, -.08, hw - .02, y1 + .075, .07, .015));
+    P.bake('pnt', groundAO(.4, .72));
+    const face = new THREE.Mesh(quadZ(-hw + .03, y0 + .03, hw - .03, y1 - .03, .0712, [0, 0, 1, 1]), zoneFace(text, sub, bg, fg));
+    return assemble(P, [['pnt', paintMaterial(0xffffff, {seed:27, gloss:.5, metal:.3})], ['glow', glow(), false], ['snw', snowMaterial({seed:79}), false]], [w, 2.95, .2], [face]); }});
+const matTex = (text, col) => once('zm' + text, () => decalMaterial(canvasTex(512, 1024, g => {
+  g.fillStyle = col; g.fillRect(0, 0, 512, 1024);
+  for (let i = -1024; i < 1536; i += 64) { g.fillStyle = '#ffd23f'; g.beginPath(); g.moveTo(i, 0); g.lineTo(i + 32, 0); g.lineTo(i + 32 + 24, 24); g.lineTo(i + 24, 24); g.fill(); }   // 위아래 노랑 빗금 띠
+  g.fillStyle = '#ffd23f'; g.fillRect(0, 0, 24, 1024); g.fillRect(488, 0, 24, 1024); g.fillRect(0, 1000, 512, 24); g.fillRect(0, 0, 512, 24);
+  g.save(); g.translate(256, 640); g.rotate(-Math.PI / 2); g.font = '170px ' + FONT_D; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = 'rgba(255,255,255,.88)'; g.fillText(text, 0, 0); g.restore();
+  g.fillStyle = 'rgba(255,255,255,.18)'; for (let k = 0; k < 9; k++) { g.beginPath(); g.arc(256, 120 + k * 4, 50 - k * 4, 0, 7); g.fill(); }
+}), {rough:.85}));
+defineProp('zoneMat', {label:'구역 바닥 매트', category:'문구점', isNewStyle:true, small:true, groundPreview:true,
+  variants:[{label:'게임존', opts:{text:'게임존'}}, {label:'키링존', opts:{text:'키링존', col:'#8e1d4e'}}],
+  usage:"W.place('zoneMat', {x, z, rot, w:3.7, d:6.6, text:'게임존', col:'#1d3a8a'});  // 두께 2cm 고무 매트, 글은 세로로", build(o = {}){
+    const w = o.w || 3.7, d = o.d || 6.6, P = new Parts();
+    P.add('rub', box(-w / 2, 0, -d / 2, w / 2, .02, d / 2, .006), 0x2a2d33);
+    const top = new THREE.Mesh(quad([-w / 2 + .01, .0205, d / 2 - .01], [w / 2 - .01, .0205, d / 2 - .01], [w / 2 - .01, .0205, -d / 2 + .01], [-w / 2 + .01, .0205, -d / 2 + .01], [0, 0, 1, 1]), matTex(o.text || '게임존', o.col || '#1d3a8a'));
+    return assemble(P, [['rub', matteMaterial(), false]], [w, .02, d], [top]); }});
+
 // ───────── 아이스크림 냉장고: 흰 상자, 위 미닫이 유리, 안에 아이스크림 ─────────
 const iceLabel = () => once('iceLabel', () => decalMaterial(canvasTex(512, 128, g => { g.fillStyle = '#2f6fb5'; g.fillRect(0, 0, 512, 128); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.font = '72px ' + FONT_D; g.fillText('눈꽃 아이스', 256, 66); g.fillStyle = '#ffd23f'; g.fillRect(0, 112, 512, 16); }), {rough:.5}));
@@ -253,9 +313,20 @@ defineProp('hulaHoops', {label:'훌라후프 걸이', category:'문구점', isNe
 // [소품, 옵션, x, y, z, 회전] (미터, 건물 원점 기준, 가게 앞이 +z)
 export const STATIONERY_LAYOUT = [
   ['stationeryShop', {}, 0, 0, 0], ['shopAwning', {w:9.6}, 0, 0, STN.D / 2 + .02],
-  ['drinkFridge', {}, -4.95, 0, 3.98], ['gachaRow', {n:4}, -2.85, 0, 4.25], ['iceFreezer', {}, -.55, 0, 4.15],
-  ['miniArcade', {c:0x2f6fb5}, 2.15, 0, 4.15], ['miniArcade', {c:0xd83a2e}, 2.95, 0, 4.15], ['kidStool', {}, 2.55, 0, 4.95],
-  ['hulaHoops', {}, -5.85, 0, 3.65]];
+  // (2026-11-22 2차) 가게 서쪽 벽 = 게임존 (작은 오락기 둘이 벽을 등지고 서쪽을 본다, 걸상, 바닥 매트, 불 간판)
+  ['zoneMat', {text:'게임존', col:'#1d3a8a', w:3.7, d:6.6}, -7.45, 0, -.2], ['zoneSign', {text:'게임존', sub:'오락기 · 딱지', bg:'#1f4fd0', fg:'#ffd23f'}, -7.45, 0, 2.75],
+  ['miniArcade', {c:0x2f6fb5}, -5.82, 0, -1.2, -Math.PI / 2], ['miniArcade', {c:0xd83a2e}, -5.82, 0, -.35, -Math.PI / 2],
+  ['kidStool', {}, -6.62, 0, -1.2, -Math.PI / 2], ['kidStool', {}, -6.62, 0, -.35, -Math.PI / 2],
+  //   가게 동쪽 벽 = 키링존 (가위바위보 오락기 + 뽑기 기계 줄이 벽을 등지고 동쪽을 본다, 바닥 매트, 불 간판)
+  ['zoneMat', {text:'키링존', col:'#8e1d4e', w:3.7, d:6.6}, 7.45, 0, -.2], ['zoneSign', {text:'키링존', sub:'가위바위보 · 뽑기', bg:'#c2185b', fg:'#ffe9a0'}, 7.45, 0, 2.75],
+  ['rpsMachine', {}, 5.75, 0, -1.6, Math.PI / 2], ['gachaRow', {n:4}, 5.82, 0, .9, Math.PI / 2],
+  //   가게 앞: 냉장고 둘과 훌라후프만 (앞마당을 넓게)
+  ['drinkFridge', {}, -3.0, 0, 3.98], ['iceFreezer', {}, -.6, 0, 4.15], ['hulaHoops', {}, 3.6, 0, 3.65]];
+  // (가게 안 양은 쟁반은 사용자 요청으로 뺐다. 쟁반은 목욕탕 평상 위에만)
+// 오락기 놀이 자리 (activities/arcade.js): 건물 원점 기준 미터, 기계 위치와 방향 r. 사람은 기계 앞 0.8m에 선다
+export const STATIONERY_ARCADES = [{kind:'cab', x:-5.82, z:-1.2, r:-Math.PI / 2}, {kind:'cab', x:-5.82, z:-.35, r:-Math.PI / 2}, {kind:'rps', x:5.75, z:-1.6, r:Math.PI / 2}, {kind:'gacha', x:5.82, z:.9, r:Math.PI / 2}];
+// 구역 이름표 자리 (건물 원점 기준 미터): 미니맵 · 떠 있는 이름표
+export const STATIONERY_ZONES = [['게임존', -7.45, -.2], ['키링존', 7.45, -.2]];
 export const STATIONERY_PLAY = {ttakji:[-2.2, 6.9]};     // 딱지치기 자리 (건물 원점 기준, 미터)
 defineProp('stationeryCorner', {label:'문구점 (조립 예시)', category:'문구점', isNewStyle:true, blocksCamera:true,
   usage:"STATIONERY_LAYOUT.forEach(([n, o, x, y, z, r]) => W.place(n, {...o, x: cx + x * UNIT, y: y * UNIT, z: cz + z * UNIT, rot: r || 0}));", build(){

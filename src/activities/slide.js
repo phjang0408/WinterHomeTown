@@ -42,7 +42,7 @@ const slide = defineActivity({
     });
   },
   offer(offer){
-    if (W.groundY(me.x, me.z) < SPIRAL.H * UNIT - .3) return;        // 탑 위에 있을 때만
+    if (W.groundY(me.x, me.z, me.y) < SPIRAL.H * UNIT - .3) return;  // 탑 위에 있을 때만 (2026-11-22: 발 높이로 판정, 탑 밑에서는 안 뜬다)
     offer(Math.hypot(me.x - TOP[0], me.z - TOP[2]), 3.2, '미끄럼틀 타기', slide.start);
   },
   start(){ begin(slide, {t:0, puffT:0}); me.slideU = 0; sfx(300, 900, DUR, 'triangle', .04); flash('간다~ 꽉 잡아!'); },

@@ -192,13 +192,13 @@ export function buildStreets(){
   { const PS = 1.25, P_ = (x, z, rot, v = 0) => ({x, z, rot, v, s:PS});
     const A = run(212, 432, 30).filter(x => BRIDGES.every(b => Math.abs(x - b.x) > 7)).map((x, i) => P_(x, 92.3, PI / 2, i % 3 === 1 ? 1 : 0)),
       B = [102, 146, 194, 244].map((z, i) => P_(L.x0 - 7.7, z, 0, i === 1 ? 1 : i === 2 ? 2 : 0)),   // (2026-11-18) 7개 → 4개: 맨 북쪽 · 남쪽은 두고 하나 건너 잇는다
-      D = [112, 144, 168, 192, 216].map((z, i) => P_(435.6, z, 0, i === 2 ? 1 : 0)),   // 동쪽 줄 뒤 보도. 학교 서쪽 전봇대 줄(C)은 없앴다
+      /* (2026-11-22 15차) 동쪽 줄 뒤 보도 전봇대 줄(D)은 없앴다: 근린상가가 북쪽 줄로 옮겨 가 인입선이 필요 없다 */
       F = [238, 270, 299, 329, 358, 390, 422].map((x, i) => P_(x, 212.8, PI / 2, i === 3 ? 1 : 0));   // (2026-11-17) 공원 남쪽 보도 화단 띠 위 (나무 사이), 서쪽 길 · 동쪽 줄 전봇대와 잇는다
-    const drops = [{from:1, to:[433.9, 9.2, 139.5]}, {from:1, to:[433.9, 8.6, 151]}, {from:2, to:[431.2, 6.4, 171]}, {from:3, to:[433.9, 7.2, 188]}, {from:4, to:[433.9, 8.4, 199]}];
+    // (2026-11-22) 상가로 들어가는 인입선(drops)은 없앴다: 상가는 보통 땅속으로 끌어온다
     // (2026-11-18 2차) 공원 서쪽 길(WP) 전봇대 셋은 모두 없앴다 (그리기 부담 우선): 공원 남쪽 줄(F)은 동쪽 줄에만 잇는다
-    const links = [[A[0], B[0]], [A[A.length - 1], D[0]], [F[F.length - 1], D[4]]];
-    [A, B, D, F].forEach(ps => [0, 1, 2].forEach(v => { const l = ps.filter(p => p.v === v); if (l.length) W.placeMany('utilityPole', l, {v}); }));
-    root.add(poleWires(A, {links})); root.add(poleWires(B)); root.add(poleWires(D, {drops})); root.add(poleWires(F)); }
+    const links = [[A[0], B[0]]];
+    [A, B, F].forEach(ps => [0, 1, 2].forEach(v => { const l = ps.filter(p => p.v === v); if (l.length) W.placeMany('utilityPole', l, {v}); }));
+    root.add(poleWires(A, {links})); root.add(poleWires(B)); root.add(poleWires(F)); }
   // ── 보도 (연석까지 블록) ──
   const sideX = (x0, x1, z0, z1, holes = []) => { let a = z0; [...holes, [z1, z1]].forEach(([h0, h1]) => { if (h0 > a) slab('paver', x0, a, x1, h0); a = Math.max(a, h1); }); };
   sideX(186, L.x0, NROAD.z1, ROAD.z0, [[131, 139], [198, 206]]);   // 정문 · 후문 차 길은 단지 길이 바깥 도로까지 이어진다 (보도 선에는 횡단보도) curb(L.x0 - .25, NROAD.z1, L.x0, 131); curb(L.x0 - .25, 139, L.x0, 198); curb(L.x0 - .25, 206, L.x0, ROAD.z0);   // 단지 앞 (서쪽 도로 서쪽)

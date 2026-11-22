@@ -257,7 +257,8 @@ defineProp('woodenPlatform', {label:'평상', category:'큰 가게', isNewStyle:
     P.add('mat', box(-.1, .43, -.6, 1.05, .47, .55, .02), 0xb9a77a); P.add('mat', box(.1, .47, -.5, .9, .5, .45, .02), 0xc8b78a);
     P.add('snw', box(-1.15, .43, -.7, -.25, .46, .7, .02));
     return assemble(P, [['wood', woodMaterial({seed:29})], ['mat', matteMaterial({rough:.9})], ['snw', snowMaterial({seed:85}), false]], [2.4, .6, 1.5]); }});
-BIG_SIGNS.bath = [['bananaMilk', {n:2, s:2}, 4.7, .5, 6.4, .3], ['bananaMilk', {n:1, straw:true, s:2}, 5.35, .5, 6.95, -.4], ['woodenPlatform', {}, 4.6, 0, 6.6]];   // 평상 방석(높이 0.5m) 위 바나나우유. 평상보다 먼저 놓아야 바닥 높이에 평상이 더해지지 않는다
+// (2026-11-22) 양은 쟁반을 방석 위에 깔고 바나나우유 둘을 그 위에 (쟁반 높이 2.9cm)
+BIG_SIGNS.bath = [['aluminumTray', {}, 4.72, .5, 6.42, .2], ['bananaMilk', {n:2, s:2}, 4.7, .529, 6.4, .3], ['bananaMilk', {n:1, straw:true, s:2}, 5.35, .5, 6.95, -.4], ['woodenPlatform', {}, 4.6, 0, 6.6]];   // 평상 방석(높이 0.5m) 위 바나나우유. 평상보다 먼저 놓아야 바닥 높이에 평상이 더해지지 않는다
 BIG_PROP.bath = 'bathhouse';
 defineProp('bathhouseSet', {label:'동화 목욕탕 (평상 조립 예시)', category:'큰 가게', isNewStyle:true, blocksCamera:true,
   usage:"placeBig(W, 'bath', x, z, rot);", build(){

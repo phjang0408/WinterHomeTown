@@ -198,14 +198,12 @@ export const TOWER_SIGNS = {
   brick:[
     ['signFascia', {text:'행복 부동산', sub:'아파트 · 상가 · 원룸 매매', bg:'#1f4e8c', fg:'#ffffff', w:4.9, h:.72}, -1.2, 2.8, 5.5],
     ['shopAwning', {w:4.9, proj:1.1, y0:2.72, c:0xe8742a}, -1.2, 0, 5.5],
-    ['signFascia', {text:'상가 입구', bg:'#eceff1', fg:'#37474f', w:1.9, h:.42}, 2.7, 2.95, 5.5],
     ['signFascia', {text:'솔빛 피아노 학원', bg:'#fff3c4', fg:'#7a3b8f', w:7.4, h:.7}, 0, fy(2), 5.5],
     ['signFascia', {text:'우주 PC방', sub:'24시간 · 최신 사양', bg:'#111827', fg:'#39d0ff', accent:[3, 6, '#ffcc33'], w:7.6, h:1.5}, 0, fy(3, .1), 5.5],
     ['signVertical', {text:'우주PC방', bg:'#111827', fg:'#39d0ff', len:3}, 3.86, fy(4, .4), 5.5],
     ['signFascia', {text:'바른 세무회계', bg:'#ffffff', fg:'#263238', border:'#90a4ae', w:5, h:.6}, -1.2, fy(5), 5.5]],
   beige:[
     ['signFascia', {text:'꿈나무 분식', sub:'떡볶이 · 순대 · 튀김 · 김밥', bg:'#d83a2e', fg:'#fff6d5', w:6.5, h:.72}, -.85, 2.8, 5.5],
-    ['signFascia', {text:'상가 입구', bg:'#eceff1', fg:'#37474f', w:1.3, h:.42}, 3.4, 2.95, 5.5],
     ['signFascia', {text:'하늘 바둑교실', bg:'#f4f1e6', fg:'#1b1b1b', border:'#1b1b1b', w:6.2, h:.7}, -1, fy(2), 5.5],
     ['signFascia', {text:'으뜸 보습학원', sub:'초 · 중 · 고 전과목', bg:'#1f4e8c', fg:'#ffffff', w:6.2, h:.7}, -1, fy(3), 5.5],
     ['signFascia', {text:'하얀 치과의원', bg:'#ffffff', fg:'#1d7fbf', border:'#1d7fbf', w:6.2, h:.7}, -1, fy(4), 5.5],
@@ -217,7 +215,6 @@ export const TOWER_SIGNS = {
     ['signFascia', {text:'희망 슈퍼', bg:'#2f9a4a', fg:'#ffffff', w:4.5, h:.72}, -1.2, 2.8, 5],
     ['shopAwning', {w:4.4, proj:1.3, y0:2.72, c:0x2f6fb5}, -1.2, 0, 5],
     ['fruitStand', {}, -2.1, 0, 6.15], ['drinkFridge', {}, .45, 0, 5.82],
-    ['signFascia', {text:'상가 입구', bg:'#eceff1', fg:'#37474f', w:1.8, h:.42}, 2.4, 2.95, 5],
     ['barberPole', {}, 1.2, 1.35, 5],
     ['signFascia', {text:'장미 미용실', bg:'#f7d6e0', fg:'#b0306a', w:5.6, h:.7}, 0, fy(2), 5],
     ['signFascia', {text:'왕대박 당구장', bg:'#0f5132', fg:'#ffe066', w:6.8, h:.7}, 0, fy(3), 5],
@@ -225,7 +222,6 @@ export const TOWER_SIGNS = {
     ['signFascia', {text:'동그라미 기원', bg:'#fafafa', fg:'#3e2723', border:'#6d4c41', w:5, h:.6}, 0, fy(4), 5]],
   green:[
     ['signFascia', {text:'만리장성', sub:'짜장 · 짬뽕 · 탕수육 · 배달', bg:'#c0262d', fg:'#ffe08a', w:4.5, h:.72}, -2, 2.8, 5.5],
-    ['signFascia', {text:'상가 입구', bg:'#eceff1', fg:'#37474f', w:1.8, h:.42}, 1.5, 2.95, 5.5],
     ['signFascia', {text:'열쇠 · 철물', bg:'#f2b632', fg:'#2b2b2b', w:1.5, h:.72}, 3.5, 2.8, 5.5],
     ['signFascia', {text:'튼튼 내과의원', bg:'#ffffff', fg:'#0f7a5c', border:'#0f7a5c', w:6.8, h:.7}, 0, fy(2), 5.5],
     ['signFascia', {text:'용사 태권도', sub:'유아 · 초등 · 성인부', bg:'#1f2a44', fg:'#ffffff', accent:[0, 2, '#ff5a4f'], w:6.8, h:.7}, 0, fy(3), 5.5],

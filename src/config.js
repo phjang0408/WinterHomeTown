@@ -20,7 +20,7 @@ export const COLORS = [
   {j:0x8a6f5a,h:0xe9b84e,css:'#8a6f5a'},{j:0x5a6b7d,h:0xd9695c,css:'#5a6b7d'}];
 
 // 캐릭터 상태 코드. 네트워크로 숫자가 오가므로 기존 값은 바꾸지 말고 뒤에 추가한다.
-export const ST = {WALK:0, BENCH:1, SWING:2, TARGET:3, TTAKJI:4, SNOW:5, SLED:6, SLIDE:7, CARRY:8, SEESAW:9, DUCK:10, RIDE:11, SPIN:12, PLAT:13, PHONE:14, KITE:15, BUS:16};
+export const ST = {WALK:0, BENCH:1, SWING:2, TARGET:3, TTAKJI:4, SNOW:5, SLED:6, SLIDE:7, CARRY:8, SEESAW:9, DUCK:10, RIDE:11, SPIN:12, PLAT:13, PHONE:14, KITE:15, BUS:16, ARCADE:17};
 
 // 멀티플레이 연결 방식: 'claude-room'(아티팩트 공유 기능) 또는 'websocket'(직접 띄운 서버)
 export const NET = {kind:'websocket', url:'ws://localhost:8080'};

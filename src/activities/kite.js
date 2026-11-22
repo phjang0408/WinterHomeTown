@@ -47,33 +47,36 @@ function holdArm(ch){ if (!ch) return; const u = ch.userData; u.armR.rotation.x 
 
 let mine = null;
 // ── 얼레 (2026-11-21): 연타 대신 '감기'. E(또는 화면 E 버튼)를 누르고 있거나, 얼레 그림을 빙빙 돌리면 줄이 감겨 연이 올라간다.
-//    놓으면 줄이 풀리며 천천히 내려온다(바람이 세면 버틴다). 감는 빠르기는 얼레 그림의 살이 도는 것으로 보인다.
-const REEL = {hold:false, spin:0, ang:0, el:null, drag:null};
+//    (2026-11-22) E 누르기는 없앴다: 얼레 원판만 돌린다. 시계 방향 = 감기(연이 오른다), 반대 방향 = 풀기(연이 내려온다).
+//    가만두면 줄이 조금씩 풀리며 천천히 내려온다(바람이 세면 버틴다). 살은 돌린 만큼 그대로 돈다.
+const REEL = {spin:0, ang:0, el:null, drag:null};
 function makeReel(){
   const el = document.createElement('div'); el.id = 'reel'; el.hidden = true;
-  el.style.cssText = 'position:fixed;left:14px;bottom:' + (matchMedia('(pointer:coarse)').matches ? 150 : 96) + 'px;z-index:25;width:150px;padding:8px 10px 10px;background:rgba(16,18,20,.8);border:1px solid rgba(255,255,255,.2);border-top:2px solid #e3a53b;' +
+  // (2026-11-22 2차) 오른쪽으로: R 버튼(오른쪽 아래, 높이 약 44px) 바로 위에 붙인다. 화면이 낮으면(가로 모바일) 미니맵과 겹치지 않게 R 버튼 왼쪽에
+  const small = innerHeight < 560;
+  el.style.cssText = 'position:fixed;' + (small ? 'right:160px;bottom:64px' : 'right:14px;bottom:' + (matchMedia('(pointer:coarse)').matches ? 188 : 184) + 'px') + ';z-index:25;width:' + (small ? 140 : 170) + 'px;padding:8px 10px 10px;background:rgba(16,18,20,.8);border:1px solid rgba(255,255,255,.2);border-top:2px solid #e3a53b;' +
     'color:#eceae4;font:600 12px var(--body, sans-serif);touch-action:none;user-select:none';
   el.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>얼레</span><span id="reel-h"></span></div>' +
-    '<svg id="reel-svg" viewBox="-50 -50 100 100" width="128" height="128" style="display:block;margin:0 auto;cursor:grab">' +
-    '<circle r="44" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="3"/><circle r="10" fill="#e3a53b"/>' +
+    '<svg id="reel-svg" viewBox="-50 -50 100 100" width="' + (small ? 112 : 148) + '" height="' + (small ? 112 : 148) + '" style="display:block;margin:0 auto;cursor:grab">' +
+    '<circle r="46" fill="rgba(255,255,255,.04)" stroke="rgba(255,255,255,.35)" stroke-width="3"/><circle r="10" fill="#e3a53b"/>' +
     '<g id="reel-spokes" stroke="#eceae4" stroke-width="4">' + [0, 60, 120].map(a => '<line x1="-40" y1="0" x2="40" y2="0" transform="rotate(' + a + ')"/>').join('') + '</g>' +
-    '<circle r="26" fill="none" stroke="#e3a53b" stroke-width="2" stroke-dasharray="4 5"/></svg>' +
-    '<div id="reel-w" style="text-align:center;margin-top:5px;color:#a7adb0"></div>';
+    '<circle r="26" fill="none" stroke="#e3a53b" stroke-width="2" stroke-dasharray="4 5"/>' +
+    // (2026-11-22) 화살표와 글을 원판 아래쪽에 둔다: 아래쪽에서 반시계(감기)는 오른쪽으로, 시계(풀기)는 왼쪽으로 움직이므로 글 위치와 도는 방향이 맞는다
+    '<defs><marker id="rh" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="context-stroke"/></marker></defs>' +
+    '<path d="M 10 46 A 47 47 0 0 0 36 30" fill="none" stroke="#e3a53b" stroke-width="3" marker-end="url(#rh)"/>' +
+    '<path d="M -10 46 A 47 47 0 0 1 -36 30" fill="none" stroke="#a7adb0" stroke-width="3" marker-end="url(#rh)"/></svg>' +
+    '<div style="display:flex;justify-content:space-between;margin-top:3px;color:#a7adb0;font-size:11px"><span>← 풀기</span><span style="color:#e3a53b">감기 →</span></div>' +
+    '<div id="reel-w" style="text-align:center;margin-top:3px;color:#a7adb0"></div>';
   document.body.appendChild(el); REEL.el = el;
-  // 빙빙 돌리기: 얼레 가운데를 기준으로 손가락 · 마우스가 돈 각도만큼 감는다
+  // 빙빙 돌리기: 얼레 가운데를 기준으로 손가락 · 마우스가 돈 각도만큼. 시계 방향은 +(감기), 반대는 -(풀기)
   const svg = el.querySelector('#reel-svg'), angOf = e => { const r = svg.getBoundingClientRect(); return Math.atan2(e.clientY - r.top - r.height / 2, e.clientX - r.left - r.width / 2); };
-  svg.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); svg.setPointerCapture(e.pointerId); REEL.drag = angOf(e); });
-  svg.addEventListener('pointermove', e => { if (REEL.drag === null) return; const a = angOf(e), d = Math.atan2(Math.sin(a - REEL.drag), Math.cos(a - REEL.drag)); REEL.drag = a; REEL.spin += Math.abs(d); });
-  const up = () => { REEL.drag = null; }; svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
-  // E 누르고 있기 (키보드) · 화면 E 버튼 누르고 있기
-  addEventListener('keydown', e => { if (e.code === 'KeyE' && S.mode === 'kite') REEL.hold = true; });
-  addEventListener('keyup', e => { if (e.code === 'KeyE') REEL.hold = false; });
-  const pb = document.getElementById('prompt');
-  pb.addEventListener('pointerdown', () => { if (S.mode === 'kite') REEL.hold = true; }); ['pointerup', 'pointerleave', 'pointercancel'].forEach(k => pb.addEventListener(k, () => { REEL.hold = false; }));
+  svg.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); svg.setPointerCapture(e.pointerId); REEL.drag = angOf(e); svg.style.cursor = 'grabbing'; });
+  svg.addEventListener('pointermove', e => { if (REEL.drag === null) return; const a = angOf(e), d = Math.atan2(Math.sin(a - REEL.drag), Math.cos(a - REEL.drag)); REEL.drag = a; REEL.spin -= d; REEL.ang += d; });   // (2026-11-22) 반시계 = 감기
+  const up = () => { REEL.drag = null; svg.style.cursor = 'grab'; }; svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
 }
 const kite = defineActivity({
   id:'kite', st:ST.KITE, free:true,
-  get speedMul(){ return S.game && S.game.view ? 0 : .95; },              // 연 보기 중에는 서 있는다
+  get speedMul(){ return S.game && S.game.view ? .7 : .95; },             // (2026-11-22) 연 보기 중에도 천천히 걷는다 (W = 화면 앞)
   setup(){
     W.place('kiteStall', {x:ST_.x, z:ST_.z, rot:ST_.rot});
     spotLabel('연날리기', ST_.x, W.groundY(ST_.x, ST_.z) + 3.4, ST_.z);
@@ -82,27 +85,27 @@ const kite = defineActivity({
   offer(offer){ const d = Math.hypot(me.x - front.x, me.z - front.z); if (d < 2.6) offer(d, 2.6, '연 받기', kite.start); },
   start(){
     if (!REEL.el) makeReel();
-    begin(kite, {h:3, v:0, best:3, view:false}); me.kt = [3]; REEL.hold = false; REEL.spin = 0;
+    begin(kite, {h:3, v:0, best:3, view:false}); me.kt = [3]; REEL.spin = 0;
     dropFlyer(mine); mine = makeFlyer(TOPS[me.ci % TOPS.length]);
     hud.showGame('연날리기'); REEL.el.hidden = false;
-    flash('E를 누르고 있거나 얼레를 돌려 감아요'); sfx(500, 700, .12);
+    flash('얼레를 반시계 방향으로 돌리면 감기, 시계 방향은 풀기'); sfx(500, 700, .12);
   },
   // R: 연 보기 ↔ 연 날리기 (보기: 서서 연을 올려다보는 시점, 날리기: 걸어 다니는 보통 시점). 반납은 '그만하기'
   alt(){ const g = S.game; return {label:g && g.view ? '걸으며 날리기' : '연 보기', run:() => { g.view = !g.view; }}; },
   camera(want, look){ const g = S.game; if (!mine || !g || !g.view) return false; const k = mine.kite.position, y = me.char ? me.char.position.y : 0;
-    want.set(me.x - WD.x * (6 + g.h * .2) + SIDE.x * 2.5, y + 2.2 + g.h * .15, me.z - WD.z * (6 + g.h * .2) + SIDE.z * 2.5); look.set(me.x + (k.x - me.x) * .7, y + 1.2 + (k.y - y - 1.2) * .7, me.z + (k.z - me.z) * .7); return true; },
-  prompt(){ return {label:'얼레 감기 (누르고 있기)', run:() => {}}; },
-  quit(){ dropFlyer(mine); mine = null; me.kt = [0]; REEL.hold = false; if (REEL.el) REEL.el.hidden = true; flash('연을 돌려줬어요'); },
+    want.set(me.x - WD.x * (6 + g.h * .2) + SIDE.x * 2.5, y + 2.2 + g.h * .15, me.z - WD.z * (6 + g.h * .2) + SIDE.z * 2.5); look.set(me.x + (k.x - me.x) * .7, y + 1.2 + (k.y - y - 1.2) * .7, me.z + (k.z - me.z) * .7);
+    S.cam.yaw = Math.atan2(want.x - look.x, want.z - look.z); return true; },   // (2026-11-22) 이동 기준(yaw)을 지금 보는 방향에 맞춘다: W가 화면 앞(연 쪽)
+  prompt(){ return null; },   // (2026-11-22) E는 쓰지 않는다: 얼레 원판만 돌린다
+  quit(){ dropFlyer(mine); mine = null; me.kt = [0]; REEL.drag = null; if (REEL.el) REEL.el.hidden = true; flash('연을 돌려줬어요'); },
   frame(dt, now, moved){
     if (S.mode !== 'kite' || !mine) return;
     const g = S.game, t = now / 1000, w = wind(t), run = dt > 0 ? Math.min(1.5, moved / dt / 7) : 0;
-    const wind_ = Math.min(1, REEL.spin / Math.max(dt, 1e-3) / 9); REEL.spin = 0;                 // 얼레를 돌린 빠르기 (초당 9라디안이면 최대)
-    const reel = Math.max(REEL.hold ? .8 : 0, wind_);
-    g.v += ((reel > 0 ? reel * (1.6 + w * 1.8) : -.9 + w * .75) - g.h * .015 + run * .9) * dt; g.v *= Math.exp(-1.1 * dt);
+    const reel = Math.max(-1, Math.min(1, REEL.spin / Math.max(dt, 1e-3) / 9)); REEL.spin = 0;   // 돌린 빠르기와 방향 (초당 9라디안이면 최대, +감기 · -풀기)
+    g.v += ((reel > 0 ? reel * (1.6 + w * 1.8) : reel < 0 ? -.9 + w * .4 + reel * 2.6 : -.9 + w * .75) - g.h * .015 + run * .9) * dt; g.v *= Math.exp(-1.1 * dt);
     g.h = Math.min(K.MAX, Math.max(K.MIN, g.h + g.v * dt)); if (g.h <= K.MIN && g.v < 0) g.v = 0;
     g.best = Math.max(g.best, g.h); me.kt = [Math.round(g.h)];
     placeFlyer(mine, me.x, me.char ? me.char.position.y : W.groundY(me.x, me.z), me.z, g.h, t, 0); holdArm(me.char);
-    REEL.ang += (reel * 9 - (reel ? 0 : Math.max(0, -g.v) * 1.5)) * dt;
+    if (REEL.drag === null) REEL.ang += Math.max(0, -g.v) * 1.5 * dt;                            // 손을 놓으면 줄이 풀리는 만큼 살이 거꾸로 돈다
     const sp = REEL.el.querySelector('#reel-spokes'); sp.setAttribute('transform', 'rotate(' + (REEL.ang * 57.3).toFixed(1) + ')');
     const m = Math.round(g.h * .85), wl = w > .75 ? '셈' : w > .45 ? '보통' : '약함';
     const ht = m + 'm', wt = '바람 ' + wl + (g.h < 2.5 ? ' · 감아요!' : '');

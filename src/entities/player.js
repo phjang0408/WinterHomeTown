@@ -16,7 +16,7 @@ export const me = S.me = {
   x:SPAWN.x, z:SPAWN.z, y:0, r:0, st:0, vx:0, vz:0, ci:pick(saved.c, COLORS.length), a:pick(saved.a, ADJ.length), n:pick(saved.n, NOUN.length),
   em:[0, 0],     // [보낸 횟수, 감정 코드] 다른 사람에게 감정 표현을 알리는 카운터
   th:[0, 0, 0],  // 눈덩이 던진 횟수와 조준점
-  uid:1 + Math.floor(Math.random() * 2147483646), sw:[], ballR:0, mg:[0, 0], kt:[0], sa:[0], it:[0, 0, 0], tk:[9, 0, 0, 0, 0, 0], sitT:0, sitHold:false, seatAct:null, sc:[0, 0, 0], char:null, iceHint:false,
+  uid:1 + Math.floor(Math.random() * 2147483646), sw:[], ballR:0, mg:[0, 0], kt:[0], sa:[0], it:[0, 0, 0], tk:[9, 0, 0, 0, 0, 0], ar:[0], kr:0, sitT:0, sitHold:false, seatAct:null, sc:[0, 0, 0], char:null, iceHint:false,
   onStand:null,  // 앉아 있을 때 일어나는 방법 (벤치·그네가 넣는다)
 };
 

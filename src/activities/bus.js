@@ -8,6 +8,7 @@ import { W } from '../world/world.js';
 import { me } from '../entities/player.js';
 import { townBus } from '../entities/vehicles.js';
 import { hud } from '../ui/hud.js';
+import { S } from '../core/state.js';
 import { defineActivity, begin, stopActivity } from './registry.js';
 
 // 버스 기준 거리: 앞뒤(along) · 옆(lat)
@@ -29,12 +30,12 @@ const bus = defineActivity({
     if (Math.abs(n.along) < 5.2 && n.lat < 3.6) offer(n.lat, 3.6, '마을버스 타기', bus.start);
   },
   start(){
-    begin(bus, {}); me.char.visible = false; sfx(700, 900, .12, 'square', .04);
-    hud.showGame('마을버스 타는 중'); hud.stat('창밖 구경 중… 내릴 때 E 또는 그만하기'); flash('삑! 마을버스에 탔어요');
+    begin(bus, {}); me.char.visible = false; S.cam.busDist = S.cam.dist; S.cam.dist = Math.max(S.cam.dist, 16); S.cam.pitch = Math.max(S.cam.pitch, .42);   // (2026-11-22) 타면 멀리서 버스가 보이게 줌 아웃 sfx(700, 900, .12, 'square', .04);
+    hud.showGame('마을버스 타는 중', {quit:false});   // (2026-11-22) 제목만: 내리기는 아래 버튼 flash('삑! 마을버스에 탔어요');
   },
   update(){ const V = townBus(), o = V.obj.position; me.x = o.x; me.z = o.z; me.r = V.r; me.y = W.groundY(o.x, o.z); return 0; },
   prompt(){ return {label:'버스에서 내리기', run:() => stopActivity()}; },
-  quit(){ getOff(); me.y = undefined; me.char.visible = true; sfx(900, 600, .12, 'square', .04); flash('내렸어요'); },
+  quit(){ if (S.cam.busDist) { S.cam.dist = S.cam.busDist; S.cam.busDist = 0; } getOff(); me.y = undefined; me.char.visible = true; sfx(900, 600, .12, 'square', .04); flash('내렸어요'); },
   remoteFrame(R){
     if (!R.char) return;
     if (R.st === ST.BUS) { R.char.visible = false; R.busHid = true; }

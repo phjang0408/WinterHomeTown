@@ -31,7 +31,7 @@ function holdIn(w, ch, it, now){
   const u = ch.userData, id = it ? it[0] : 0, def = ITEMS[id];
   if (w.hand && (w.hand.parent !== u.armR || w.handId !== id)) { if (w.hand.parent) w.hand.parent.remove(w.hand); w.hand = null; }
   if (!def) return;
-  if (!w.hand) { w.hand = buildProp(def.prop, def.opts); w.hand.scale.setScalar(def.s); w.hand.position.set(0, -.62, .12); w.hand.rotation.x = -1.2; u.armR.add(w.hand); w.handId = id; }
+  if (!w.hand) { w.hand = buildProp(def.prop, def.opts); w.hand.scale.setScalar(def.s); const fz = id === 2 ? 1 : -1; if (fz > 0) w.hand.position.set(0, -.62, .12); else w.hand.position.set(0, -.5, -.03); w.hand.rotation.x = -1.2 * fz; u.armR.add(w.hand); w.handId = id; }   // (2026-11-22) 군고구마 · 호떡은 손바닥 쪽, 손 위쪽으로 올려 쥔다
   w.hand.visible = it[1] > 0; if (!w.hand.visible) return;
   if (id !== 2) w.hand.scale.set(def.s, def.s * (.45 + .55 * it[1] / 3), def.s);
   const st = w.st || 0;
