@@ -14,7 +14,7 @@ import { me, nameOf } from '../entities/player.js';
 import { defineActivity, begin, stopActivity } from './registry.js';
 import { STN_AT } from '../map/layout.js';
 import { STATIONERY_ARCADES } from '../props/stationery.js';
-import { drawRpsFace, RPS_W, RPS_H } from '../props/rpsArt.js';
+import { drawRpsFace, drawHand, RPS_W, RPS_H } from '../props/rpsArt.js';
 
 const U = UNIT, cl = (v, a, b) => Math.max(a, Math.min(b, v));
 // ── 기계 자리 (문구점 기준 → 세계 좌표). sx · sz = 사람이 서는 곳 ──
@@ -22,9 +22,11 @@ const U = UNIT, cl = (v, a, b) => Math.max(a, Math.min(b, v));
 const MACH = STATIONERY_ARCADES.map((m, i) => {
   const c = Math.cos(STN_AT.rot), s = Math.sin(STN_AT.rot), w = (lx, lz) => [STN_AT.x + (lx * c + lz * s) * U, STN_AT.z + (-lx * s + lz * c) * U], r = m.r || 0;
   const [x, z] = w(m.x, m.z), [sx, sz] = w(m.x + Math.sin(r) * .8, m.z + Math.cos(r) * .8);
-  return {id:i + 1, kind:m.kind, x, z, sx, sz, face:Math.atan2(x - sx, z - sz)};
+  return {id:i + 1, kind:m.kind, game:m.game || 0, x, z, sx, sz, face:Math.atan2(x - sx, z - sz)};
 });
-const NAME = {cab:'작은 오락기', rps:'가위바위보 오락기', gacha:'행운 뽑기'};
+// (2026-11-23) 은하 대작전 · 벽돌 깨기는 오락기를 따로 (고르는 화면 없음), 공기놀이 추가
+const NAME = {cab:'작은 오락기', rps:'가위바위보 오락기', gacha:'행운 뽑기', gonggi:'공기놀이'}, GAME_NAME = ['', '은하 대작전', '벽돌 깨기'];
+const title = m => m.kind === 'cab' ? GAME_NAME[m.game] + ' 오락기' : NAME[m.kind];
 
 // ───────────────────────── 은하 대작전 (논리 화면 240 × 320) ─────────────────────────
 const LW = 240, LH = 320, DUR = 3.4;
@@ -131,21 +133,35 @@ function brickDraw(g, G){
 // ───────────────────────── 가위바위보 ─────────────────────────
 const HANDS = ['', '가위', '바위', '보'];
 const beats = (a, b) => (a === 1 && b === 3) || (a === 2 && b === 1) || (a === 3 && b === 2);
-const rpsNew = () => ({kind:3, t:0, phase:0, pick:0, cpu:0, res:0, t0:0});
+// (2026-11-23) 기계 손은 처음엔 빠르게 바뀌다가 점점 느려져(초당 14번 → 1.8번) 기계가 고른 손에서 멈춘다
+const rpsNew = () => ({kind:3, t:0, phase:0, pick:0, cpu:0, res:0, t0:0, cur:1, lit:0, acc:0});
 function rpsView(R){
   const t = R.t, sh = R.phase === 1;
-  return {hand:R.phase === 2 ? R.cpu : sh ? 1 + (t * 12 | 0) % 3 : 1 + (t * 1.6 | 0) % 3, lit:sh ? (t * 14 | 0) % 12 : R.phase === 2 ? -1 : (t * 2 | 0) % 12, res:R.phase === 2 ? R.res : 0, blink:R.phase === 2 ? ((t * 4 | 0) % 2) : 1};
+  return {hand:R.phase === 2 ? R.cpu : sh ? R.cur : 1 + (t * 1.6 | 0) % 3, lit:sh ? R.lit : R.phase === 2 ? -1 : (t * 2 | 0) % 12, res:R.phase === 2 ? R.res : 0, blink:R.phase === 2 ? ((t * 4 | 0) % 2) : 1};
 }
 function rpsStep(R, dt){
   R.t += dt;
-  if (R.phase === 1 && R.t - R.t0 > 1.4) {
+  if (R.phase === 1) { const e = R.t - R.t0; R.acc += Math.max(1.8, 14 * (1 - e / 1.8)) * dt;
+    while (R.acc >= 1) { R.acc -= 1; R.cur = R.cur % 3 + 1; R.lit = (R.lit + 1) % 12; sfx(e > 1.2 ? 520 : 760, e > 1.2 ? 500 : 740, .04, 'square', .03); if (e > 1.5 && R.cur === R.cpu) { R.stop = true; break; } } }
+  if (R.phase === 1 && R.stop) { R.stop = false;
     R.phase = 2; R.t0 = R.t; R.res = beats(R.pick, R.cpu) ? 1 : R.pick === R.cpu ? 2 : 3;
     if (R.res === 1) { me.kr = 1 + (Math.random() * 5 | 0); setKeyring(me.char, me.kr); flash('이겼다! 상품은 키링이다!'); sfx(660, 1320, .5, 'triangle', .06); }
     else if (R.res === 2) { flash('비겼다! 한 번 더!'); sfx(440, 440, .25, 'square', .04); }
     else { flash('졌다~ 다시 해 볼까?'); sfx(300, 120, .5, 'triangle', .05); }
   } else if (R.phase === 2 && R.t - R.t0 > 2.4) { R.phase = 0; R.pick = 0; R.res = 0; }
 }
-function rpsPick(R, k){ if (R.phase !== 0) return; R.phase = 1; R.pick = k; R.cpu = 1 + (Math.random() * 3 | 0); R.t0 = R.t; sfx(520, 700, .1, 'square', .04); }
+function rpsPick(R, k){ if (R.phase !== 0) return; R.phase = 1; R.pick = k; R.cpu = 1 + (Math.random() * 3 | 0); R.cur = 1 + (Math.random() * 3 | 0); R.acc = 0; R.t0 = R.t; sfx(520, 700, .1, 'square', .04); }
+// 아래 '나 VS 기계' 판: 내가 낸 손과 기계 손을 크게
+function drawVs(R){
+  const one = (id, kind, bg, label) => { const c = ui.querySelector(id), g = c.getContext('2d'), d = Math.min(2, devicePixelRatio || 1); if (c.width !== 96 * d) { c.width = c.height = 96 * d; }
+    g.setTransform(d, 0, 0, d, 0, 0); g.fillStyle = bg; g.fillRect(0, 0, 96, 96); g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 3; g.strokeRect(1.5, 1.5, 93, 93);
+    if (kind) drawHand(g, kind, 48, 47, .48, '#1b1b1b', false); else { g.fillStyle = '#1b1b1b'; g.font = '44px ' + FONT_D; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('?', 48, 46); }
+    g.font = '700 12px ' + FONT_B; g.textAlign = 'center'; g.fillStyle = '#1b1b1b'; g.fillText(label + (kind ? ' · ' + HANDS[kind] : ''), 48, 86); };
+  one('#vs-me', R ? R.pick : 0, '#ffd23f', '나');
+  one('#vs-cpu', R ? (R.phase === 1 ? R.cur : R.phase === 2 ? R.cpu : 0) : 0, R && R.phase === 1 ? '#9ec5ff' : '#6fa8ff', '기계');
+  const m = ui.querySelector('#vs-mid'), res = R && R.phase === 2 ? R.res : 0;
+  m.textContent = ['VS', '이겼다!', '비겼다', '졌다'][res]; m.style.color = ['#eceae4', '#ffd23f', '#cfd6e0', '#ff7b7b'][res];
+}
 
 // ───────────────────────── 행운 뽑기 (2026-11-22 2차) ─────────────────────────
 //   손잡이를 한 바퀴 돌리면(끌기 · E/스페이스/화살표 누르고 있기) 캡슐이 '덜컥' 떨어지고, 캡슐을 누르면(E) 열려서 키링이 나온다.
@@ -206,6 +222,69 @@ function gachaDraw(g, G){
     g.font = '20px ' + FONT_D; g.fillStyle = '#ffd23f'; g.fillText('뽑았다!', 120, 62); g.font = '700 13px ' + FONT_B; g.fillStyle = '#fff'; g.fillText(KR_NAME[G.prize] + ' 키링이 가방에 달렸어요', 120, 236); }
 }
 
+// ───────────────────────── 공기놀이 (2026-11-23) ─────────────────────────
+//   한 번 던질 때: 탭(E · 스페이스 · 화면)으로 하나를 던지고 → 공중에 있는 동안 타다닥 탭해서 바닥 알을 줍고 → 떨어질 때(손이 빛나는 동안) 탭해서 잡는다.
+//   1단 하나씩 네 번 · 2단 둘씩 두 번 · 3단 셋 · 하나 · 4단 넷 한 번에 · 5단 다섯 알을 던져 손바닥에 올리고 → 다시 던져 잡기로 끝.
+//   놓치면 그 단을 처음부터. 저장 없음.
+const GG_PLAN = [null, [1, 1, 1, 1], [2, 2], [3, 1], [4]], GG_C = ['#e8402a', '#f2c51f', '#2f8fd6', '#5fb24a', '#b05bd6'];
+const GH = [120, 272], WIN = .76;
+function ggScatter(G){ G.floor = Array.from({length:4}, (_, i) => ({x:58 + i * 34 + (Math.random() - .5) * 18, y:160 + Math.random() * 60, c:GG_C[i + 1]})); G.held = 1; G.step = 0; G.ph = G.stage === 5 ? 'ready5' : 'ready'; }
+const gonggiNew = () => { const G = {kind:5, t:0, stage:1, step:0, ph:'ready', picked:0, toss:0, air:1.2, msg:'', msgT:-9, fly:[], tapT:0, held:1, floor:[]}; ggScatter(G); return G; };
+const ggNeed = G => G.stage < 5 ? GG_PLAN[G.stage][G.step] : 0;
+function ggSay(G, m){ G.msg = m; G.msgT = G.t; }
+function ggFail(G, m){ ggSay(G, m); sfx(300, 120, .35, 'triangle', .05); if (G.stage === 5) { G.floor = []; G.held = 5; G.ph = 'ready5'; } else ggScatter(G); }
+function ggTap(G){
+  G.tapT = G.t; const u = (G.t - G.toss) / G.air;
+  if (G.ph === 'ready') { G.ph = 'air'; G.toss = G.t; G.air = Math.max(.85, 1.25 - (G.stage - 1) * .08); G.picked = 0; sfx(500, 800, .08, 'triangle', .04); return; }
+  if (G.ph === 'air') {
+    if (G.picked < ggNeed(G) && G.floor.length) { const f = G.floor.shift(); G.fly.push({x:f.x, y:f.y, c:f.c, t:G.t}); G.picked++; sfx(900 + G.picked * 80, 700, .04, 'square', .035); return; }
+    if (u >= WIN && G.picked >= ggNeed(G)) {
+      G.held += G.picked; G.step++; sfx(700, 1000, .1, 'triangle', .05);
+      if (G.step >= GG_PLAN[G.stage].length) { ggSay(G, G.stage + '단 성공!'); G.stage++; if (G.stage === 5) { G.floor = []; G.held = 5; G.ph = 'ready5'; } else ggScatter(G); }
+      else G.ph = 'ready';
+    }
+    return;
+  }
+  if (G.ph === 'ready5') { G.ph = 'air5a'; G.toss = G.t; G.air = .95; sfx(500, 900, .1, 'triangle', .05); return; }
+  if (G.ph === 'air5a' && u >= WIN - .06) { G.ph = 'palm'; ggSay(G, '손바닥에 올렸다!'); sfx(650, 820, .1, 'triangle', .05); return; }
+  if (G.ph === 'palm') { G.ph = 'air5b'; G.toss = G.t; G.air = .85; sfx(500, 900, .1, 'triangle', .05); return; }
+  if (G.ph === 'air5b' && u >= WIN - .06) { G.ph = 'done'; ggSay(G, '공기 다 했다! 5단 성공!'); flash('공기 다 했다! 5단 성공!'); sfx(660, 1320, .5, 'triangle', .06); return; }
+  if (G.ph === 'done') Object.assign(G, gonggiNew(), {t:G.t});
+}
+function ggStep(G, dt){
+  G.t += dt; const u = (G.t - G.toss) / G.air;
+  if ((G.ph === 'air' || G.ph === 'air5a' || G.ph === 'air5b') && u >= 1) ggFail(G, G.ph === 'air' && G.picked < ggNeed(G) ? '덜 주웠다! 다시' : '놓쳤다! 다시');
+  G.fly = G.fly.filter(f => G.t - f.t < .18);
+}
+function stone(g, x, y, c, r = 7){ g.fillStyle = c; g.beginPath(); g.moveTo(x, y - r); g.lineTo(x + r, y); g.lineTo(x, y + r * .9); g.lineTo(x - r, y); g.closePath(); g.fill(); g.fillStyle = 'rgba(255,255,255,.45)'; g.fillRect(x - r * .4, y - r * .5, r * .5, r * .35); }
+function ggDraw(g, G){
+  const t = G.t, u = Math.min(1, (t - G.toss) / G.air), flying = G.ph === 'air' || G.ph === 'air5a' || G.ph === 'air5b';
+  g.fillStyle = '#4a3426'; g.fillRect(0, 0, LW, LH);
+  g.fillStyle = '#b8282e'; g.fillRect(18, 108, 204, 152); g.strokeStyle = '#d8c07a'; g.lineWidth = 3; g.strokeRect(30, 120, 180, 128);
+  G.floor.forEach(f => stone(g, f.x, f.y, f.c));
+  G.fly.forEach(f => { const k = (t - f.t) / .18; stone(g, f.x + (GH[0] - f.x) * k, f.y + (GH[1] - 14 - f.y) * k, f.c); });
+  const win = flying && u >= (G.ph === 'air' ? WIN : WIN - .06);
+  if (win) { g.strokeStyle = G.ph !== 'air' || G.picked >= ggNeed(G) ? '#7dff8a' : '#ff6b6b'; g.lineWidth = 4; g.beginPath(); g.arc(GH[0], GH[1] - 6, 34, 0, 7); g.stroke(); }
+  g.fillStyle = '#f6d9c2'; g.beginPath(); g.ellipse(GH[0], GH[1], 30, 16, 0, 0, 7); g.fill(); g.fillRect(GH[0] - 20, GH[1], 40, 34);
+  const inHand = G.ph === 'palm' ? 5 : G.ph === 'air5a' || G.ph === 'air5b' ? 0 : flying ? G.held - 1 + G.picked : G.held;
+  for (let i = 0; i < Math.min(5, inHand); i++) stone(g, GH[0] - 14 + i * 7, GH[1] - 6 - (i % 2) * 3, GG_C[i], 5);
+  if (flying) { const n = G.ph === 'air' ? 1 : 5, hgt = Math.sin(u * Math.PI) * (G.ph === 'air' ? 180 : 150);
+    g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(GH[0], GH[1] - 22, 8 + hgt * .02, 3, 0, 0, 7); g.fill();
+    for (let i = 0; i < n; i++) stone(g, GH[0] + (n > 1 ? (i - 2) * 9 : 0), GH[1] - 20 - hgt - (n > 1 ? (i % 2) * 6 : 0), GG_C[n > 1 ? i : 0], 7); }
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '20px ' + FONT_D; g.fillStyle = '#ffd23f'; g.fillText(G.ph === 'done' ? '5단 끝!' : G.stage + '단', 120, 24);
+  g.font = '700 11px ' + FONT_B; g.fillStyle = '#fff';
+  if (G.stage < 5 && G.ph !== 'done') { const plan = GG_PLAN[G.stage]; g.fillText(plan.map((n, i) => i < G.step ? '●' : i === G.step ? '◎' : '○').join(' ') + '   이번에 주울 알 ' + ggNeed(G), 120, 46); }
+  const tip = {ready:'탭: 하나 던지기', air:G.picked < ggNeed(G) ? '타다닥! 탭으로 줍기 (' + G.picked + '/' + ggNeed(G) + ')' : '떨어질 때 탭: 잡기', ready5:'탭: 다섯 알 던지기',
+    air5a:'떨어질 때 탭: 손바닥에 올리기', palm:'탭: 손바닥에서 던지기', air5b:'떨어질 때 탭: 잡기', done:'탭: 처음부터 다시'}[G.ph];
+  g.fillStyle = '#ffe9a0'; g.fillText(tip, 120, 70);
+  if (t - G.msgT < 1.2) { g.font = '24px ' + FONT_D; g.strokeStyle = '#000'; g.lineWidth = 4; g.strokeText(G.msg, 120, 92); g.fillStyle = '#7dff8a'; g.fillText(G.msg, 120, 92); }
+}
+// 놀이 자세: 오른손만 앞으로 (왼손은 손 흔들기용으로 비워 둔다). 공기놀이는 쪼그려 앉는다
+function pose(ch, squat, armX){
+  const u = ch.userData; u.armR.rotation.x = armX;
+  if (squat) { u.legL.rotation.x = u.legR.rotation.x = -1.4; u.inner.position.y = -.3; u.armR.rotation.x = armX + .35; }   // 방석 옆 바닥에 앉는다 (썰매보다 조금 낮게)
+}
+
 // ───────────────────────── 가방 키링 (상품) ─────────────────────────
 // 1 별 · 2 하트 · 3 방울 · 4 물고기 · 5 눈사람 · 6 딸기 · 7 토끼 · 8 주사위 (모두 지어낸 단순한 모양). 가방(캐릭터 등 뒤 상자) 오른쪽 위 고리에 매달려 흔들린다
 const KR_NAME = ['', '별', '하트', '방울', '물고기', '눈사람', '딸기', '토끼', '주사위'], KR_N = 8;
@@ -236,7 +315,7 @@ function keyringMesh(k){
 function setKeyring(ch, k){
   if (!ch) return; const u = ch.userData;
   if (u.keyring) { u.inner.remove(u.keyring); u.keyring = null; }
-  if (!k) return; u.keyring = keyringMesh(k); u.keyring.position.set(.14, 1.16, -.53); u.inner.add(u.keyring); u.krK = k;
+  if (!k) return; u.keyring = keyringMesh(k); u.keyring.scale.setScalar(1.7); u.keyring.position.set(.13, 1.19, -.54); u.inner.add(u.keyring); u.krK = k;   // (2026-11-23) 1.7배로 키워 가방 오른쪽 위에서 잘 보이게
 }
 const swingKeyring = (ch, now, moved) => { const k = ch && ch.userData.keyring; if (k) { k.rotation.x = Math.sin(now / 160) * (.08 + Math.min(.4, moved * 6)); k.rotation.z = Math.sin(now / 230) * .1; } };
 
@@ -251,6 +330,7 @@ function makeUI(){
   ui.innerHTML = '<div style="pointer-events:auto;background:rgba(12,13,15,.93);border:1px solid rgba(255,255,255,.2);border-top:2px solid #e3a53b;padding:9px 10px 10px;display:flex;flex-direction:column;align-items:center;gap:8px">' +
     '<div style="display:flex;justify-content:space-between;gap:16px;width:100%;color:#eceae4;font:700 14px var(--body, sans-serif)"><span id="ar-title"></span><span id="ar-info" style="font-weight:600;color:#a7adb0"></span></div>' +
     '<canvas id="ar-cv" style="display:block;background:#000;image-rendering:pixelated"></canvas>' +
+    '<div id="ar-vs" style="display:flex;align-items:center;gap:14px"><canvas id="vs-me" style="width:96px;height:96px"></canvas><b id="vs-mid" style="font:28px var(--display, sans-serif);min-width:84px;text-align:center">VS</b><canvas id="vs-cpu" style="width:96px;height:96px"></canvas></div>' +
     '<div id="ar-menu" style="display:flex;gap:8px"></div>' +
     '<div id="ar-pad" style="display:flex;gap:10px"><button data-k="l" style="' + btn + 'width:64px;height:48px;background:#2b2f35;color:#fff;border:1px solid #555">◀</button>' +
       '<button data-k="r" style="' + btn + 'width:64px;height:48px;background:#2b2f35;color:#fff;border:1px solid #555">▶</button>' +
@@ -263,7 +343,8 @@ function makeUI(){
   // 뽑기: 캔버스 위 손잡이를 끌어 돌리고, 캡슐을 눌러 연다
   const lp = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * LW, (e.clientY - r.top) / r.height * LH]; };
   let drag = null;
-  cv.addEventListener('pointerdown', e => { const g = S.game; if (!g || g.watch || !g.G || g.G.kind !== 4) return; e.preventDefault(); const [x, y] = lp(e);
+  cv.addEventListener('pointerdown', e => { const g = S.game; if (g && !g.watch && g.G && g.G.kind === 5) { e.preventDefault(); ggTap(g.G); return; }
+    if (!g || g.watch || !g.G || g.G.kind !== 4) return; e.preventDefault(); const [x, y] = lp(e);
     if (g.G.phase === 2 && Math.hypot(x - 120, y - 273) < 30) { gachaOpen(g.G); return; }
     if (Math.hypot(x - KX, y - KY) < 60) { drag = Math.atan2(y - KY, x - KX); cv.setPointerCapture(e.pointerId); } });
   cv.addEventListener('pointermove', e => { if (drag === null || !S.game || !S.game.G) return; const [x, y] = lp(e), a = Math.atan2(y - KY, x - KX), d = Math.atan2(Math.sin(a - drag), Math.cos(a - drag)); drag = a; gachaTurn(S.game.G, Math.abs(d)); });
@@ -291,8 +372,9 @@ function layout(kind, watch){
   cv.style.width = Math.round(w) + 'px'; cv.style.height = Math.round(h) + 'px'; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
   cx.setTransform(cv.width / (rps ? RPS_W : LW), 0, 0, cv.height / (rps ? RPS_H : LH), 0, 0);
   ui.querySelector('#ar-pad').style.display = !rps && !watch && touch() ? 'flex' : 'none';
-  ui.querySelectorAll('#ar-pad button').forEach(b => { b.style.display = kind === 'gacha' && b.dataset.k !== 'f' ? 'none' : ''; if (b.dataset.k === 'f') b.textContent = kind === 'gacha' ? '돌리기 · 열기' : '발사'; });
+  ui.querySelectorAll('#ar-pad button').forEach(b => { b.style.display = kind === 'gacha' && b.dataset.k !== 'f' ? 'none' : ''; if (b.dataset.k === 'f') b.textContent = kind === 'gacha' ? '돌리기 · 열기' : kind === 'gonggi' ? '탁!' : '발사'; if (kind === 'gonggi' && b.dataset.k !== 'f') b.style.display = 'none'; });
   ui.querySelector('#ar-rps').style.display = rps && !watch ? 'flex' : 'none';
+  ui.querySelector('#ar-vs').style.display = rps ? 'flex' : 'none';
   ui.querySelectorAll('#ar-rps button').forEach(b => { b.style.width = b.style.height = (small ? 58 : 76) + 'px'; });
 }
 function menu(on){
@@ -313,17 +395,18 @@ function drawMenu(g, t){
 // 놀이 상태: S.game = {m 기계, R (가위바위보) | G (게임) | menu, watch 구경 대상(다른 사람)}
 function choose(k){ const g = S.game; if (!g || g.watch) return; if (g.m.kind === 'rps') { if (g.R) rpsPick(g.R, k); return; }
   if (g.menu && (k === 1 || k === 2)) { g.menu = false; g.G = k === 1 ? galaxyNew() : brickNew(); menu(false); sfx(600, 900, .12, 'square', .04); } }
-function again(){ const g = S.game; if (g && g.G && g.G.kind !== 4 && g.G.over) { g.G = g.G.kind === 1 ? galaxyNew() : brickNew(); } }
-function action(){ const g = S.game; if (!g || g.watch) return; if (g.G && g.G.kind === 4) { gachaOpen(g.G); return; } if (g.G && g.G.over) again(); }
+function again(){ const g = S.game; if (g && g.G && g.G.kind < 4 && g.G.over) { g.G = g.G.kind === 1 ? galaxyNew() : brickNew(); } }
+function action(){ const g = S.game; if (!g || g.watch) return; if (g.G && g.G.kind === 5) { ggTap(g.G); return; } if (g.G && g.G.kind === 4) { gachaOpen(g.G); return; } if (g.G && g.G.over) again(); }
 
 // ── 구경: 받은 ar로 같은 그리기 상태를 만든다 ──
 // 살아 있는 적 · 벽돌을 16칸씩 묶은 숫자로 (presence 숫자 범위 안: 최대 65535)
 const pack = arr => { const out = []; arr.forEach((v, i) => { const j = i >> 4; out[j] = (out[j] || 0) | (v ? 1 << (i & 15) : 0); }); return out.map(v => v || 0); };
 const unpack = (ws, n) => Array.from({length:n}, (_, i) => !!(((ws[i >> 4] || 0) >> (i & 15)) & 1));
 function shareState(g){
-  if (g.R) { const R = g.R; return [g.m.id, 3, R.phase, R.pick, R.cpu, R.res, Math.round(R.t * 10), Math.round(R.t0 * 10)]; }
+  if (g.R) { const R = g.R; return [g.m.id, 3, R.phase, R.pick, R.cpu, R.res, Math.round(R.t * 10), Math.round(R.t0 * 10), R.cur, R.lit]; }
   if (!g.G) return [g.m.id, 0];
-  if (g.G.kind === 4) return [g.m.id, 4, g.G.phase];   // 뽑기는 구경하지 않는다 (줄에 넷이라 여럿이 같이 한다)
+  if (g.G.kind === 4) return [g.m.id, 4, g.G.phase];
+  if (g.G.kind === 5) return [g.m.id, 5, g.G.stage];   // 뽑기는 구경하지 않는다 (줄에 넷이라 여럿이 같이 한다)
   const G = g.G;
   if (G.kind === 1) { const [a, b] = pack(G.alive), d = [0, 1, 2].flatMap(j => G.divers[j] ? [G.divers[j].i, Math.round(G.divers[j].t0 * 10), G.divers[j].tx] : [-1, 0, 0]), p = [0, 1].flatMap(j => G.pb[j] ? [Math.round(G.pb[j].x), Math.round(G.pb[j].y)] : [-1, -1]);
     return [g.m.id, 1, Math.round(G.t * 10), Math.round(G.x), G.score, G.lives, a, b, G.wave, G.over ? 1 : 0, ...d, ...p, Math.round(G.dead * 10), G.clearT ? 1 : 0]; }
@@ -332,7 +415,7 @@ function shareState(g){
 }
 function watchState(Rm, w){
   const a = Rm.ar || [], el = Math.min(.6, (performance.now() - (Rm.arT || 0)) / 1000), k = a[1];
-  if (k === 3) { const R = {t:a[6] / 10 + el, phase:a[2], pick:a[3], cpu:a[4], res:a[5], t0:a[7] / 10}; return {R}; }
+  if (k === 3) { const R = {t:a[6] / 10 + el, phase:a[2], pick:a[3], cpu:a[4], res:a[5], t0:a[7] / 10, cur:a[8] || 1, lit:a[9] || 0}; return {R}; }
   if (k === 1) {
     const t = a[2] / 10 + el, G = w.G && w.G.kind === 1 ? w.G : galaxyNew(), alive = unpack([a[6], a[7]], 32);
     alive.forEach((v, i) => { if (G.alive[i] && !v) { const p = slot(i, t); G.boom.push({x:p[0], y:p[1], t}); } });   // 새로 떨어진 적은 터지는 모습
@@ -356,21 +439,23 @@ const arcade = defineActivity({
     for (const m of MACH) {
       const d = Math.hypot(me.x - m.sx, me.z - m.sz); if (d > 2.4) continue;
       if (m.kind === 'gacha') { offer(d, 2.4, '뽑기 하기', () => arcade.start(m)); continue; }
+      if (m.kind === 'gonggi') { offer(d, 2.4, '공기놀이 하기', () => arcade.start(m)); continue; }
       const R = watchedBy(m);
       if (R) offer(d, 2.4, '구경하기', () => arcade.start(m, R));
-      else offer(d, 2.2, m.kind === 'rps' ? '가위바위보 하기' : '오락기 하기', () => arcade.start(m));
+      else offer(d, 2.2, m.kind === 'rps' ? '가위바위보 하기' : GAME_NAME[m.game] + ' 하기', () => arcade.start(m));
     }
   },
   start(m, watch){
     if (!ui) makeUI();
-    begin(arcade, {m, watch:watch || null, menu:!watch && m.kind === 'cab', R:!watch && m.kind === 'rps' ? rpsNew() : null, G:m.kind === 'gacha' ? gachaNew() : null, t:0});
+    begin(arcade, {m, watch:watch || null, menu:false, R:!watch && m.kind === 'rps' ? rpsNew() : null, t:0,
+      G:watch ? null : m.kind === 'gacha' ? gachaNew() : m.kind === 'gonggi' ? gonggiNew() : m.kind === 'cab' ? (m.game === 2 ? brickNew() : galaxyNew()) : null});
     if (watch) { me.st = 0; const side = m.kind === 'rps' ? 1 : -1; me.x = m.sx + Math.cos(m.face) * .9 * side; me.z = m.sz - Math.sin(m.face) * .9 * side; }   // 구경은 옆 (가게 가운데 쪽)
     else { me.x = m.sx; me.z = m.sz; }
     me.r = Math.atan2(m.x - me.x, m.z - me.z);
     K.l = K.r = K.f = false;
-    ui.querySelector('#ar-title').textContent = watch ? nameOf(watch.a, watch.n) + ' 구경 중' : NAME[m.kind];
+    ui.querySelector('#ar-title').textContent = watch ? nameOf(watch.a, watch.n) + ' 구경 중' : title(m);
     ui.querySelector('#ar-info').textContent = '';
-    layout(m.kind, !!watch); menu(!watch && m.kind === 'cab'); ui.hidden = false;
+    layout(m.kind, !!watch); menu(false); ui.hidden = false;
     sfx(700, 1000, .1, 'square', .04);
   },
   prompt(){ return null; },
@@ -388,14 +473,14 @@ const arcade = defineActivity({
       if (!S.remotes.has(R.id) || R.st !== ST.ARCADE || !R.ar || R.ar[0] !== g.m.id) { stopActivity(); flash('구경 끝! 오락이 끝났어요'); return; }
       const v = watchState(R, g); g.G = v.G || null; g.Rv = v.R || null; g.menu = !!v.menu;
     } else {
-      if (g.R) rpsStep(g.R, dt); else if (g.G) ({1:galaxyStep, 2:brickStep, 4:gachaStep})[g.G.kind](g.G, Math.min(dt, .05), K);
+      if (g.R) rpsStep(g.R, dt); else if (g.G) ({1:galaxyStep, 2:brickStep, 4:gachaStep, 5:ggStep})[g.G.kind](g.G, Math.min(dt, .05), K);
       me.ar = shareState(g);
-      if (me.char) { const u = me.char.userData; u.armL.rotation.x = u.armR.rotation.x = -1.05 - (K.f || (g.R && g.R.phase === 1) ? .12 * Math.sin(now / 50) : 0); }
+      if (me.char) pose(me.char, g.G && g.G.kind === 5, -1.05 - (K.f || (g.R && g.R.phase === 1) || (g.G && g.G.tapT && now / 1000 - g.G.tapT < .12) ? .25 * Math.sin(now / 40) : 0));
     }
     // 그리기
     const R = g.watch ? g.Rv : g.R;
-    if (g.m.kind === 'rps') { if (R) drawRpsFace(cx, rpsView(R)); ui.querySelector('#ar-info').textContent = R && R.pick ? '나: ' + HANDS[R.pick] + (R.phase === 2 ? ' · 기계: ' + HANDS[R.cpu] : '') : (g.watch ? '' : '버튼을 눌러요'); }
-    else if (g.G) { ({1:galaxyDraw, 2:brickDraw, 4:gachaDraw})[g.G.kind](cx, g.G); ui.querySelector('#ar-info').textContent = ({1:'은하 대작전', 2:'벽돌 깨기', 4:'키링이 나와요'})[g.G.kind]; }
+    if (g.m.kind === 'rps') { if (R) drawRpsFace(cx, rpsView(R)); drawVs(R); ui.querySelector('#ar-info').textContent = R && R.pick ? '나: ' + HANDS[R.pick] + (R.phase === 2 ? ' · 기계: ' + HANDS[R.cpu] : '') : (g.watch ? '' : '버튼을 눌러요'); }
+    else if (g.G) { ({1:galaxyDraw, 2:brickDraw, 4:gachaDraw, 5:ggDraw})[g.G.kind](cx, g.G); ui.querySelector('#ar-info').textContent = ({1:'은하 대작전', 2:'벽돌 깨기', 4:'키링이 나와요', 5:g.G.stage + '단'})[g.G.kind]; }
     else drawMenu(cx, g.t);
   },
   remote(R, p){ R.ar = p.ar; R.arT = performance.now(); R.kr = p.kr; },
@@ -403,6 +488,6 @@ const arcade = defineActivity({
     if (!R.char) return;
     if ((R.kr || 0) !== (R.char.userData.krK || 0)) { setKeyring(R.char, R.kr); R.char.userData.krK = R.kr || 0; }
     swingKeyring(R.char, performance.now(), moved);
-    if (R.st === ST.ARCADE) { const u = R.char.userData; u.armL.rotation.x = u.armR.rotation.x = -1.05; }
+    if (R.st === ST.ARCADE) pose(R.char, R.ar && R.ar[1] === 5, -1.05);
   },
 });

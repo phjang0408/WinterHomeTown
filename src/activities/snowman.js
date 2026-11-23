@@ -8,6 +8,7 @@
 //   그래서 동시에 보태도 개수가 사라지지 않고, 보탠 사람이 나가도 남은 사람이 계속 들고 있다.
 //   다른 눈사람이면 개수가 많은 쪽, 같으면 나중에 시작한 쪽을 따른다. 다 녹은 상태는 받지 않는다.
 import * as THREE from '../lib/three.js';
+import { waving } from '../entities/character.js';
 import { root } from '../core/engine.js';
 import { S } from '../core/state.js';
 import { sfx, flash, puff } from '../core/fx.js';
@@ -64,7 +65,8 @@ function rollBall(m, w, r, moved){
 function holdBall(m, w, ch, r){
   const y = ch ? ch.position.y : W.groundY(w.x, w.z), dx = Math.sin(w.r), dz = Math.cos(w.r), bob = ch ? Math.abs(Math.sin(ch.userData.phase || 0)) * .06 : 0;
   m.scale.setScalar(r); m.position.set(w.x + dx * .12, y + 2.05 + r * .92 + bob, w.z + dz * .12);
-  if (ch) { const u = ch.userData; u.armL.rotation.x = u.armR.rotation.x = -2.95; u.armL.rotation.z = .28; u.armR.rotation.z = -.28; }
+  // 큰 눈덩이는 두 손으로 든다. 손을 흔드는 동안만 왼손을 뗀다 (2026-11-23 흔드는 손은 왼손)
+  if (ch) { const u = ch.userData; u.armR.rotation.x = -2.95; u.armR.rotation.z = -.28; if (!waving(ch)) { u.armL.rotation.x = -2.95; u.armL.rotation.z = .28; } }
 }
 // 눈밭과 눈사람 자리 표시 (2026-11-20 3차 더 잘 보이게): 눈밭 전체를 잔디 없이 눈으로 덮고(겹침 방지 polygonOffset), 둘레 말뚝 줄,
 // 자리는 눈을 걷어 낸 맨땅 원(2026-11-21, 예전 눈 단 · 깃발 말뚝 snowmanStage는 쓰지 않는다), 눈덩이를 들고 있으면 자리 위에 내려오는 화살표가 뜬다

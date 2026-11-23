@@ -31,7 +31,7 @@ export const CATALOG = [
     ['목욕탕 (남쪽 줄 가운데)', ['bathhouseSet', 'bathhouse', 'woodenPlatform', 'bananaMilk', {n:'aluminumTray', note:'양은 쟁반 (2026-11-22, 목욕탕 평상)'}]],
   ]},
   {title:'학교', open:true, note:'학교는 닫음 (방학 중). 학교 앞 동쪽 줄의 문구점 · 근린상가', cats:[
-    ['학교 앞 문구점', [{n:'stationeryCorner', note:'문구점 부품을 맞춘 조립 예시'}, 'stationeryShop', 'shopAwning', 'gachaRow', 'miniArcade', 'iceFreezer', 'drinkFridge', 'kidStool', 'hulaHoops', {n:'rpsMachine', note:'가위바위보 오락기 (2026-11-22, 놀이: activities/arcade.js)'}, {n:'zoneSign', note:'게임존 · 키링존 불 간판 (2026-11-22)'}, {n:'zoneMat', note:'게임존 · 키링존 바닥 매트 (2026-11-22)'}]],
+    ['학교 앞 문구점', [{n:'stationeryCorner', note:'문구점 부품을 맞춘 조립 예시'}, 'stationeryShop', 'shopAwning', 'gachaRow', 'miniArcade', 'iceFreezer', 'drinkFridge', 'kidStool', 'hulaHoops', {n:'rpsMachine', note:'가위바위보 오락기 (2026-11-22, 놀이: activities/arcade.js)'}, {n:'gonggiSet', note:'공기놀이 방석 + 공기알 (2026-11-23, 놀이: activities/arcade.js)'}, {n:'zoneSign', note:'게임존 · 키링존 불 간판 (2026-11-22, 2026-11-23 맵에서 뺌)'}, {n:'zoneMat', note:'게임존 · 키링존 바닥 매트 (2026-11-22, 2026-11-23 맵에서 뺌)'}]],
     ['근린상가 (조립 예시)', ['shopTowerBrickSet', 'shopTowerBeigeSet', 'shopTowerGraySet', 'shopTowerGreenSet']],
     ['근린상가 몸체', ['shopTowerBrick', 'shopTowerBeige', 'shopTowerGray', 'shopTowerGreen']],
     ['근린상가 앞 물건', ['barberPole', 'fruitStand', 'deliveryScooter']],

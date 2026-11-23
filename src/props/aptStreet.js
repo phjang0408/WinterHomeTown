@@ -8,6 +8,7 @@ import { box, loft, tube, lathe, fillet, ridge, blob, xf, groundAO, Parts } from
 import { matteMaterial, snowMaterial, decalMaterial, plasticMaterial, metalMaterial, glassMaterial, clearMaterial } from '../core/texkit.js';
 import { assemble, quadZ, quad, mulberry } from './kit.js';
 import { UNIT, FONT_D, FONT_B } from '../config.js';
+import { drawNotice, drawBannerAtlas } from './signArt/otherSigns.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z), U = UNIT, PI = Math.PI;
 const once = (() => { const m = new Map(); return (k, f) => { if (!m.has(k)) m.set(k, f()); return m.get(k); }; })();
@@ -170,24 +171,8 @@ defineProp('phoneBooth', {label:'공중전화 부스', category:'거리', isNewS
     return assemble(P, [['fr', plasticMaterial({rough:.5})], ['mat', matteMaterial()], ['met', metalMaterial()], ['gls', glassMaterial(), false], ['snw', snowMaterial({seed:43})]], [1.1, 2.5, 1.1], [deco, glass]); }});
 
 // ── 단지 안내 게시판: 철제 기둥 둘, 비 가림 지붕, 유리문 두 짝 안에 공고문과 광고지 ──
-function paper(g, x, y, w, h, bg, rot, draw){ g.save(); g.translate(x + w / 2, y + h / 2); g.rotate(rot); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(-w / 2 + 3, -h / 2 + 4, w, h); g.fillStyle = bg; g.fillRect(-w / 2, -h / 2, w, h);
-  g.textAlign = 'center'; g.textBaseline = 'middle'; draw(g, w, h); g.restore(); }
-const lines = (g, list, font, color, y0, dy) => { g.font = font; g.fillStyle = color; list.forEach((t, i) => g.fillText(t, 0, y0 + i * dy)); };
-const small = (g, w, y0, n, color = '#555') => { g.fillStyle = color; for (let i = 0; i < n; i++) g.fillRect(-w * .38, y0 + i * 11, w * (.76 - (i === n - 1 ? .3 : 0)), 3); };
-const noticeTex = () => once('notice', () => decalMaterial(canvasTex(1024, 512, (g, W, H) => {
-  g.fillStyle = '#3d6b5c'; g.fillRect(0, 0, W, H); const R = mulberry(9); g.fillStyle = 'rgba(255,255,255,.05)'; for (let i = 0; i < 900; i++) g.fillRect(R() * W, R() * H, 2, 2);
-  paper(g, 30, 26, 150, 236, '#fbfaf4', -.01, (g, w) => { lines(g, ['겨울철', '동파 예방 안내'], '25px ' + FONT_D, '#22262a', -86, 30); small(g, w, -28, 8); lines(g, ['(관리사무소)'], '800 17px ' + FONT_B, '#22262a', 92, 0); });
-  paper(g, 200, 34, 150, 196, '#ffffff', .015, g => lines(g, ['혹한기', '베란다', '세탁기', '사용 금지'], '36px ' + FONT_D, '#d2342a', -66, 44));
-  paper(g, 30, 284, 190, 206, '#ffffff', .01, g => { lines(g, ['수도 계량기'], '34px ' + FONT_D, '#22262a', -66, 0); lines(g, ['헌 옷으로', '감싸 주세요'], '38px ' + FONT_D, '#d2342a', -14, 46); });
-  paper(g, 240, 252, 130, 232, '#f6e3b4', -.02, (g, w) => { lines(g, ['피아노 · 태권도'], '19px ' + FONT_D, '#2b3f6b', -90, 0); lines(g, ['겨울방학'], '34px ' + FONT_D, '#d2342a', -52, 0); lines(g, ['특강 모집'], '30px ' + FONT_D, '#2b3f6b', -14, 0); small(g, w, 16, 4, '#7a6a4a'); lines(g, ['상가 2층'], '800 17px ' + FONT_B, '#2b3f6b', 86, 0); });
-  paper(g, 540, 28, 124, 214, '#f7d23c', .012, g => { lines(g, ['신속배달', '중국집'], '26px ' + FONT_D, '#22262a', -78, 32); lines(g, ['겨울 특선'], '22px ' + FONT_D, '#22262a', -8, 0); lines(g, ['굴짬뽕', '개시!'], '36px ' + FONT_D, '#d2342a', 34, 40); });
-  paper(g, 684, 40, 130, 176, '#ffffff', -.015, (g, w) => { lines(g, ['동화상가'], '19px ' + FONT_D, '#2b3f6b', -64, 0); lines(g, ['겨울방학', '특강 모집'], '28px ' + FONT_D, '#d2342a', -30, 34); small(g, w, 34, 4, '#2b3f6b'); });
-  paper(g, 548, 262, 136, 150, '#ffffff', -.01, (g, w) => { lines(g, ['크린세탁소'], '24px ' + FONT_D, '#2b3f6b', -50, 0); lines(g, ['패딩 · 코트', '할인'], '26px ' + FONT_D, '#d2342a', -14, 32); small(g, w, 44, 2); });
-  paper(g, 704, 236, 150, 250, '#f7d23c', .02, (g, w) => { lines(g, ['헌 옷 · 헌 책', '방문 수거'], '30px ' + FONT_D, '#22262a', -86, 40); small(g, w, -8, 6, '#6b5a12'); lines(g, ['단지 정문 앞'], '800 18px ' + FONT_B, '#22262a', 96, 0); });
-  paper(g, 874, 30, 124, 170, '#fbfaf4', .01, (g, w) => { lines(g, ['제설 봉사'], '26px ' + FONT_D, '#22262a', -58, 0); lines(g, ['함께해요'], '26px ' + FONT_D, '#2f7a52', -24, 0); small(g, w, 6, 5); });
-  paper(g, 880, 226, 118, 120, '#e9f0f7', -.03, g => lines(g, ['분리수거', '화 · 금'], '24px ' + FONT_D, '#2b3f6b', -18, 34));
-  [[380, 26], [1000, 216], [520, 250]].forEach(([x, y]) => { g.fillStyle = '#c8362c'; g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill(); });
-}), {rough:.75}));
+// (2026-11-23) 게시판 그림은 props/signArt/otherSigns.js drawNotice (1024×484, 판 2.48m × 1.16m 비율)
+const noticeTex = () => once('notice', () => decalMaterial(canvasTex(1024, 484, g => drawNotice(g)), {rough:.75}));
 defineProp('noticeBoard', {label:'단지 안내 게시판', category:'안내', isNewStyle:true, colliders:[{r:[-1.4 * U, -.16 * U, 1.4 * U, .16 * U]}],
   usage:"W.place('noticeBoard', {x: 140, z: 146, rot: 0});  // 폭 2.8m, 높이 2.3m", build(){
     const P = new Parts(), X = 1.3, Y0 = .82, Y1 = 2.0, RUST = 0x8d8479, FR = 0x9fa6aa, mt = (g, c) => P.add('met', g, c);
@@ -204,25 +189,16 @@ defineProp('noticeBoard', {label:'단지 안내 게시판', category:'안내', i
     return assemble(P, [['met', metalMaterial({rough:.45})], ['mat', matteMaterial()], ['snw', snowMaterial({seed:43})]], [3.1, 2.4, .8], [deco, glass]); }});
 
 // ── 현수막 게시대: 스테인리스 기둥 둘 사이에 현수막 세 장 ──
-const BAN = [
-  {bg:'#fbfbf8', a:[['보일러 ', '#1f3f8f'], ['무상 점검', '#d2342a'], [' 및 ', '#1f3f8f'], ['콘덴싱 교체', '#1f3f8f'], [' 특가', '#d2342a']], sub:'동화설비  ☎ 000-0000', sc:'#22262a'},
-  {bg:'#d8372c', a:[['동화마트 ', '#ffe14a'], ['겨울맞이 초특가 세일!', '#ffffff']], sub:'귤 · 호빵 · 사골  이번 주말까지', sc:'#ffe14a'},
-  {bg:'#f3e3b0', a:[['외풍 차단! ', '#1f3f8f'], ['샷시 수리', '#d2342a'], [' · 틈막이 시공', '#1f3f8f']], sub:'새봄창호  ☎ 000-0000', sc:'#22262a'}];
-const bannerTex = () => once('banner', () => decalMaterial(canvasTex(2048, 1024, (g, W, H) => { const R = mulberry(4);
-  BAN.forEach((b, i) => { const y = i * 320; g.fillStyle = b.bg; g.fillRect(0, y, W, 320);
-    g.font = '150px ' + FONT_D; g.textBaseline = 'middle'; g.textAlign = 'left'; const tw = b.a.reduce((s, [t]) => s + g.measureText(t).width, 0), k = Math.min(1, (W - 120) / tw); let x = (W - tw * k) / 2;
-    g.save(); g.translate(0, y + 122); g.scale(k, 1); x /= k; b.a.forEach(([t, c]) => { g.fillStyle = c; g.fillText(t, x, 0); x += g.measureText(t).width; }); g.restore();
-    g.font = '72px ' + FONT_D; g.textAlign = 'center'; g.fillStyle = b.sc; g.fillText(b.sub, W / 2, y + 256);
-    g.fillStyle = 'rgba(120,90,40,.10)'; for (let j = 0; j < 14; j++) g.fillRect(R() * W, y + R() * 320, 60 + R() * 200, 8 + R() * 30);          // 빗물 얼룩
-    g.fillStyle = 'rgba(0,0,0,.06)'; for (let j = 1; j < 8; j++) g.fillRect(j * W / 8, y, 3, 320); });                                          // 접힌 자국
-}), {rough:.8}));
+// (2026-11-23) 현수막 그림은 props/signArt/otherSigns.js drawBannerAtlas (2048×1024, 한 장 2048×336 = 판 4.76m × 0.78m 비율)
+const BH = 336;
+const bannerTex = () => once('banner', () => decalMaterial(canvasTex(2048, 1024, g => drawBannerAtlas(g)), {rough:.8}));
 defineProp('bannerBoard', {label:'현수막 게시대', category:'안내', isNewStyle:true, colliders:[{c:[-2.5 * U, 0, .1 * U]}, {c:[2.5 * U, 0, .1 * U]}],
   usage:"W.place('bannerBoard', {x: 184, z: 146, rot: Math.PI / 2});  // 폭 5m, 높이 4.4m, 현수막 세 장", build(){
     const P = new Parts(), X = 2.5, T = 4.2, D = new Parts(), mt = (g, c = STEEL) => P.add('met', g, c);
     [-X, X].forEach(x => { mt(tube([V(x, 0, 0), V(x, T, 0)], .055, {radial:10})); P.add('mat', xf(cyl(.14, .16, .05, 12), {x, y:.025}), 0x8b9297); });
     mt(box(-X - .25, T, -.22, X + .25, T + .05, .22, .01), 0xcfd4d7); P.add('snw', box(-X - .22, T + .04, -.2, X + .22, T + .16, .2, .06));
     [0, 1, 2].forEach(i => { const y1 = 3.9 - i * 1.02, y0 = y1 - .78; [y0 - .03, y1 + .03].forEach(y => mt(tube([V(-X, y, 0), V(X, y, 0)], .016, {radial:6})));
-      const uv = [0, 1 - (i + 1) * 320 / 1024, 1, 1 - i * 320 / 1024]; D.add('d', quadZ(-X + .12, y0, X - .12, y1, .012, uv)); D.add('d', quadZ(-X + .12, y0, X - .12, y1, -.012, uv, true));
+      const uv = [0, 1 - (i + 1) * BH / 1024, 1, 1 - i * BH / 1024]; D.add('d', quadZ(-X + .12, y0, X - .12, y1, .012, uv)); D.add('d', quadZ(-X + .12, y0, X - .12, y1, -.012, uv, true));
       [[-1, y0], [-1, y1], [1, y0], [1, y1]].forEach(([s, y]) => P.add('mat', tube([V(s * (X - .12), y, .012), V(s * (X - .03), y + (y === y0 ? -.03 : .03), 0)], .006, {radial:4}), 0xe9e6dc)); });   // 묶은 끈
     return assemble(P, [['met', metalMaterial()], ['mat', matteMaterial()], ['snw', snowMaterial({seed:43})]], [5.5, 4.4, .5], [new THREE.Mesh(D.geo('d'), bannerTex())]); }});
 

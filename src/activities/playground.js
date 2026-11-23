@@ -12,7 +12,7 @@ import { buildProp } from '../props/registry.js';
 import { SEESAW_M } from '../props/aptYard.js';
 import { W } from '../world/world.js';
 import { me } from '../entities/player.js';
-import { SIT, POSES } from '../entities/character.js';
+import { SIT, POSES, waving } from '../entities/character.js';
 import { S } from '../core/state.js';
 import { sfx } from '../core/fx.js';
 import { defineActivity, seatTaken } from './registry.js';
@@ -120,12 +120,12 @@ defineActivity({
   frame(dt, now){
     MG.w *= Math.exp(-.35 * dt); if (MG.w < .01) MG.w = 0;
     MG.ang += MG.w * dt; MG.obj.rotation.y = MG.ang;
-    // 미는 사람: 두 팔을 앞으로, 밀 때마다 몸을 숙인다
+    // 미는 사람: 오른팔을 앞으로 (2026-11-23 놀이 손은 오른손, 왼손은 흔드는 손), 밀 때마다 몸을 숙인다
     const lean = c => { const e = (performance.now() - (c.pushT || 0)) / 1000; return e < .25 ? .35 * Math.sin(e / .25 * PI) : 0; };
     // (2026-11-22) 미는 사람이 등으로 미는 것처럼 보이던 것: 기울기를 세계 x축이 아니라 몸 기준(YXZ)으로 줘서 얼굴 쪽(앞)으로 숙인다
-    if (me.st === ST.SPIN && me.char) { const u = me.char.userData; u.armL.rotation.x = u.armR.rotation.x = -1.35; me.char.rotation.order = 'YXZ'; me.char.rotation.x = lean(me); }
+    if (me.st === ST.SPIN && me.char) { const u = me.char.userData; u.armR.rotation.x = -1.35; me.char.rotation.order = 'YXZ'; me.char.rotation.x = lean(me); }
     else if (me.char && me.st !== ST.DUCK && me.char.rotation.order !== 'XYZ') me.char.rotation.order = 'XYZ';
-    else if (me.st === ST.RIDE && me.char) { const u = me.char.userData; u.armL.rotation.x = u.armR.rotation.x = -1.1; }
+    else if (me.st === ST.RIDE && me.char) { const u = me.char.userData; u.armR.rotation.x = -1.1; }
   },
   remote(R, p){
     R.mgPhi = p.mg[1];
@@ -134,7 +134,7 @@ defineActivity({
   },
   remoteFrame(R){
     if (!R.char) return; const u = R.char.userData;
-    if (R.st === ST.SPIN) { u.armL.rotation.x = u.armR.rotation.x = -1.35; const e = (performance.now() - (R.pushT || 0)) / 1000; R.char.rotation.order = 'YXZ'; R.char.rotation.x = e < .25 ? .35 * Math.sin(e / .25 * PI) : 0; }
-    else if (R.st === ST.RIDE) u.armL.rotation.x = u.armR.rotation.x = -1.1;
+    if (R.st === ST.SPIN) { u.armR.rotation.x = -1.35; const e = (performance.now() - (R.pushT || 0)) / 1000; R.char.rotation.order = 'YXZ'; R.char.rotation.x = e < .25 ? .35 * Math.sin(e / .25 * PI) : 0; }
+    else if (R.st === ST.RIDE) u.armR.rotation.x = -1.1;
   },
 });

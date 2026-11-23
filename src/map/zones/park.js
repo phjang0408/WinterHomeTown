@@ -31,7 +31,7 @@ function shopRow(xs, z0, rot, roofAt){
   const groups = new Map(), c = Math.cos(rot), s = Math.sin(rot);
   xs.forEach((sx, k) => SHOP_LAYOUT.forEach(([name, o, x, y, z, r]) => {
     if (name === 'signRoof' && !roofAt.includes(k)) return;
-    const opts = name === 'signFascia' || name === 'signVertical' ? {...o, v:((o.v || 0) + k * 3) % (name === 'signFascia' ? 8 : 5)} : o, key = name + JSON.stringify(opts);
+    const opts = name === 'signFascia' || name === 'signVertical' ? {...o, v:((o.v || 0) + k * 3) % (name === 'signFascia' ? 10 : 8)} : o, key = name + JSON.stringify(opts);
     if (!groups.has(key)) groups.set(key, {name, opts, list:[]});
     groups.get(key).list.push({x:sx + (x * c + z * s) * U, y:y * U, z:z0 + (-x * s + z * c) * U, rot:rot + (r || 0)}); }));
   for (const {name, opts, list} of groups.values()) { const def = getProp(name), g = W.placeMany(name, list, opts);
@@ -187,7 +187,7 @@ export default {
     NL_SHOPS.towers.forEach(([k, x]) => placeTower(W, k, x, NL_SHOPS.back + TOWER[k].D / 2 * U, 0));
     W.mmLabel(STN_AT.x, STN_AT.z + 1, '문구점', 9);
     // (16차) 게임존 · 키링존 이름표: 미니맵과 떠 있는 이름표 (놀이 중에는 숨는다)
-    { const c = Math.cos(STN_AT.rot), s = Math.sin(STN_AT.rot); STATIONERY_ZONES.forEach(([t, lx, lz]) => { const x = STN_AT.x + (lx * c + lz * s) * U, z = STN_AT.z + (-lx * s + lz * c) * U; W.mmLabel(x, z, t, 7); spotLabel(t, x, 5.2, z); }); }
+    { const c = Math.cos(STN_AT.rot), s = Math.sin(STN_AT.rot); STATIONERY_ZONES.forEach(([t, lx, lz, h]) => { const x = STN_AT.x + (lx * c + lz * s) * U, z = STN_AT.z + (-lx * s + lz * c) * U; W.mmLabel(x, z, t, 7); spotLabel(t, x, h || 4.3, z); }); }
     // 공중전화 부스 둘: 문구점 동쪽 옆에 나란히, 열린 쪽이 남쪽 (2026-11-22 15차)
     W.placeMany('phoneBooth', PHONES.slice(3, 5));
   },

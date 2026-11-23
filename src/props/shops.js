@@ -9,29 +9,19 @@ import { box, loft, tube, lathe, flatXZ, fillet, ridge, blob, xf, groundAO, triC
 import { matteMaterial, snowMaterial, decalMaterial, metalMaterial, concreteMaterial, paverMaterial, glassMaterial } from '../core/texkit.js';
 import { assemble, quad, quadZ, mulberry } from './kit.js';
 import { UNIT, FONT_D, FONT_B } from '../config.js';
+import { drawAtlas, cellRect, SIGNS } from './signArt/fasciaSigns.js';
+import { drawBoardAtlas, VSIGNS, VCELL, ROOF } from './signArt/otherSigns.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z), U = UNIT;
 const once = (() => { const m = new Map(); return (k, f) => { if (!m.has(k)) m.set(k, f()); return m.get(k); }; })();
 const SB = {X:10.5, Z:4.5, PH:.9, TD:2.4, Y1:4.5, Y2:7.8, bays:[-8.4, -4.2, 0, 4.2, 8.4], gap:2.1, PW:1.85, PY:3.75};   // PW·PY: 가운데 통로의 반폭과 천장 높이
 
-// ── 간판 그림: 한 장에 모아 그린다 (가로 8칸 512×96, 세로 5칸 96×384, 옥상 1024×256) ──
-const SHOPS = [
-  {n:'동화마트', sub:'식품 · 생활용품', bg:'#d83a2e', fg:'#fff8e0'}, {n:'참새분식', sub:'떡볶이 · 김밥', bg:'#f2b632', fg:'#5a2a12'},
-  {n:'무지개세탁', sub:'드라이 · 수선', bg:'#2f6fb5', fg:'#ffffff'}, {n:'새봄약국', sub:'처방 조제', bg:'#f4f6f4', fg:'#2f8a5a'},
-  {n:'별빛문구', sub:'문구 · 복사', bg:'#3f8a97', fg:'#ffffff'}, {n:'바삭치킨', sub:'후라이드 · 양념', bg:'#e8742a', fg:'#ffffff'},
-  {n:'다정미용실', sub:'커트 · 파마', bg:'#b0558a', fg:'#ffffff'}, {n:'동화부동산', sub:'매매 · 전세', bg:'#f1e9c9', fg:'#27496d'}];
-const VERT = [{n:'은하피아노', bg:'#27496d', fg:'#ffffff'}, {n:'으뜸태권도', bg:'#d83a2e', fg:'#fff8e0'}, {n:'새봄약국', bg:'#f4f6f4', fg:'#2f8a5a'}, {n:'속셈학원', bg:'#f2b632', fg:'#5a2a12'}, {n:'동화치과', bg:'#3f8a97', fg:'#ffffff'}];
-const cell = (x, y, w, h) => [x / 2048, 1 - (y + h) / 1024, (x + w) / 2048, 1 - y / 1024];
-const atlas = () => once('signs', () => decalMaterial(canvasTex(2048, 1024, g => {
-  g.fillStyle = '#777'; g.fillRect(0, 0, 2048, 1024); g.textBaseline = 'middle';
-  SHOPS.forEach((s, i) => { const x = (i % 2) * 512, y = (i >> 1) * 96; g.fillStyle = s.bg; g.fillRect(x, y, 512, 96); g.fillStyle = s.fg; g.fillRect(x + 12, y + 12, 7, 72);
-    g.textAlign = 'left'; g.font = '62px ' + FONT_D; g.fillText(s.n, x + 32, y + 46); g.textAlign = 'right'; g.font = '800 21px ' + FONT_B; g.fillText(s.sub, x + 498, y + 72); });
-  VERT.forEach((s, i) => { const x = 1024 + i * 96, ch = [...s.n], st = 350 / ch.length; g.fillStyle = s.bg; g.fillRect(x, 0, 96, 384); g.fillStyle = s.fg; g.textAlign = 'center'; g.font = '700 ' + Math.min(72, st * .92) + 'px ' + FONT_D;
-    ch.forEach((c, k) => g.fillText(c, x + 48, 20 + st * (k + .5))); });
-  g.fillStyle = '#27496d'; g.fillRect(0, 400, 1024, 256); g.strokeStyle = '#f4f6f7'; g.lineWidth = 8; g.strokeRect(12, 412, 1000, 232);
-  g.lineWidth = 14; g.lineCap = 'round'; g.strokeStyle = '#8fc0e8'; for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; g.beginPath(); g.moveTo(140, 528); g.lineTo(140 + Math.cos(a) * 70, 528 + Math.sin(a) * 70); g.stroke(); }
-  g.fillStyle = '#f4f6f7'; g.textAlign = 'left'; g.font = '178px ' + FONT_D; g.fillText('동화상가', 262, 534);
-}), {rough:.6}));
+// ── 간판 그림 (2026-11-23 새 그림: props/signArt/) ──
+//   가로 간판 아틀라스 2048×1024: 10칸 1024×180 (2열 × 5행). 세로 · 옥상 아틀라스 1024×1024: 세로 8칸 128×512 (y 0), 옥상 1024×244 (y 528)
+const SHOPS = SIGNS.map(s => s.n), VERT = VSIGNS.map(s => s.n);   // 가게 이름 순서 = v 번호 (가로 10, 세로 8)
+const cell = (x, y, w, h, AW = 2048, AH = 1024) => [x / AW, 1 - (y + h) / AH, (x + w) / AW, 1 - y / AH];
+const atlas = () => once('signs', () => decalMaterial(canvasTex(2048, 1024, g => drawAtlas(g)), {rough:.6}));
+const boardAtlas = () => once('boards', () => decalMaterial(canvasTex(1024, 1024, g => drawBoardAtlas(g)), {rough:.6}));
 const face = (g, mat) => { const m = new THREE.Mesh(g, mat || atlas()); return m; };
 // 글자를 직접 주는 간판 그림 (2026-11-15: 상가 건물 4동이 기존 간판 소품을 다시 쓰도록). 가로면 한 줄(+작은 줄), 세로면 한 글자씩.
 //   o.text, o.sub, o.bg, o.fg, o.accent(글자 일부 색: [시작, 끝, 색]), o.border
@@ -125,22 +115,22 @@ defineProp('shopStairs', {label:'상가 계단', category:'상가', isNewStyle:t
 
 // ── 간판 세 가지. 원점은 아래 가운데, 뒤(z = 0)가 벽에 붙는 면 ──
 defineProp('signFascia', {label:'가로 간판', category:'상가', isNewStyle:true, small:true,
-  variants:[{label:'동화마트', opts:{v:0}}, {label:'참새분식', opts:{v:1}}, {label:'새봄약국', opts:{v:3}}],
-  usage:"W.place('signFascia', {x, z, y: 3.78 * UNIT, rot: 0, v: 0});  // 4m × 0.75m, v: 0~7 (가게 이름). 글자를 직접: {text, sub, bg, fg, accent, w, h}", build(o = {}){
-    const i = (o.v || 0) % SHOPS.length, w = o.w || 4, h = o.h || .75, P = new Parts(), col = i % 2, row = i >> 1;
+  variants:[{label:'동화마트', opts:{v:0}}, {label:'참새분식', opts:{v:1}}, {label:'새봄약국', opts:{v:3}}, {label:'CBQ치킨', opts:{v:8}}, {label:'왕별노래방', opts:{v:9}}],
+  usage:"W.place('signFascia', {x, z, y: 3.78 * UNIT, rot: 0, v: 0});  // 4m × 0.75m, v: 0~9 (가게 이름). 글자를 직접: {text, sub, bg, fg, accent, w, h}", build(o = {}){
+    const i = (o.v || 0) % SHOPS.length, w = o.w || 4, h = o.h || .75, P = new Parts();
     P.add('mat', box(-w / 2, 0, 0, w / 2, h, .14, .02), 0x2d3238);
     [-w * .3, w * .3].forEach(x => { P.add('met', tube(fillet([V(x, h - .04, .03), V(x, h + .2, .03), V(x, h + .2, .4), V(x, h + .1, .43)], .08, 4), .012, {radial:6}), 0x3a4047); P.add('met', xf(lathe([[.07, 0], [.03, .09], [0, .095]], 10), {rx:.5, x, y:h + .02, z:.44}), 0x3a4047); });
     P.add('snw', ridge(Array.from({length:9}, (_, k) => V(-w / 2 + .1 + (w - .2) * k / 8, h, .07)), .13, .05));
-    return assemble(P, [['mat', matteMaterial()], ['met', metalMaterial(), false], ['snw', snowMaterial({seed:48})]], [w, 1, .5], [o.text ? face(quadZ(-w / 2 + .03, .03, w / 2 - .03, h - .03, .1465), textSignMat(o, false, (w - .06) / (h - .06))) : face(quadZ(-w / 2 + .03, .03, w / 2 - .03, h - .03, .1465, cell(col * 512, row * 96, 512, 96)))]); }});
+    return assemble(P, [['mat', matteMaterial()], ['met', metalMaterial(), false], ['snw', snowMaterial({seed:48})]], [w, 1, .5], [o.text ? face(quadZ(-w / 2 + .03, .03, w / 2 - .03, h - .03, .1465), textSignMat(o, false, (w - .06) / (h - .06))) : face(quadZ(-w / 2 + .03, .03, w / 2 - .03, h - .03, .1465, cell(...cellRect(i))))]); }});
 defineProp('signVertical', {label:'세로 돌출 간판', category:'상가', isNewStyle:true, small:true,
-  variants:[{label:'은하피아노', opts:{v:0}}, {label:'으뜸태권도', opts:{v:1}}],
-  usage:"W.place('signVertical', {x, z, y: 4.9 * UNIT, rot: 0, v: 0});  // 0.6m × 2.4m, 벽에서 0.76m 튀어나온다. v: 0~4. 글자를 직접: {text, bg, fg, len}", build(o = {}){
-    const i = (o.v || 0) % VERT.length, P = new Parts(), uv = o.text ? [0, 0, 1, 1] : cell(1024 + i * 96, 0, 96, 384), x = .0915, L = o.len || 2.4;
+  variants:[{label:'은하피아노', opts:{v:0}}, {label:'으뜸태권도', opts:{v:1}}, {label:'왕별당구장', opts:{v:5}}, {label:'밝은안경', opts:{v:6}}, {label:'꿈나무독서실', opts:{v:7}}],
+  usage:"W.place('signVertical', {x, z, y: 4.9 * UNIT, rot: 0, v: 0});  // 0.6m × 2.4m, 벽에서 0.76m 튀어나온다. v: 0~7. 글자를 직접: {text, bg, fg, len}", build(o = {}){
+    const i = (o.v || 0) % VERT.length, P = new Parts(), uv = o.text ? [0, 0, 1, 1] : cell(i * VCELL[0], 0, VCELL[0], VCELL[1], 1024, 1024), x = .0915, L = o.len || 2.4;
     P.add('mat', box(-.09, 0, .14, .09, L, .76, .02), 0x2d3238);
     [.3, L - .3].forEach(y => { P.add('met', box(-.02, y - .02, 0, .02, y + .02, .15), 0x3a4047); P.add('met', box(-.08, y - .08, 0, .08, y + .08, .012), 0x3a4047); });
     P.add('snw', xf(blob(.1, .05, .32, {seed:2, bump:.06, seg:10}), {y:L - .01, z:.45}));
     const d = new Parts(); d.add('d', quad([x, .04, .73], [x, .04, .17], [x, L - .04, .17], [x, L - .04, .73], uv)); d.add('d', quad([-x, .04, .17], [-x, .04, .73], [-x, L - .04, .73], [-x, L - .04, .17], uv));
-    return assemble(P, [['mat', matteMaterial()], ['met', metalMaterial(), false], ['snw', snowMaterial({seed:48})]], [.2, L + .05, .76], [face(d.geo('d'), o.text ? textSignMat(o, true, (L - .08) / .56) : null)]); }});
+    return assemble(P, [['mat', matteMaterial()], ['met', metalMaterial(), false], ['snw', snowMaterial({seed:48})]], [.2, L + .05, .76], [face(d.geo('d'), o.text ? textSignMat(o, true, (L - .08) / .56) : boardAtlas())]); }});
 defineProp('signRoof', {label:'옥상 간판', category:'상가', isNewStyle:true, small:true,
   usage:"W.place('signRoof', {x, z, y: 7.86 * UNIT, rot: 0});  // 6.4m × 1.6m 판, 철골 다리 1.2m. 글자를 직접: {text, bg, fg}", build(o = {}){
     const P = new Parts(), ST_ = 0x6b747b, met = g => P.add('met', g, ST_);
@@ -148,7 +138,7 @@ defineProp('signRoof', {label:'옥상 간판', category:'상가', isNewStyle:tru
     [-2.8, -.95, .95, 2.8].forEach(x => { met(tube([V(x, 0, -.14), V(x, 2.75, -.14)], .035, {radial:6})); met(tube([V(x, 2.4, -.14), V(x, 0, -1.3)], .028, {radial:6})); met(tube([V(x, 0, -.14), V(x, 0, -1.3)], .028, {radial:6})); met(box(x - .1, 0, -1.4, x + .1, .03, -.04)); });
     [1.3, 2.6].forEach(y => met(tube([V(-3.1, y, -.14), V(3.1, y, -.14)], .025, {radial:6}))); met(tube([V(-2.8, 0, -1.3), V(2.8, 0, -1.3)], .025, {radial:6})); met(tube([V(-2.8, 1.25, -.14), V(-.95, 2.6, -.14)], .018, {radial:5})); met(tube([V(2.8, 1.25, -.14), V(.95, 2.6, -.14)], .018, {radial:5}));
     P.add('snw', ridge(Array.from({length:11}, (_, k) => V(-3.1 + 6.2 * k / 10, 2.8, 0)), .2, .08));
-    return assemble(P, [['mat', matteMaterial()], ['met', metalMaterial()], ['snw', snowMaterial({seed:48})]], [6.4, 2.9, 1.5], [o.text ? face(quadZ(-3.15, 1.25, 3.15, 2.75, .1015), textSignMat(o, false, 6.3 / 1.5)) : face(quadZ(-3.15, 1.25, 3.15, 2.75, .1015, cell(0, 400, 1024, 256)))]); }});
+    return assemble(P, [['mat', matteMaterial()], ['met', metalMaterial()], ['snw', snowMaterial({seed:48})]], [6.4, 2.9, 1.5], [o.text ? face(quadZ(-3.15, 1.25, 3.15, 2.75, .1015), textSignMat(o, false, 6.3 / 1.5)) : face(quadZ(-3.15, 1.25, 3.15, 2.75, .1015, cell(ROOF.x, ROOF.y, ROOF.w, ROOF.h, 1024, 1024)), boardAtlas())]); }});
 
 // ── 조립 예시: 몸체 + 계단 + 가로 간판 5 + 세로 간판 3 + 옥상 간판. 맵에 놓을 때도 이 좌표대로 따로따로 놓으면 된다 ──
 export const SHOP_LAYOUT = [

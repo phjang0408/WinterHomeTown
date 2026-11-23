@@ -9,10 +9,10 @@ export const FONT_D = '"Black Han Sans","Nanum Gothic","Apple SD Gothic Neo","Ma
 export const FONT_B = '"Nanum Gothic","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
 // 화면 UI 글씨 (2026-11-21): 머리 위 이름표 · 자리 표시 등 3D 안의 UI 글씨도 같은 글꼴
 export const FONT_UI = '"IBM Plex Sans KR","Barlow Condensed","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
-export const FONTS_TO_LOAD = ['600 16px "IBM Plex Sans KR"', '600 16px "Barlow Condensed"', '32px "Black Han Sans"', '16px "Nanum Gothic"', '800 16px "Nanum Gothic"'];
+export const FONTS_TO_LOAD = ['600 16px "IBM Plex Sans KR"', '600 16px "Barlow Condensed"', '32px "Black Han Sans"', '16px "Nanum Gothic"', '800 16px "Nanum Gothic"', '32px "Song Myung"', '32px "Do Hyeon"', '32px "Jua"', '32px "Gugi"', '32px "Yeon Sung"', '700 32px "Gaegu"', '500 32px "Sunflower"', '700 32px "Sunflower"', '700 32px "Nanum Myeongjo"', '800 32px "Nanum Myeongjo"', '900 32px "Gothic A1"'];   // (2026-11-23) 간판 그림 글꼴 (props/signArt/)
 
-export const ADJ = ['포근한','조용한','느긋한','말랑한','따끈한','수줍은','졸린','소복한','반짝이는','다정한','동그란','나른한'];
-export const NOUN = ['눈송이','귤','붕어빵','목도리','호빵','고드름','털모자','군고구마','입김','손난로','발자국','장갑','코코아','눈토끼'];
+export const ADJ = ['킹왕짱','폭풍간지','떡실신','완소','엽기','폼생폼사','숭구리당당','뽀대나는','zI존','지못미','뭥미','뽐뿌'];
+export const NOUN = ['차도남','초글링','초딩','본좌','도토리','허접','쌈짱','얼짱','뷁','잉여','일촌'];
 export const COLORS = [
   {j:0xd9695c,h:0xf4ecd8,css:'#d9695c'},{j:0x3f8a97,h:0xf2c66d,css:'#3f8a97'},
   {j:0xe2a84b,h:0x5b6f8c,css:'#e2a84b'},{j:0x6f86b8,h:0xf3d9d2,css:'#6f86b8'},

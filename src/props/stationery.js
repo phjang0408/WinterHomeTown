@@ -11,6 +11,7 @@ import { matteMaterial, snowMaterial, decalMaterial, metalMaterial, concreteMate
 import { assemble, quad, quadZ, mulberry } from './kit.js';
 import { UNIT, FONT_D, FONT_B } from '../config.js';
 import { drawRpsFace, RPS_W, RPS_H } from './rpsArt.js';
+import { drawStationeryWide, drawStationeryTall } from './signArt/otherSigns.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z), U = UNIT;
 const once = (() => { const m = new Map(); return (k, f) => { if (!m.has(k)) m.set(k, f()); return m.get(k); }; })();
@@ -42,7 +43,7 @@ export const STN = {W:11, D:7, H1:3.4, H:6.6, top:7.2, open:4.7};
 const IMG = new Map();
 function shopImg(kind){ if (IMG.has(kind)) return IMG.get(kind);
   const C = ['#d83a2e', '#f2b632', '#2f6fb5', '#3f8a5a', '#e8742a', '#b0558a', '#7fc6e8', '#f4f1e6', '#8e6bbf'], r = mulberry(kind.length * 17 + 3), pick = () => C[Math.floor(r() * C.length)];
-  const [Wc, Hc] = kind === 'back' ? [1024, 512] : kind === 'side' ? [1024, 384] : kind === 'hang' ? [1024, 128] : kind === 'open' ? [256, 80] : [256, 192];
+  const [Wc, Hc] = kind === 'back' ? [1024, 512] : kind === 'side' ? [1024, 384] : kind === 'hang' ? [1024, 128] : kind === 'open' ? [256, 80] : kind === 'poster' ? [512, 352] : [160, 560];   // (2026-11-23) 포스터는 판 비율대로: 옆벽 1.6m × 1.1m, 앞 창 띠 0.4m × 1.4m
   const t = canvasTex(Wc, Hc, g => {
     if (kind === 'back' || kind === 'side') { g.fillStyle = '#ece8dc'; g.fillRect(0, 0, Wc, Hc); const rows = kind === 'back' ? 5 : 4, rh = Hc / rows;
       for (let i = 0; i < rows; i++) { const y = i * rh; g.fillStyle = '#b7bcc0'; g.fillRect(0, y + rh - 8, Wc, 8);
@@ -50,8 +51,8 @@ function shopImg(kind){ if (IMG.has(kind)) return IMG.get(kind);
       g.fillStyle = '#9aa0a5'; for (let x = 0; x < Wc; x += Wc / 4) g.fillRect(x, 0, 6, Hc); }
     else if (kind === 'hang') { g.clearRect(0, 0, Wc, Hc); for (let x = 10; x < Wc - 20; x += 22 + r() * 20) { const w = 16 + r() * 22, h = 30 + r() * 60; g.fillStyle = '#6f777e'; g.fillRect(x + w / 2 - 1, 0, 2, 14); g.fillStyle = pick(); g.fillRect(x, 14, w, h); } }
     else if (kind === 'open') { g.fillStyle = '#d83a2e'; g.fillRect(0, 0, Wc, Hc); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '44px ' + FONT_D; g.fillText('영업 중', Wc / 2, Hc / 2 + 2); }
-    else { const bg = {poster:'#2f6fb5', poster2:'#f2b632', poster3:'#3f8a5a'}[kind]; g.fillStyle = bg; g.fillRect(0, 0, Wc, Hc); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
-      const L = {poster:['신학기', '학용품 할인'], poster2:['뽑기', '새 상품 입고'], poster3:['딱지 · 구슬', '팽이 있어요']}[kind]; g.font = '54px ' + FONT_D; g.fillText(L[0], Wc / 2, 70); g.font = '800 26px ' + FONT_B; g.fillText(L[1], Wc / 2, 140); } });
+    else if (kind === 'poster') drawStationeryWide(g);
+    else drawStationeryTall(g, kind === 'poster3' ? 1 : 0); });
   const m = kind === 'hang' ? decalMaterial(t, {alpha:true, rough:.8}) : new THREE.MeshLambertMaterial({map:t}); if (kind === 'hang') m.side = THREE.DoubleSide; IMG.set(kind, m); return m; }
 
 defineProp('stationeryShop', {label:'문구점 건물 (별빛문구)', category:'문구점', isNewStyle:true, blocksCamera:true, minimap:'#c58b6e', mmSize:6,
@@ -222,6 +223,16 @@ defineProp('rpsMachine', {label:'가위바위보 오락기', category:'문구점
     const face = new THREE.Mesh(quadZ(-hw + .01, y0 + .1, hw - .01, y1 - .01, .152, [0, 0, 1, 1]), rpsFace());   // 앞판 그림 (600 × 480 비율에 가깝게)
     return assemble(P, [['pnt', plasticMaterial({rough:.36})], ['pla', plasticMaterial({rough:.22}), false], ['snw', snowMaterial({seed:78}), false]], [.66, 1.45, .45], [face]); }});
 
+// ───────── 공기놀이 자리 (2026-11-23): 빨간 방석 + 플라스틱 공기알 다섯 ─────────
+//   공기알은 실제(지름 약 2cm)보다 두 배 크게 해서 멀리서도 보이게. 방석 0.55m 정사각, 두께 4cm
+defineProp('gonggiSet', {label:'공기놀이 방석', category:'문구점', isNewStyle:true, small:true,
+  usage:"W.place('gonggiSet', {x, z, rot});  // 방석 0.55m, 공기알 5 (놀이: activities/arcade.js 공기놀이)", build(){
+    const P = new Parts(), R = mulberry(31), C = [0xe8402a, 0xf2c51f, 0x2f8fd6, 0x5fb24a, 0xb05bd6];
+    P.add('cus', box(-.275, 0, -.275, .275, .04, .275, .015), 0xb8282e); P.add('cus', box(-.2, .0405, -.2, .2, .042, .2, .002), 0xd8c07a);   // 방석 + 가운데 수 무늬 판
+    C.forEach((c, i) => { const a = i / 5 * Math.PI * 2 + R() * .4, r = .08 + R() * .1; P.add('pla', xf(new THREE.IcosahedronGeometry(.022, 0), {x:Math.cos(a) * r, y:.058, z:Math.sin(a) * r, rx:R() * 3, ry:R() * 3}), c); });
+    P.bake('cus', groundAO(.03, .75));
+    return assemble(P, [['cus', matteMaterial()], ['pla', plasticMaterial({rough:.3}), false]], [.55, .08, .55]); }});
+
 // ───────── 구역 표지 (2026-11-22): '게임존' · '키링존' ─────────
 //   zoneSign: 기둥 둘 + 불 들어오는 간판 상자(테두리에 전구). 앞(+z)에 글. 폭 w(기본 2.2m), 높이 2.95m.
 //   zoneMat : 바닥 고무 매트(두께 2cm) + 윗면 글 · 줄무늬 테두리. 폭 w × 깊이 d.
@@ -313,20 +324,18 @@ defineProp('hulaHoops', {label:'훌라후프 걸이', category:'문구점', isNe
 // [소품, 옵션, x, y, z, 회전] (미터, 건물 원점 기준, 가게 앞이 +z)
 export const STATIONERY_LAYOUT = [
   ['stationeryShop', {}, 0, 0, 0], ['shopAwning', {w:9.6}, 0, 0, STN.D / 2 + .02],
-  // (2026-11-22 2차) 가게 서쪽 벽 = 게임존 (작은 오락기 둘이 벽을 등지고 서쪽을 본다, 걸상, 바닥 매트, 불 간판)
-  ['zoneMat', {text:'게임존', col:'#1d3a8a', w:3.7, d:6.6}, -7.45, 0, -.2], ['zoneSign', {text:'게임존', sub:'오락기 · 딱지', bg:'#1f4fd0', fg:'#ffd23f'}, -7.45, 0, 2.75],
-  ['miniArcade', {c:0x2f6fb5}, -5.82, 0, -1.2, -Math.PI / 2], ['miniArcade', {c:0xd83a2e}, -5.82, 0, -.35, -Math.PI / 2],
-  ['kidStool', {}, -6.62, 0, -1.2, -Math.PI / 2], ['kidStool', {}, -6.62, 0, -.35, -Math.PI / 2],
-  //   가게 동쪽 벽 = 키링존 (가위바위보 오락기 + 뽑기 기계 줄이 벽을 등지고 동쪽을 본다, 바닥 매트, 불 간판)
-  ['zoneMat', {text:'키링존', col:'#8e1d4e', w:3.7, d:6.6}, 7.45, 0, -.2], ['zoneSign', {text:'키링존', sub:'가위바위보 · 뽑기', bg:'#c2185b', fg:'#ffe9a0'}, 7.45, 0, 2.75],
-  ['rpsMachine', {}, 5.75, 0, -1.6, Math.PI / 2], ['gachaRow', {n:4}, 5.82, 0, .9, Math.PI / 2],
-  //   가게 앞: 냉장고 둘과 훌라후프만 (앞마당을 넓게)
-  ['drinkFridge', {}, -3.0, 0, 3.98], ['iceFreezer', {}, -.6, 0, 4.15], ['hulaHoops', {}, 3.6, 0, 3.65]];
-  // (가게 안 양은 쟁반은 사용자 요청으로 뺐다. 쟁반은 목욕탕 평상 위에만)
-// 오락기 놀이 자리 (activities/arcade.js): 건물 원점 기준 미터, 기계 위치와 방향 r. 사람은 기계 앞 0.8m에 선다
-export const STATIONERY_ARCADES = [{kind:'cab', x:-5.82, z:-1.2, r:-Math.PI / 2}, {kind:'cab', x:-5.82, z:-.35, r:-Math.PI / 2}, {kind:'rps', x:5.75, z:-1.6, r:Math.PI / 2}, {kind:'gacha', x:5.82, z:.9, r:Math.PI / 2}];
-// 구역 이름표 자리 (건물 원점 기준 미터): 미니맵 · 떠 있는 이름표
-export const STATIONERY_ZONES = [['게임존', -7.45, -.2], ['키링존', 7.45, -.2]];
+  // (2026-11-23) 오락기들은 가게 앞 한 줄로 (바닥 매트 · 불 간판은 없앴다. 이름표만 위에 뜬다)
+  //   왼쪽(서): 은하 대작전 오락기(파랑) · 벽돌 깨기 오락기(빨강) + 걸상 = 게임존. 가운데 음료 냉장고. 오른쪽(동): 뽑기 기계 줄 · 가위바위보 오락기 = 키링존
+  ['miniArcade', {c:0x2f6fb5}, -4.6, 0, 4.15], ['miniArcade', {c:0xd83a2e}, -3.75, 0, 4.15], ['kidStool', {}, -4.6, 0, 4.95], ['kidStool', {}, -3.75, 0, 4.95],
+  ['drinkFridge', {}, -2.2, 0, 3.98], ['gachaRow', {n:4}, 1.2, 0, 4.25], ['rpsMachine', {}, 3.35, 0, 4.12],
+  ['hulaHoops', {}, -5.85, 0, 3.65],
+  //   가게 동쪽 옆: 공기놀이 자리 (방석 + 공기알 다섯). 아이스크림 냉장고는 마트 앞으로 옮겼다
+  ['gonggiSet', {}, 7.2, 0, 2.4]];
+// 놀이 자리 (activities/arcade.js): 건물 원점 기준 미터, 기계 위치와 방향 r. 사람은 기계 앞(+z를 r만큼 돌린 쪽) 0.8m에 선다
+export const STATIONERY_ARCADES = [{kind:'cab', game:1, x:-4.6, z:4.15}, {kind:'cab', game:2, x:-3.75, z:4.15}, {kind:'gacha', x:1.2, z:4.25}, {kind:'rps', x:3.35, z:4.12},
+  {kind:'gonggi', x:7.2, z:2.4, r:Math.PI / 2}];
+// 떠 있는 이름표 (건물 원점 기준 미터, 높이는 게임 단위): 미니맵 · 이름표. 간판을 가리지 않게 간판 위(2층 벽 앞)에 띄운다
+export const STATIONERY_ZONES = [['게임존', -4.2, 5.4, 6.3], ['키링존', 2.3, 5.4, 6.3], ['공기놀이', 7.2, 2.4, 3.4]];
 export const STATIONERY_PLAY = {ttakji:[-2.2, 6.9]};     // 딱지치기 자리 (건물 원점 기준, 미터)
 defineProp('stationeryCorner', {label:'문구점 (조립 예시)', category:'문구점', isNewStyle:true, blocksCamera:true,
   usage:"STATIONERY_LAYOUT.forEach(([n, o, x, y, z, r]) => W.place(n, {...o, x: cx + x * UNIT, y: y * UNIT, z: cz + z * UNIT, rot: r || 0}));", build(){

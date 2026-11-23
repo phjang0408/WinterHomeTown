@@ -10,6 +10,7 @@ import { box, tube, xf, blob, groundAO, triCount, Parts } from '../core/meshkit.
 import { matteMaterial, snowMaterial, decalMaterial, metalMaterial, concreteMaterial, plasticMaterial, glassMaterial, clearMaterial, woodMaterial, paintMaterial, brickWallMaterial } from '../core/texkit.js';
 import { assemble, mulberry, quadZ } from './kit.js';
 import { UNIT, FONT_D, FONT_B } from '../config.js';
+import { drawMartPosters, drawMeatStrip } from './signArt/otherSigns.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z), U = UNIT;
 const once = (() => { const m = new Map(); return (k, f) => { if (!m.has(k)) m.set(k, f()); return m.get(k); }; })();
@@ -20,17 +21,8 @@ function acUnit(P, x, y, z, ry = 0){ const T = g => xf(g, {ry, x, y, z});
   P.add('met', T(box(-.4, 0, -.15, .4, .58, .15, .02)), 0xe9eae7); P.add('mat', T(xf(new THREE.CylinderGeometry(.2, .2, .02, 16), {rx:Math.PI / 2, x:-.12, y:.29, z:.155})), 0x3a3f44);
   P.add('snw', T(box(-.4, .58, -.15, .4, .63, .15, .02))); }
 
-// 홍보물 그림 한 장 (음식 사진 띠 · 마트 할인 포스터)
-const posterMat = kind => once('poster' + kind, () => decalMaterial(canvasTex(1024, 128, g => {
-  if (kind === 'food') { g.fillStyle = '#2a1d17'; g.fillRect(0, 0, 1024, 128);
-    const C = ['#b4372b', '#c9542f', '#a83a3a', '#d1763a', '#9e3328', '#c4452f'];
-    for (let i = 0; i < 8; i++) { const x = i * 128; g.fillStyle = '#efe6d8'; g.fillRect(x + 6, 8, 116, 112); g.fillStyle = '#3b3b3b'; g.beginPath(); g.ellipse(x + 64, 66, 50, 34, 0, 0, 7); g.fill();
-      g.fillStyle = C[i % C.length]; for (let k = 0; k < 6; k++) { g.beginPath(); g.ellipse(x + 40 + (k % 3) * 22, 54 + (k > 2 ? 22 : 0), 13, 8, .4, 0, 7); g.fill(); }
-      g.fillStyle = '#4c8a3c'; g.beginPath(); g.ellipse(x + 92, 80, 10, 6, 0, 0, 7); g.fill(); g.fillStyle = '#fff'; g.font = '800 15px ' + FONT_B; g.textAlign = 'center'; g.fillText(['생갈비', '양념갈비', '삼겹살', '목살', '항정살', '된장찌개', '냉면', '점심특선'][i], x + 64, 114); } }
-  else { const C = ['#e53935', '#f9a825', '#1e88e5', '#43a047', '#e53935', '#fb8c00', '#1e88e5', '#8e24aa'];
-    for (let i = 0; i < 8; i++) { const x = i * 128; g.fillStyle = C[i]; g.fillRect(x, 0, 128, 128); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.font = '58px ' + FONT_D; g.fillText(['할인', '1+1', '특가', '신선', '세일', '2+1', '행사', '배달'][i], x + 64, 54); g.font = '800 18px ' + FONT_B; g.fillText(['매일 아침', '과자 · 음료', '정육', '채소 · 과일', '생활용품', '라면', '이번 주', '3만원 이상'][i], x + 64, 104); } }
-})));
+// 홍보물 그림 한 장 (2026-11-23 새 그림: props/signArt/otherSigns.js). 음식 사진 띠 2048×156 (판 8.55m × 0.65m), 마트 창 포스터 2048×488 (판 8.2m × 1.95m)
+const posterMat = kind => once('poster' + kind, () => decalMaterial(kind === 'food' ? canvasTex(2048, 156, g => drawMeatStrip(g)) : canvasTex(2048, 488, g => drawMartPosters(g))));
 
 // ───────── 고깃집: 단층 (높이 4.6m), 폭 18m · 깊이 10m ─────────
 export const MEAT = {W:18, D:10, H:4.6, glass:3.3};
@@ -164,7 +156,8 @@ export const BIG_SIGNS = {
     ['signFascia', {text:'점심 특선', bg:'#b71c1c', fg:'#ffffff', w:1.8, h:.5}, -6.8, 2.2, 4.92], ['foodWasteBin', {}, 7.6, 0, 6.2]],   // 주차장 표지는 뒤 주차장 입구(강변도로 쪽)에 둔다
   mart:[['signFascia', {text:'우리동네 마트', sub:'신선식품 · 생활용품 · 배달', bg:'#1d5fb8', fg:'#ffffff', accent:[0, 4, '#ffeb3b'], w:13, h:1.7}, 0, 4.85, 5.56],
     ['signFascia', {text:'24시', bg:'#ffeb3b', fg:'#1d5fb8', w:1.6, h:1.0}, 8.4, 5.2, 5.56],
-    ['fruitStand', {}, -5.2, 0, 6.6], ['fruitStand', {}, -7.4, 0, 6.6], ['cartCorral', {}, 3.8, 0, 7.0, Math.PI / 2], ['shoppingCart', {}, 6.4, 0, 6.6, -.4], ['drinkFridge', {}, 8.6, 0, 6.2], ['drinkFridge', {}, 9.5, 0, 6.2]],
+    ['fruitStand', {}, -5.2, 0, 6.6], ['fruitStand', {}, -7.4, 0, 6.6], ['cartCorral', {}, 3.8, 0, 7.0, Math.PI / 2], ['shoppingCart', {}, 6.4, 0, 6.6, -.4], ['drinkFridge', {}, 8.6, 0, 6.2], ['drinkFridge', {}, 9.5, 0, 6.2],
+    ['iceFreezer', {}, -9.6, 0, 6.4]],   // (2026-11-23) 아이스크림 냉장고는 문구점 앞에서 마트 앞(과일 좌판 서쪽)으로
 };
 export const BIG_PROP = {meat:'meatHouse', mart:'martBuilding'};
 export function placeBig(W, key, cx, cz, rot){
