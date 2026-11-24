@@ -47,7 +47,7 @@ defineActivity({
     const i = nearestSeat(me.x, me.z), st = SW.seats[i], d = Math.hypot(me.x - st.x, me.z - st.z);
     if (d < 3.4 && !seatTaken(st.x, st.z, ST.SWING)) offer(d, 3.4, '그네 타기', () => {
       me.st = ST.SWING; me.seat = i; me.x = st.x; me.z = st.z; me.r = 0;
-      pumpStart(.25, () => Math.abs(Math.sin(swPhase(i, performance.now(), PUMP.amp))) > .78, '그네', '그네가 끝에 다다를 때 밀어요.');
+      pumpStart(.25, () => Math.abs(Math.sin(swPhase(i, performance.now(), PUMP.amp))) > .78, '그네');
       me.onStand = () => { me.z = st.z + 2.6; me.char.rotation.x = 0; pumpStop(); };
     });
   },

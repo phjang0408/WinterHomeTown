@@ -95,4 +95,6 @@ const phone = defineActivity({
   },
 });
 // 수화기를 귀에 댄 오른팔
-function ear(ch){ if (!ch) return; const u = ch.userData; u.armR.rotation.x = -2.4; u.armR.rotation.z = .75; }
+// (2026-11-23) 수화기는 오른손(armL = 캐릭터 오른팔)으로 오른쪽 귀에: 팔을 거의 곧게 올리고 머리 쪽으로 살짝만 기울인다.
+//   예전엔 왼팔(armR)을 바깥(z .75)으로 벌려 손이 왼쪽 옆 부스까지 갔다
+function ear(ch){ if (!ch) return; const u = ch.userData; u.armL.rotation.x = -2.98; u.armL.rotation.z = .06; }

@@ -65,9 +65,12 @@ function sideTex(h, floors, num){
     g.fillStyle = 'rgba(120,135,150,.22)'; for (let f = 1; f <= floors; f++) g.fillRect(0, H - f * FH * P, W, 1.5);
     g.textAlign = 'center'; g.textBaseline = 'middle';
     const cx = W / 2, top = 1.3 * P;
-    g.strokeStyle = '#3f6fa8'; g.lineWidth = 3; g.lineCap = 'round';                       // 눈 결정 표식
-    for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3, r = .8 * P, x = cx - 2.1 * P, y = top;
-      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); g.stroke(); }
+    // 눈 결정 표식 (2026-11-24 21차): 동화상가 옥상 간판과 같은 모양 (흰 원 + 파란 결정, 가지 둘씩)
+    { const x = cx - 2.1 * P, y = top, R = 1.15 * P, r = R * .7; g.fillStyle = '#f4f6f7'; g.beginPath(); g.arc(x, y, R, 0, 7); g.fill(); g.strokeStyle = '#2c5585'; g.lineWidth = 2; g.stroke();
+      g.lineWidth = 3; g.lineCap = 'round';
+      for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3, c = Math.cos(a), sn = Math.sin(a), px = x + c * r * .55, py = y + sn * r * .55;
+        g.beginPath(); g.moveTo(x, y); g.lineTo(x + c * r, y + sn * r); g.stroke();
+        [-1, 1].forEach(k => { const b = a + k * .7; g.beginPath(); g.moveTo(px, py); g.lineTo(px + Math.cos(b) * r * .35, py + Math.sin(b) * r * .35); g.stroke(); }); } }
     g.fillStyle = '#34465c'; g.font = Math.round(1.6 * P) + 'px ' + FONT_D; g.fillText(APT_NAME, cx + .8 * P, top + 1);
     g.font = Math.round(2.8 * P) + 'px ' + FONT_D; g.fillText(num, cx, top + 2.9 * P);
     const bx = cx - .2 * P, bw = 2.6 * P; let y = top + 6.6 * P;                             // 색띠

@@ -66,7 +66,7 @@ function signMat(num, units){
     g.textAlign = 'left'; g.font = '78px ' + FONT_D; g.fillText(num, 150, 50); const w1 = g.measureText(num).width; g.font = '50px ' + FONT_D; g.fillText('동', 158 + w1, 56);
     g.textAlign = 'right'; g.font = '78px ' + FONT_D; g.fillText(units, 820, 50); g.font = '50px ' + FONT_D; g.textAlign = 'left'; g.fillText('호', 828, 56);
     g.save(); g.translate(0, 96); g.scale(174 / 256, 160 / 376); g.fillStyle = '#4f6b58'; g.fillRect(0, 0, 256, 376);
-    g.fillStyle = '#e9e4d6'; g.fillRect(8, 8, 240, 34); g.fillStyle = '#34465c'; g.font = '800 22px ' + FONT_B; g.textAlign = 'center'; g.fillText('동화아파트 게시판', 128, 26);
+    g.fillStyle = '#e9e4d6'; g.fillRect(8, 8, 240, 34); g.fillStyle = '#34465c'; g.font = '22px ' + FONT_B; g.textAlign = 'center'; g.fillText('동화아파트 게시판', 128, 26);
     [[14, 56, 104, 128, '#fbfbf6', -2], [128, 54, 110, 96, '#f3ecc4', 1.5], [20, 204, 96, 150, '#f6f6f2', 1], [126, 170, 112, 186, '#fdfdfb', -1.5]].forEach(([x, y, w, h, c, r], k) => {
       g.save(); g.translate(x + w / 2, y + h / 2); g.rotate(r * Math.PI / 180); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(-w / 2 + 2, -h / 2 + 3, w, h); g.fillStyle = c; g.fillRect(-w / 2, -h / 2, w, h);
       g.fillStyle = k === 1 ? '#b8552f' : '#3f6fa8'; g.fillRect(-w / 2 + 8, -h / 2 + 8, w - 16, 9); g.fillStyle = '#9aa3ab'; for (let l = 0; l < Math.floor((h - 30) / 11); l++) g.fillRect(-w / 2 + 8, -h / 2 + 26 + l * 11, (w - 16) * (l % 3 === 2 ? .6 : 1), 4);

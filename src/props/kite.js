@@ -43,7 +43,7 @@ defineProp('bangpaeKite', {label:'방패연', category:'겨울', isNewStyle:true
 const signTex = () => canvasTex(512, 192, (g, W, H) => {
   g.fillStyle = '#f2e6cc'; g.fillRect(0, 0, W, H); g.strokeStyle = '#7a5532'; g.lineWidth = 10; g.strokeRect(5, 5, W - 10, H - 10);
   g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#b23a2c'; g.font = '64px ' + FONT_D; g.fillText('연 빌려 가세요', W / 2, 78);
-  g.fillStyle = '#4a3a2a'; g.font = '800 30px ' + FONT_B; g.fillText('날리고 나면 꼭 돌려주세요', W / 2, 146);
+  g.fillStyle = '#4a3a2a'; g.font = '30px ' + FONT_B; g.fillText('날리고 나면 꼭 돌려주세요', W / 2, 146);
 });
 defineProp('kiteStall', {label:'연 가게', category:'겨울', isNewStyle:true, colliders:[{r:[-.95, -.3, .95, .3].map(v => v * (1 / .85))}],
   usage:"W.place('kiteStall', {x, z, rot});  // 1.8m 폭. 앞(+z)에서 '연 받기'", build(){

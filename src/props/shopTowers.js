@@ -194,42 +194,47 @@ Object.entries(TOWER).forEach(([k, S]) => {
 
 // ───────── 간판 · 앞 물건 배치 (몸체 원점 기준 미터, 여섯째 값은 회전). 모두 기존 소품을 글자 옵션으로 다시 쓴다 ─────────
 const fy = (f, d = .12) => floorY(f) + d;
+// (2026-11-23) 2층 이상 가로 간판은 그 층 창 '위' 벽(다음 층 바닥 띠 둘레, 창 위 끝 +2.5 ~ 다음 층 창 아래 끝 +0.95 사이 가운데)에 단다.
+//   예전엔 층 바닥 바로 위(fy)에 달아 한 칸씩 내려와 보였다 (2층 간판이 1층 간판 바로 위에 붙고, 맨 위층 창 위는 비었다). 맨 위층 간판은 옥상 난간 앞.
+const sy = (f, h) => floorY(f + 1) + .225 - h / 2;
+// 상호는 동네 전체에서 겹치지 않게 (아파트 동화상가 · 큰 가게 · 문구점과 업종 · 이름이 안 겹치도록 2026-11-23 정리). {v}만 주면 간판 그림 아틀라스(props/signArt)의 칸을 쓴다
 export const TOWER_SIGNS = {
   brick:[
     ['signFascia', {text:'행복 부동산', sub:'아파트 · 상가 · 원룸 매매', bg:'#1f4e8c', fg:'#ffffff', w:4.9, h:.72}, -1.2, 2.8, 5.5],
     ['shopAwning', {w:4.9, proj:1.1, y0:2.72, c:0xe8742a}, -1.2, 0, 5.5],
-    ['signFascia', {text:'솔빛 피아노 학원', bg:'#fff3c4', fg:'#7a3b8f', w:7.4, h:.7}, 0, fy(2), 5.5],
-    ['signFascia', {text:'우주 PC방', sub:'24시간 · 최신 사양', bg:'#111827', fg:'#39d0ff', accent:[3, 6, '#ffcc33'], w:7.6, h:1.5}, 0, fy(3, .1), 5.5],
-    ['signVertical', {text:'우주PC방', bg:'#111827', fg:'#39d0ff', len:3}, 3.86, fy(4, .4), 5.5],
-    ['signFascia', {text:'바른 세무회계', bg:'#ffffff', fg:'#263238', border:'#90a4ae', w:5, h:.6}, -1.2, fy(5), 5.5]],
+    ['signFascia', {text:'밝은 안경원', sub:'시력검사 · 콘택트렌즈', bg:'#fbfbf8', fg:'#1d4f9c', border:'#1d4f9c', w:7.4, h:.7}, 0, sy(2, .7), 5.5],
+    ['signVertical', {v:6}, -3.86, fy(2, .35), 5.5],
+    ['signFascia', {text:'우주 PC방', sub:'24시간 · 최신 사양', bg:'#111827', fg:'#39d0ff', accent:[3, 6, '#ffcc33'], w:7.2, h:1.4}, 0, sy(3, 1.4), 5.5],
+    ['signVertical', {text:'우주PC방', bg:'#111827', fg:'#39d0ff', len:2.6}, 3.86, fy(3, .15), 5.5],
+    ['signFascia', {text:'바른 세무회계', bg:'#ffffff', fg:'#263238', border:'#90a4ae', w:5, h:.6}, -1.2, sy(5, .6), 5.5]],
   beige:[
-    ['signFascia', {text:'꿈나무 분식', sub:'떡볶이 · 순대 · 튀김 · 김밥', bg:'#d83a2e', fg:'#fff6d5', w:6.5, h:.72}, -.85, 2.8, 5.5],
-    ['signFascia', {text:'하늘 바둑교실', bg:'#f4f1e6', fg:'#1b1b1b', border:'#1b1b1b', w:6.2, h:.7}, -1, fy(2), 5.5],
-    ['signFascia', {text:'으뜸 보습학원', sub:'초 · 중 · 고 전과목', bg:'#1f4e8c', fg:'#ffffff', w:6.2, h:.7}, -1, fy(3), 5.5],
-    ['signFascia', {text:'하얀 치과의원', bg:'#ffffff', fg:'#1d7fbf', border:'#1d7fbf', w:6.2, h:.7}, -1, fy(4), 5.5],
-    ['signFascia', {text:'푸른 영어교습소', bg:'#3f8a5a', fg:'#ffffff', w:6.2, h:.7}, -1, fy(5), 5.5],
-    ['signVertical', {text:'으뜸학원', bg:'#1f4e8c', fg:'#ffffff', len:2.4}, -4.16, fy(3, .3), 5.5],
+    ['signFascia', {text:'고소한 빵집', sub:'식빵 · 케이크 · 단팥빵', bg:'#f6e2b3', fg:'#8a4b1c', w:6.5, h:.72}, -.85, 2.8, 5.5],
+    ['signFascia', {text:'하늘 바둑교실', bg:'#f4f1e6', fg:'#1b1b1b', border:'#1b1b1b', w:6.2, h:.7}, -1, sy(2, .7), 5.5],
+    ['signFascia', {text:'다솜 보습학원', sub:'초 · 중 · 고 전과목', bg:'#1f4e8c', fg:'#ffffff', w:6.2, h:.7}, -1, sy(3, .7), 5.5],
+    ['signFascia', {text:'봄날 한의원', bg:'#ffffff', fg:'#8d5524', border:'#8d5524', w:6.2, h:.7}, -1, sy(4, .7), 5.5],
+    ['signFascia', {text:'푸른 영어교습소', bg:'#3f8a5a', fg:'#ffffff', w:6.2, h:.7}, -1, sy(5, .7), 5.5],
+    ['signVertical', {text:'다솜학원', bg:'#1f4e8c', fg:'#ffffff', len:2.4}, -4.16, fy(3, .3), 5.5],
     ['signRoof', {text:'새빛교회', bg:'#ffffff', fg:'#b71c1c'}, -.6, topOf(TOWER.beige) + .1, 3.8],
     ['foodWasteBin', {}, -4.75, 0, 4.1, Math.PI / 2], ['foodWasteBin', {}, -4.75, 0, 3.4, Math.PI / 2]],   // 상가 입구 앞이 아닌 건물 옆벽에 붙임
   gray:[
-    ['signFascia', {text:'희망 슈퍼', bg:'#2f9a4a', fg:'#ffffff', w:4.5, h:.72}, -1.2, 2.8, 5],
+    ['signFascia', {text:'희망 청과', bg:'#2f9a4a', fg:'#ffffff', w:4.5, h:.72}, -1.2, 2.8, 5],
     ['shopAwning', {w:4.4, proj:1.3, y0:2.72, c:0x2f6fb5}, -1.2, 0, 5],
     ['fruitStand', {}, -2.1, 0, 6.15], ['drinkFridge', {}, .45, 0, 5.82],
     ['barberPole', {}, 1.2, 1.35, 5],
-    ['signFascia', {text:'장미 미용실', bg:'#f7d6e0', fg:'#b0306a', w:5.6, h:.7}, 0, fy(2), 5],
-    ['signFascia', {text:'왕대박 당구장', bg:'#0f5132', fg:'#ffe066', w:6.8, h:.7}, 0, fy(3), 5],
-    ['signVertical', {text:'당구장', bg:'#0f5132', fg:'#ffe066', len:1.8}, 3.56, fy(3, .5), 5],
-    ['signFascia', {text:'동그라미 기원', bg:'#fafafa', fg:'#3e2723', border:'#6d4c41', w:5, h:.6}, 0, fy(4), 5]],
+    ['signFascia', {v:9}, 0, sy(2, .75), 5],
+    ['signFascia', {text:'왕별 당구장', bg:'#0f5132', fg:'#ffe066', w:6.8, h:.7}, 0, sy(3, .7), 5],
+    ['signVertical', {v:5}, 3.56, fy(3, .3), 5],
+    ['signFascia', {text:'장미 미용실', bg:'#f7d6e0', fg:'#b0306a', w:5.6, h:.7}, 0, sy(4, .7), 5]],
   green:[
     ['signFascia', {text:'만리장성', sub:'짜장 · 짬뽕 · 탕수육 · 배달', bg:'#c0262d', fg:'#ffe08a', w:4.5, h:.72}, -2, 2.8, 5.5],
     ['signFascia', {text:'열쇠 · 철물', bg:'#f2b632', fg:'#2b2b2b', w:1.5, h:.72}, 3.5, 2.8, 5.5],
-    ['signFascia', {text:'튼튼 내과의원', bg:'#ffffff', fg:'#0f7a5c', border:'#0f7a5c', w:6.8, h:.7}, 0, fy(2), 5.5],
-    ['signFascia', {text:'용사 태권도', sub:'유아 · 초등 · 성인부', bg:'#1f2a44', fg:'#ffffff', accent:[0, 2, '#ff5a4f'], w:6.8, h:.7}, 0, fy(3), 5.5],
-    ['signFascia', {text:'한마음 독서실', bg:'#5b3f8f', fg:'#ffffff', w:6.8, h:.7}, 0, fy(4), 5.5],
-    ['signFascia', {text:'참좋은 요가', bg:'#fff8e1', fg:'#6d4c41', w:5, h:.6}, 0, fy(5), 5.5],
+    ['signFascia', {text:'튼튼 내과의원', bg:'#ffffff', fg:'#0f7a5c', border:'#0f7a5c', w:6.8, h:.7}, 0, sy(2, .7), 5.5],
+    ['signFascia', {text:'새싹 미술학원', sub:'유아 · 초등 · 입시 미술', bg:'#2f6fb5', fg:'#ffffff', w:6.8, h:.7}, 0, sy(3, .7), 5.5],
+    ['signFascia', {text:'꿈나무 독서실', bg:'#3c3a6e', fg:'#ffffff', w:6.8, h:.7}, 0, sy(4, .7), 5.5],
+    ['signFascia', {text:'참좋은 요가', bg:'#fff8e1', fg:'#6d4c41', w:5, h:.6}, 0, sy(5, .6), 5.5],
     ['signVertical', {text:'튼튼내과', bg:'#ffffff', fg:'#0f7a5c', len:2.2}, -4.1, fy(2, .4), 5.55],
-    ['signVertical', {text:'용사태권도', bg:'#1f2a44', fg:'#ffffff', len:2.6}, 4.1, fy(3, .2), 5.55],
-    ['signVertical', {text:'한마음독서실', bg:'#5b3f8f', fg:'#ffffff', len:2.8}, -4.1, fy(4, .1), 5.55],
+    ['signVertical', {text:'새싹미술', bg:'#2f6fb5', fg:'#ffffff', len:2.4}, 4.1, fy(3, .3), 5.55],
+    ['signVertical', {v:7}, -4.1, fy(4, .3), 5.55],
     ['deliveryScooter', {}, 3.2, 0, 6.9, .5]],
 };
 export const TOWER_PROP = PROP;

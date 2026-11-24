@@ -17,7 +17,7 @@ const V = (x, y, z) => new THREE.Vector3(x, y, z), PI = Math.PI;
 const signTex = () => canvasTex(512, 256, (g, W, H) => {
   g.fillStyle = '#f4ead2'; g.fillRect(0, 0, W, H); g.strokeStyle = '#6b4a2e'; g.lineWidth = 12; g.strokeRect(6, 6, W - 12, H - 12);
   g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#9b3a1e'; g.font = '104px ' + FONT_D; g.fillText('군고구마', W / 2, 104);
-  g.fillStyle = '#3a2c20'; g.font = '800 40px ' + FONT_B; g.fillText('한 봉지 천 원', W / 2, 196);
+  g.fillStyle = '#3a2c20'; g.font = '40px ' + FONT_B; g.fillText('한 봉지 천 원', W / 2, 196);
 });
 
 defineProp('gogumaCart', {label:'군고구마 포장마차', category:'거리', isNewStyle:true, colliders:[{r:[-1.15, -.7, 1.15, .7].map(v => v / .85)}],
@@ -71,7 +71,7 @@ defineProp('goguma', {label:'군고구마', category:'거리', isNewStyle:true, 
 const hotSign = () => canvasTex(512, 256, (g, W, H) => {
   g.fillStyle = '#fff6e2'; g.fillRect(0, 0, W, H); g.strokeStyle = '#b23a2c'; g.lineWidth = 12; g.strokeRect(6, 6, W - 12, H - 12);
   g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#b23a2c'; g.font = '108px ' + FONT_D; g.fillText('꿀호떡', W / 2, 104);
-  g.fillStyle = '#3a2c20'; g.font = '800 40px ' + FONT_B; g.fillText('세 개 천 원', W / 2, 196);
+  g.fillStyle = '#3a2c20'; g.font = '40px ' + FONT_B; g.fillText('세 개 천 원', W / 2, 196);
 });
 defineProp('hotteokStall', {label:'호떡 노점', category:'거리', isNewStyle:true, colliders:[{r:[-1.0, -.62, 1.0, .62].map(v => v / .85)}],
   usage:"W.place('hotteokStall', {x, z, rot});  // 앞(+z)에서 '호떡 사기'", build(){

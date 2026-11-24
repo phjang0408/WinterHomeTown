@@ -134,7 +134,7 @@ defineProp('railFence', {label:'회색 세로살 난간 (2m)', category:'간이�
 let signMat = null;
 const stationSignMat = () => signMat || (signMat = decalMaterial(canvasTex(1024, 384, g => {
   g.fillStyle = '#f6f7f4'; g.fillRect(0, 0, 1024, 384); g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillStyle = '#1d2a3a'; g.font = '150px ' + FONT_D; g.fillText('동 화', 512, 120); g.fillStyle = '#5a6672'; g.font = '800 40px ' + FONT_B; g.fillText('Donghwa', 512, 214);
+  g.fillStyle = '#1d2a3a'; g.font = '150px ' + FONT_D; g.fillText('동 화', 512, 120); g.fillStyle = '#5a6672'; g.font = '40px ' + FONT_B; g.fillText('Donghwa', 512, 214);
   g.fillStyle = '#2a5ea8'; g.fillRect(0, 262, 1024, 122); g.fillStyle = '#ffffff'; g.font = '62px ' + FONT_D; g.textAlign = 'left'; g.fillText('← 솔 내', 40, 324); g.textAlign = 'right'; g.fillText('강 변 →', 984, 324);
   g.strokeStyle = '#c9ced3'; g.lineWidth = 10; g.strokeRect(5, 5, 1014, 374); }), {rough:.5}));
 defineProp('stationSign', {label:'역명판', category:'간이역', isNewStyle:true, colliders:[{c:[-1.31 * U, 0, .1 * U]}, {c:[1.31 * U, 0, .1 * U]}],

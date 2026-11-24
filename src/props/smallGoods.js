@@ -24,13 +24,13 @@ const rAt = y => { const p = MILK.PROFILE; for (let i = 1; i < p.length; i++) if
 const milkTex = kind => once('milk' + kind, () => decalMaterial(canvasTex(...(kind === 'band' ? [512, 128] : [128, 128]), g => {
   if (kind === 'band') {   // 몸통 글씨 띠 (투명 바탕): 초록 글씨 상표 + 갈색 작은 글씨
     g.clearRect(0, 0, 512, 128); g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillStyle = '#2f7d3a'; g.font = '900 52px ' + FONT_B; g.fillText('동화 바나나우유', 256, 52);
-    g.fillStyle = '#7a4a1e'; g.font = '700 22px ' + FONT_B; g.fillText('BANANA · 240ml', 256, 100);
+    g.fillStyle = '#2f7d3a'; g.font = '52px ' + FONT_B; g.fillText('동화 바나나우유', 256, 52);
+    g.fillStyle = '#7a4a1e'; g.font = '22px ' + FONT_B; g.fillText('BANANA · 240ml', 256, 100);
   } else {                 // 은박 뚜껑: 은색 원 + 바나나 그림 + 글씨
     g.fillStyle = '#86c35c'; g.fillRect(0, 0, 128, 128); g.fillStyle = '#7ab652'; for (let i = 0; i < 128; i += 6) g.fillRect(0, i, 128, 2);   // 연두 은박 (원본 뚜껑 색)
     g.strokeStyle = '#f4f7ef'; g.lineWidth = 5; g.beginPath(); g.arc(64, 64, 54, 0, Math.PI * 2); g.stroke();
     g.fillStyle = '#f2c230'; g.beginPath(); g.ellipse(64, 54, 30, 12, -.35, 0, Math.PI * 2); g.fill();
-    g.fillStyle = '#ffffff'; g.font = '800 20px ' + FONT_B; g.textAlign = 'center'; g.fillText('동화', 64, 98);
+    g.fillStyle = '#ffffff'; g.font = '20px ' + FONT_B; g.textAlign = 'center'; g.fillText('동화', 64, 98);
   } }), {alpha:kind === 'band'}));
 
 defineProp('bananaMilk', {label:'바나나우유', category:'큰 가게', isNewStyle:true, small:true, far:40,
@@ -106,7 +106,7 @@ const trayPrint = () => once('trayPrint', () => { const m = decalMaterial(canvas
   peony(g, 300, 395, 30, '#b8309a', '#dc5cba', '#f6a6dc', R);       // 분홍 (아래)
   aster(g, 280, 175, 26, '#8a5ce0', R); aster(g, 255, 330, 22, '#7d52d6', R);
   [[245, 285], [262, 300], [238, 305]].forEach(([x, y]) => { g.fillStyle = '#f2b632'; g.beginPath(); g.arc(x, y, 7, 0, Math.PI * 2); g.fill(); });
-  g.fillStyle = '#3a3a3a'; g.font = '700 30px ' + FONT_B; g.textAlign = 'center'; g.fillText('大', 256, 92);
+  g.fillStyle = '#3a3a3a'; g.font = '30px ' + FONT_B; g.textAlign = 'center'; g.fillText('大', 256, 92);
 }), {rough:.55, alpha:true}); m.depthWrite = false; m.polygonOffsetFactor = -4; m.polygonOffsetUnits = -4; return m; });
 defineProp('aluminumTray', {label:'양은 쟁반', category:'큰 가게', isNewStyle:true, small:true, far:60,
   variants:[{label:'눕힘 (大)', opts:{}}, {label:'세 개 쌓음', opts:{n:3}}, {label:'벽에 기댐', opts:{lean:1.22}}, {label:'中', opts:{s:'M'}}],

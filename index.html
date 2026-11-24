@@ -179,25 +179,19 @@ button:focus-visible{outline:2px solid var(--accent)}
 
 <section id="intro" class="sheet card">
   <h1>겨울 동네</h1>
-  <p class="sub">폐역에서 강변까지 이어지는 겨울 산책길</p>
-  <p>말 없이 함께 걷는 동네입니다.<br>채팅은 없고, 서로의 발자국만 남습니다.</p>
+  <p class="sub" hidden></p>
   <div class="name"><small>오늘의 이름</small><b id="intro-name"></b></div>
   <div class="row">
     <button class="btn ghost" id="reroll">다른 이름</button>
     <button class="btn" id="enter">동네로 들어가기</button>
   </div>
-  <ul>
-    <li>강변 눈밭 눈덩이 과녁 · 문구점 앞 딱지치기 · 공원 눈사람 만들기</li>
-    <li>강변 얼음 썰매장 · 놀이터 나선 미끄럼틀</li>
-    <li>벤치와 그네에 앉아 쉬어갈 수 있습니다</li>
-  </ul>
 </section>
 
 <script type="module" src="src/main.js"></script>
 <script>
   // 모듈을 불러오지 못하면 안내를 띄운다.
   setTimeout(function(){ if (!window.__townReady) { var b = document.getElementById('enter'); if (b) { b.disabled = true; b.textContent = '불러오는 중...'; }
-    setTimeout(function(){ if (!window.__townReady) { var i = document.getElementById('intro'); i.querySelector('.sub').textContent = '3D 엔진을 불러오지 못했습니다. 새로고침해 주세요.'; } }, 8000); } }, 2500);
+    setTimeout(function(){ if (!window.__townReady) { var i = document.getElementById('intro'); var m = i.querySelector('.sub'); m.hidden = false; m.textContent = '3D 엔진을 불러오지 못했습니다. 새로고침해 주세요.'; } }, 8000); } }, 2500);
   window.addEventListener('load', function(){ var t = setInterval(function(){ if (window.__townReady) { var b = document.getElementById('enter'); b.disabled = false; b.textContent = '동네로 들어가기'; clearInterval(t); } }, 300); });
 </script>
 </body>

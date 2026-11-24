@@ -12,7 +12,7 @@ import { sfx, flash, puff } from '../core/fx.js';
 import { W } from '../world/world.js';
 import { me, nameOf } from '../entities/player.js';
 import { defineActivity, begin, stopActivity } from './registry.js';
-import { STN_AT } from '../map/layout.js';
+import { STN_AT, GONGGI } from '../map/layout.js';
 import { STATIONERY_ARCADES } from '../props/stationery.js';
 import { drawRpsFace, drawHand, RPS_W, RPS_H } from '../props/rpsArt.js';
 
@@ -21,9 +21,11 @@ const U = UNIT, cl = (v, a, b) => Math.max(a, Math.min(b, v));
 // (2026-11-22 2차) 기계마다 방향 r: 사람은 기계 앞(기계 +z를 r만큼 돌린 쪽) 0.8m에 선다
 const MACH = STATIONERY_ARCADES.map((m, i) => {
   const c = Math.cos(STN_AT.rot), s = Math.sin(STN_AT.rot), w = (lx, lz) => [STN_AT.x + (lx * c + lz * s) * U, STN_AT.z + (-lx * s + lz * c) * U], r = m.r || 0;
-  const [x, z] = w(m.x, m.z), [sx, sz] = w(m.x + Math.sin(r) * .8, m.z + Math.cos(r) * .8);
+  const d = m.d || .8, [x, z] = w(m.x, m.z), [sx, sz] = w(m.x + Math.sin(r) * d, m.z + Math.cos(r) * d);   // (2026-11-23) d: 키운 기계는 조금 더 떨어져 선다
   return {id:i + 1, kind:m.kind, game:m.game || 0, x, z, sx, sz, face:Math.atan2(x - sx, z - sz)};
 });
+// (2026-11-23) 공기놀이 마당은 공원 동쪽 잔디(세계 좌표 GONGGI). 돗자리 남쪽 가장자리 안쪽에 앉는다
+MACH.push({id:MACH.length + 1, kind:'gonggi', game:0, x:GONGGI.x, z:GONGGI.z, sx:GONGGI.x, sz:GONGGI.z + .95 * U, face:Math.PI});
 // (2026-11-23) 은하 대작전 · 벽돌 깨기는 오락기를 따로 (고르는 화면 없음), 공기놀이 추가
 const NAME = {cab:'작은 오락기', rps:'가위바위보 오락기', gacha:'행운 뽑기', gonggi:'공기놀이'}, GAME_NAME = ['', '은하 대작전', '벽돌 깨기'];
 const title = m => m.kind === 'cab' ? GAME_NAME[m.game] + ' 오락기' : NAME[m.kind];
@@ -90,11 +92,11 @@ function galaxyDraw(g, G){
   if (t > G.dead && !G.over && (t > G.dead + 2.4 || Math.sin(t * 30) > 0)) drawShip(g, G.x, 298);
   G.boom.forEach(b => { const k = (t - b.t) / .5, r = (b.big ? 16 : 9) * (.4 + k); g.strokeStyle = `rgba(255,${200 - k * 150 | 0},60,${1 - k})`; g.lineWidth = 2;
     for (let j = 0; j < 8; j++) { const a = j * .785; g.beginPath(); g.moveTo(b.x + Math.cos(a) * r * .4, b.y + Math.sin(a) * r * .4); g.lineTo(b.x + Math.cos(a) * r, b.y + Math.sin(a) * r); g.stroke(); } });
-  g.font = '700 11px ' + FONT_B; g.textAlign = 'left'; g.textBaseline = 'top'; g.fillStyle = '#ff5050'; g.fillText('점수', 6, 4); g.fillStyle = '#fff'; g.fillText(String(G.score), 34, 4);
+  g.font = '11px ' + FONT_B; g.textAlign = 'left'; g.textBaseline = 'top'; g.fillStyle = '#ff5050'; g.fillText('점수', 6, 4); g.fillStyle = '#fff'; g.fillText(String(G.score), 34, 4);
   g.textAlign = 'right'; g.fillStyle = '#7fd0ff'; g.fillText(G.wave + '판', 234, 4);
   for (let i = 0; i < G.lives - (t > G.dead ? 1 : 0); i++) drawShip(g, 12 + i * 16, 312);
   if (G.clearT && !G.over) center(g, G.wave + 1 + '판 준비!', '#7fd0ff');
-  if (G.over) { center(g, '게임 끝', '#ff5050'); g.font = '700 12px ' + FONT_B; g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText('점수 ' + G.score + ' · 발사 · Enter: 한 판 더', 120, 180); }
+  if (G.over) { center(g, '게임 끝', '#ff5050'); g.font = '12px ' + FONT_B; g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText('점수 ' + G.score + ' · 발사 · Enter: 한 판 더', 120, 180); }
 }
 function center(g, text, col){ g.font = '22px ' + FONT_D; g.textAlign = 'center'; g.textBaseline = 'middle'; g.strokeStyle = '#000'; g.lineWidth = 4; g.strokeText(text, 120, 150); g.fillStyle = col; g.fillText(text, 120, 150); }
 
@@ -125,9 +127,9 @@ function brickDraw(g, G){
   G.alive.forEach((a, i) => { if (!a) return; const [x, y] = brick(i); g.fillStyle = BRICK_C[i / BC | 0]; g.fillRect(x, y, 26, 10); g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(x, y, 26, 2); });
   g.fillStyle = '#e6e6e6'; g.fillRect(G.px - 20, 296, 40, 6); g.fillStyle = '#e8402a'; g.fillRect(G.px - 20, 296, 5, 6); g.fillRect(G.px + 15, 296, 5, 6);
   if (!G.over) { g.fillStyle = '#fff'; g.beginPath(); g.arc(G.bx, G.by, 3.5, 0, 7); g.fill(); }
-  g.font = '700 11px ' + FONT_B; g.textAlign = 'left'; g.textBaseline = 'top'; g.fillStyle = '#ffd23f'; g.fillText('점수 ' + G.score, 6, 4); g.textAlign = 'right'; g.fillStyle = '#7fd0ff'; g.fillText(G.lvl + '단계 · 공 ' + G.lives, 234, 4);
-  if (G.stuck && !G.over) { g.font = '700 11px ' + FONT_B; g.textAlign = 'center'; g.fillStyle = '#cfd6e0'; g.fillText('발사로 공 띄우기', 120, 250); }
-  if (G.over) { center(g, '게임 끝', '#ff5050'); g.font = '700 12px ' + FONT_B; g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText('점수 ' + G.score + ' · 발사 · Enter: 한 판 더', 120, 180); }
+  g.font = '11px ' + FONT_B; g.textAlign = 'left'; g.textBaseline = 'top'; g.fillStyle = '#ffd23f'; g.fillText('점수 ' + G.score, 6, 4); g.textAlign = 'right'; g.fillStyle = '#7fd0ff'; g.fillText(G.lvl + '단계 · 공 ' + G.lives, 234, 4);
+  if (G.stuck && !G.over) { g.font = '11px ' + FONT_B; g.textAlign = 'center'; g.fillStyle = '#cfd6e0'; g.fillText('발사로 공 띄우기', 120, 250); }
+  if (G.over) { center(g, '게임 끝', '#ff5050'); g.font = '12px ' + FONT_B; g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText('점수 ' + G.score + ' · 발사 · Enter: 한 판 더', 120, 180); }
 }
 
 // ───────────────────────── 가위바위보 ─────────────────────────
@@ -156,7 +158,7 @@ function drawVs(R){
   const one = (id, kind, bg, label) => { const c = ui.querySelector(id), g = c.getContext('2d'), d = Math.min(2, devicePixelRatio || 1); if (c.width !== 96 * d) { c.width = c.height = 96 * d; }
     g.setTransform(d, 0, 0, d, 0, 0); g.fillStyle = bg; g.fillRect(0, 0, 96, 96); g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 3; g.strokeRect(1.5, 1.5, 93, 93);
     if (kind) drawHand(g, kind, 48, 47, .48, '#1b1b1b', false); else { g.fillStyle = '#1b1b1b'; g.font = '44px ' + FONT_D; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('?', 48, 46); }
-    g.font = '700 12px ' + FONT_B; g.textAlign = 'center'; g.fillStyle = '#1b1b1b'; g.fillText(label + (kind ? ' · ' + HANDS[kind] : ''), 48, 86); };
+    g.font = '12px ' + FONT_B; g.textAlign = 'center'; g.fillStyle = '#1b1b1b'; g.fillText(label + (kind ? ' · ' + HANDS[kind] : ''), 48, 86); };
   one('#vs-me', R ? R.pick : 0, '#ffd23f', '나');
   one('#vs-cpu', R ? (R.phase === 1 ? R.cur : R.phase === 2 ? R.cpu : 0) : 0, R && R.phase === 1 ? '#9ec5ff' : '#6fa8ff', '기계');
   const m = ui.querySelector('#vs-mid'), res = R && R.phase === 2 ? R.res : 0;
@@ -212,77 +214,149 @@ function gachaDraw(g, G){
   g.fillStyle = '#e8eaec'; g.beginPath(); g.arc(KX, KY, 26, 0, 7); g.fill(); g.strokeStyle = '#7d848b'; g.lineWidth = 3; g.stroke();
   g.save(); g.translate(KX, KY); g.rotate(G.turn); g.fillStyle = '#4a5058'; g.fillRect(-24, -6, 48, 12); g.restore();
   if (G.phase === 0) { g.strokeStyle = '#ffd23f'; g.lineWidth = 2.5; g.beginPath(); g.arc(KX, KY, 36, -Math.PI * .8, -Math.PI * .8 + Math.max(.05, G.turn)); g.stroke();
-    g.font = '700 11px ' + FONT_B; g.fillStyle = '#fff'; g.fillText('손잡이를 한 바퀴 돌려요', 120, 318 - 8); }
+    g.font = '11px ' + FONT_B; g.fillStyle = '#fff'; g.fillText('손잡이를 한 바퀴 돌려요', 120, 318 - 8); }
   // 나오는 구멍 + 캡슐
   g.fillStyle = '#1b1d21'; g.fillRect(96, 258, 48, 30);
   if (G.phase === 1) { const k = Math.min(1, (t - G.t0) / .8); capsule(g, 120, 236 + k * 37, 13, G.cap, false); }
-  if (G.phase === 2) { capsule(g, 120, 273, 13 + Math.sin(t * 6) * 1, G.cap, false); g.font = '700 11px ' + FONT_B; g.fillStyle = '#ffd23f'; g.fillText('캡슐을 눌러 열기 (E)', 120, 310); }
+  if (G.phase === 2) { capsule(g, 120, 273, 13 + Math.sin(t * 6) * 1, G.cap, false); g.font = '11px ' + FONT_B; g.fillStyle = '#ffd23f'; g.fillText('캡슐을 눌러 열기 (E)', 120, 310); }
   if (G.phase === 3) { g.fillStyle = 'rgba(0,0,0,.6)'; g.fillRect(0, 0, LW, LH); const k = Math.min(1, (t - G.t0) / .4);
     capsule(g, 120, 150, 26, G.cap, true); drawCharm(g, G.prize, 120, 146 - k * 10, 1.6 + k * .6);
-    g.font = '20px ' + FONT_D; g.fillStyle = '#ffd23f'; g.fillText('뽑았다!', 120, 62); g.font = '700 13px ' + FONT_B; g.fillStyle = '#fff'; g.fillText(KR_NAME[G.prize] + ' 키링이 가방에 달렸어요', 120, 236); }
+    g.font = '20px ' + FONT_D; g.fillStyle = '#ffd23f'; g.fillText('뽑았다!', 120, 62); g.font = '13px ' + FONT_B; g.fillStyle = '#fff'; g.fillText(KR_NAME[G.prize] + ' 키링이 가방에 달렸어요', 120, 236); }
 }
 
-// ───────────────────────── 공기놀이 (2026-11-23) ─────────────────────────
-//   한 번 던질 때: 탭(E · 스페이스 · 화면)으로 하나를 던지고 → 공중에 있는 동안 타다닥 탭해서 바닥 알을 줍고 → 떨어질 때(손이 빛나는 동안) 탭해서 잡는다.
-//   1단 하나씩 네 번 · 2단 둘씩 두 번 · 3단 셋 · 하나 · 4단 넷 한 번에 · 5단 다섯 알을 던져 손바닥에 올리고 → 다시 던져 잡기로 끝.
-//   놓치면 그 단을 처음부터. 저장 없음.
+// ───────────────────────── 공기놀이 (2026-11-24 4차: 원기둥 손 · 잡을 알 수만큼 누르기 · 높이 막대로 받기) ─────────────────────────
+//   위에서 내려다본 돗자리. 아래 가운데 원기둥 손이 좌우 150도(±75도)를 천천히 오간다. 점선은 손이 뻗을 길이다.
+//   버튼(E · 스페이스 · 화면 누르기) 한 번 = 공(빨간 알) 던지기. 공이 떠 있는 동안 버튼 한 번마다 손이 점선 방향으로 뻗어
+//   처음 닿은 알 하나를 잡아 온다 (두 알을 잡는 차례면 두 번). 다 잡으면 오른쪽 높이 막대에서 떨어지는 공이 노란 칸에 올 때 눌러 받는다.
+//   헛손질 · 덜 잡음 · 일찍 누름 · 놓침은 그 차례만 다시 (잡은 알은 제자리로). 노란 칸은 단이 오를수록 좁아진다.
+//   1단 한 알씩 넷 · 2단 두 알씩 둘 · 3단 세 알 그다음 한 알 · 4단 네 알 · 5단 다섯 알을 던져 손등에 올렸다가 다시 던져 받기. 저장 없음.
 const GG_PLAN = [null, [1, 1, 1, 1], [2, 2], [3, 1], [4]], GG_C = ['#e8402a', '#f2c51f', '#2f8fd6', '#5fb24a', '#b05bd6'];
-const GH = [120, 272], WIN = .76;
-function ggScatter(G){ G.floor = Array.from({length:4}, (_, i) => ({x:58 + i * 34 + (Math.random() - .5) * 18, y:160 + Math.random() * 60, c:GG_C[i + 1]})); G.held = 1; G.step = 0; G.ph = G.stage === 5 ? 'ready5' : 'ready'; }
-const gonggiNew = () => { const G = {kind:5, t:0, stage:1, step:0, ph:'ready', picked:0, toss:0, air:1.2, msg:'', msgT:-9, fly:[], tapT:0, held:1, floor:[]}; ggScatter(G); return G; };
+const GG_TIP = ['', '한 알씩', '두 알씩', '세 알, 그다음 한 알', '네 알 한꺼번에', '손등에 올렸다가 받기'];
+const GG_ZONE = [0, .5, .42, .35, .29, .24], GG_LATE = [0, .2, .17, .15, .13, .11];   // 받는 칸 높이(막대의 비율) · 손에 닿은 뒤 봐주는 시간(초)
+const ggAirT = (stage, need) => stage >= 5 ? 1.5 : 1.45 + .42 * need;                 // 잡을 알이 많을수록 공을 높이 (오래) 던진다
+const PIV = [106, 264], MAT = [10, 60, 202, 280], SWING = 75 * Math.PI / 180, HW = 9, L0 = 30, GRAB = HW + 7, DASH_V = 720, GAUGE = {x:216, y0:72, y1:262};
+const ggAir = G => G.ph === 'air' || G.ph === 'air5a' || G.ph === 'air5b';
+const ray = (th, r) => [PIV[0] + Math.sin(th) * r, PIV[1] - Math.cos(th) * r];
+// 손이 th 방향으로 뻗을 수 있는 길이 (돗자리 끝까지, 최대 150)
+function reach(th){ const sx = Math.sin(th), cy = Math.cos(th); let L = 150;
+  if (sx > 1e-3) L = Math.min(L, (MAT[2] - 8 - PIV[0]) / sx); if (sx < -1e-3) L = Math.min(L, (MAT[0] + 8 - PIV[0]) / sx);
+  if (cy > 1e-3) L = Math.min(L, (PIV[1] - MAT[1] - 8) / cy); return L; }
+// 점과 선분(손목 → 손끝 len) 사이 거리
+function segD(th, len, x, y){ const dx = Math.sin(th), dy = -Math.cos(th), px = x - PIV[0], py = y - PIV[1], k = Math.max(0, Math.min(len, px * dx + py * dy)); return Math.hypot(px - dx * k, py - dy * k); }
+// th 방향으로 뻗으면 처음 닿을 알 (없으면 -1)
+function ggFirst(G, th){ let best = -1, bk = 1e9; const dx = Math.sin(th), dy = -Math.cos(th);
+  G.floor.forEach((f, i) => { const k = (f.x - PIV[0]) * dx + (f.y - PIV[1]) * dy; if (k > 0 && segD(th, reach(th), f.x, f.y) < GRAB && k < bk) { bk = k; best = i; } }); return best; }
+// 단마다 알 넷을 서로 다른 방향에 흩어 놓는다
+function ggScatter(G){
+  const R = (k => () => (k = (k * 16807) % 2147483647) / 2147483647)(7 + G.stage * 13 + G.tries * 5), D = Math.PI / 180;
+  G.floor = [-57, -20, 18, 55].map((a, i) => { const th = (a + (R() - .5) * 10) * D, [x, y] = ray(th, Math.min(62 + R() * 42, reach(th) - 10)); return {x, y, c:GG_C[i + 1]}; });
+  G.held = 1; G.got = []; G.step = 0;
+}
+const gonggiNew = intro => { const G = {kind:5, t:0, stage:1, step:0, ph:intro === false ? 'ready' : 'intro', sw:0, th:0, len:L0, dash:null, toss:-9, air:1.8, msg:'', msgT:-9, msgC:'#7dff8a', tapT:0, held:1, floor:[], got:[], tries:0}; ggScatter(G); return G; };
 const ggNeed = G => G.stage < 5 ? GG_PLAN[G.stage][G.step] : 0;
-function ggSay(G, m){ G.msg = m; G.msgT = G.t; }
-function ggFail(G, m){ ggSay(G, m); sfx(300, 120, .35, 'triangle', .05); if (G.stage === 5) { G.floor = []; G.held = 5; G.ph = 'ready5'; } else ggScatter(G); }
+function ggSay(G, m, c = '#7dff8a'){ G.msg = m; G.msgT = G.t; G.msgC = c; }
+const ggH = G => { const u = (G.t - G.toss) / G.air; return u > 0 && u < 1 ? Math.sin(u * Math.PI) : 0; };   // 공 높이 0~1
+const ggIn = G => (G.t - G.toss) / G.air > .5 && ggH(G) <= GG_ZONE[G.stage];                                 // 떨어지며 노란 칸 안 (손에 닿은 뒤 조금까지)
+function ggMiss(G, m){ G.tries++; ggSay(G, m, '#ff8a7a'); sfx(300, 120, .35, 'triangle', .05); G.floor.push(...G.got); G.got = []; G.dash = null; G.len = L0;
+  G.ph = G.stage < 5 ? 'ready' : 'ready5'; }
 function ggTap(G){
-  G.tapT = G.t; const u = (G.t - G.toss) / G.air;
-  if (G.ph === 'ready') { G.ph = 'air'; G.toss = G.t; G.air = Math.max(.85, 1.25 - (G.stage - 1) * .08); G.picked = 0; sfx(500, 800, .08, 'triangle', .04); return; }
+  G.tapT = G.t;
+  if (G.ph === 'intro') { G.ph = 'ready'; sfx(700, 1000, .08, 'square', .04); return; }
+  if (G.ph === 'ready') { G.ph = 'air'; G.toss = G.t; G.air = ggAirT(G.stage, ggNeed(G)); G.got = []; sfx(500, 820, .1, 'triangle', .05); return; }
   if (G.ph === 'air') {
-    if (G.picked < ggNeed(G) && G.floor.length) { const f = G.floor.shift(); G.fly.push({x:f.x, y:f.y, c:f.c, t:G.t}); G.picked++; sfx(900 + G.picked * 80, 700, .04, 'square', .035); return; }
-    if (u >= WIN && G.picked >= ggNeed(G)) {
-      G.held += G.picked; G.step++; sfx(700, 1000, .1, 'triangle', .05);
-      if (G.step >= GG_PLAN[G.stage].length) { ggSay(G, G.stage + '단 성공!'); G.stage++; if (G.stage === 5) { G.floor = []; G.held = 5; G.ph = 'ready5'; } else ggScatter(G); }
-      else G.ph = 'ready';
-    }
+    if (G.dash) return;                                                                        // 손이 뻗어 있는 동안은 무시
+    if (G.got.length < ggNeed(G)) { G.dash = {th:G.th, L:reach(G.th), out:true, hit:false}; sfx(420, 640, .05, 'square', .03); return; }
+    if (!ggIn(G)) { ggMiss(G, '너무 일찍! 한 번 더'); return; }
+    G.held += G.got.length; G.got = []; G.step++; sfx(700, 1050, .12, 'triangle', .05);
+    if (G.step < GG_PLAN[G.stage].length) { ggSay(G, '받았다!'); G.ph = 'ready'; return; }
+    ggSay(G, G.stage + '단 성공!'); G.stage++;
+    if (G.stage === 5) { G.floor = []; G.held = 5; G.th = 0; G.ph = 'ready5'; } else { ggScatter(G); G.ph = 'ready'; }
     return;
   }
-  if (G.ph === 'ready5') { G.ph = 'air5a'; G.toss = G.t; G.air = .95; sfx(500, 900, .1, 'triangle', .05); return; }
-  if (G.ph === 'air5a' && u >= WIN - .06) { G.ph = 'palm'; ggSay(G, '손바닥에 올렸다!'); sfx(650, 820, .1, 'triangle', .05); return; }
-  if (G.ph === 'palm') { G.ph = 'air5b'; G.toss = G.t; G.air = .85; sfx(500, 900, .1, 'triangle', .05); return; }
-  if (G.ph === 'air5b' && u >= WIN - .06) { G.ph = 'done'; ggSay(G, '공기 다 했다! 5단 성공!'); flash('공기 다 했다! 5단 성공!'); sfx(660, 1320, .5, 'triangle', .06); return; }
-  if (G.ph === 'done') Object.assign(G, gonggiNew(), {t:G.t});
+  if (G.ph === 'ready5' || G.ph === 'palm') { G.ph = G.ph === 'palm' ? 'air5b' : 'air5a'; G.toss = G.t; G.air = ggAirT(5, 0); sfx(500, 820, .1, 'triangle', .05); return; }
+  if (G.ph === 'air5a' || G.ph === 'air5b') {
+    if (!ggIn(G)) { ggMiss(G, '너무 일찍! 다섯 알부터 다시'); return; }
+    if (G.ph === 'air5a') { G.ph = 'palm'; ggSay(G, '손등에 올렸다!'); sfx(650, 820, .1, 'triangle', .05); return; }
+    G.ph = 'done'; ggSay(G, '공기 다 했다!'); flash('공기 다 했다! 5단 성공!'); sfx(660, 1320, .5, 'triangle', .06); return;
+  }
+  if (G.ph === 'done') Object.assign(G, gonggiNew(false), {t:G.t});
 }
 function ggStep(G, dt){
-  G.t += dt; const u = (G.t - G.toss) / G.air;
-  if ((G.ph === 'air' || G.ph === 'air5a' || G.ph === 'air5b') && u >= 1) ggFail(G, G.ph === 'air' && G.picked < ggNeed(G) ? '덜 주웠다! 다시' : '놓쳤다! 다시');
-  G.fly = G.fly.filter(f => G.t - f.t < .18);
+  G.t += dt;
+  if ((G.ph === 'ready' || G.ph === 'intro' || G.ph === 'air') && !G.dash) { G.sw += dt * (1.9 + .25 * (G.stage - 1)); G.th = SWING * Math.sin(G.sw); }   // 단이 오를수록 조금 빨리 오간다
+  const d = G.dash;
+  if (d) {
+    if (d.out) { G.len = Math.min(d.L, G.len + DASH_V * dt);                                      // 뻗다가 처음 닿은 알 하나를 잡고 돌아온다
+      for (let i = 0; i < G.floor.length; i++) { const f = G.floor[i]; if (segD(d.th, G.len, f.x, f.y) < GRAB) { G.got.push(G.floor.splice(i, 1)[0]); d.hit = true; sfx(900 + G.got.length * 90, 700, .05, 'square', .04); break; } }
+      if (d.hit || G.len >= d.L) d.out = false; }
+    else { G.len = Math.max(L0, G.len - DASH_V * dt); if (G.len <= L0) { G.dash = null; if (!d.hit) ggMiss(G, '헛손질! 점선을 알에 맞춰요'); } }
+  }
+  if (ggAir(G) && G.t - G.toss > G.air + GG_LATE[G.stage]) ggMiss(G, G.stage >= 5 ? '놓쳤다! 다섯 알부터 다시' : G.got.length < ggNeed(G) ? '덜 잡았다! 한 번 더' : '놓쳤다! 한 번 더');
 }
 function stone(g, x, y, c, r = 7){ g.fillStyle = c; g.beginPath(); g.moveTo(x, y - r); g.lineTo(x + r, y); g.lineTo(x, y + r * .9); g.lineTo(x - r, y); g.closePath(); g.fill(); g.fillStyle = 'rgba(255,255,255,.45)'; g.fillRect(x - r * .4, y - r * .5, r * .5, r * .35); }
-function ggDraw(g, G){
-  const t = G.t, u = Math.min(1, (t - G.toss) / G.air), flying = G.ph === 'air' || G.ph === 'air5a' || G.ph === 'air5b';
-  g.fillStyle = '#4a3426'; g.fillRect(0, 0, LW, LH);
-  g.fillStyle = '#b8282e'; g.fillRect(18, 108, 204, 152); g.strokeStyle = '#d8c07a'; g.lineWidth = 3; g.strokeRect(30, 120, 180, 128);
-  G.floor.forEach(f => stone(g, f.x, f.y, f.c));
-  G.fly.forEach(f => { const k = (t - f.t) / .18; stone(g, f.x + (GH[0] - f.x) * k, f.y + (GH[1] - 14 - f.y) * k, f.c); });
-  const win = flying && u >= (G.ph === 'air' ? WIN : WIN - .06);
-  if (win) { g.strokeStyle = G.ph !== 'air' || G.picked >= ggNeed(G) ? '#7dff8a' : '#ff6b6b'; g.lineWidth = 4; g.beginPath(); g.arc(GH[0], GH[1] - 6, 34, 0, 7); g.stroke(); }
-  g.fillStyle = '#f6d9c2'; g.beginPath(); g.ellipse(GH[0], GH[1], 30, 16, 0, 0, 7); g.fill(); g.fillRect(GH[0] - 20, GH[1], 40, 34);
-  const inHand = G.ph === 'palm' ? 5 : G.ph === 'air5a' || G.ph === 'air5b' ? 0 : flying ? G.held - 1 + G.picked : G.held;
-  for (let i = 0; i < Math.min(5, inHand); i++) stone(g, GH[0] - 14 + i * 7, GH[1] - 6 - (i % 2) * 3, GG_C[i], 5);
-  if (flying) { const n = G.ph === 'air' ? 1 : 5, hgt = Math.sin(u * Math.PI) * (G.ph === 'air' ? 180 : 150);
-    g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(GH[0], GH[1] - 22, 8 + hgt * .02, 3, 0, 0, 7); g.fill();
-    for (let i = 0; i < n; i++) stone(g, GH[0] + (n > 1 ? (i - 2) * 9 : 0), GH[1] - 20 - hgt - (n > 1 ? (i % 2) * 6 : 0), GG_C[n > 1 ? i : 0], 7); }
-  g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '20px ' + FONT_D; g.fillStyle = '#ffd23f'; g.fillText(G.ph === 'done' ? '5단 끝!' : G.stage + '단', 120, 24);
-  g.font = '700 11px ' + FONT_B; g.fillStyle = '#fff';
-  if (G.stage < 5 && G.ph !== 'done') { const plan = GG_PLAN[G.stage]; g.fillText(plan.map((n, i) => i < G.step ? '●' : i === G.step ? '◎' : '○').join(' ') + '   이번에 주울 알 ' + ggNeed(G), 120, 46); }
-  const tip = {ready:'탭: 하나 던지기', air:G.picked < ggNeed(G) ? '타다닥! 탭으로 줍기 (' + G.picked + '/' + ggNeed(G) + ')' : '떨어질 때 탭: 잡기', ready5:'탭: 다섯 알 던지기',
-    air5a:'떨어질 때 탭: 손바닥에 올리기', palm:'탭: 손바닥에서 던지기', air5b:'떨어질 때 탭: 잡기', done:'탭: 처음부터 다시'}[G.ph];
-  g.fillStyle = '#ffe9a0'; g.fillText(tip, 120, 70);
-  if (t - G.msgT < 1.2) { g.font = '24px ' + FONT_D; g.strokeStyle = '#000'; g.lineWidth = 4; g.strokeText(G.msg, 120, 92); g.fillStyle = '#7dff8a'; g.fillText(G.msg, 120, 92); }
+function ggButton(G){
+  if (G.ph === 'intro') return ['시작하기', '#e3a53b', '#fff'];
+  if (G.ph === 'ready') return ['던지기', '#e3a53b', '#fff'];
+  if (G.ph === 'air') { const need = ggNeed(G);
+    if (G.dash) return ['잡는 중…', '#5b6168', '#fff'];
+    if (G.got.length < need) return ['잡기 ' + G.got.length + ' / ' + need, '#e3a53b', '#fff'];
+    return ggIn(G) ? ['받기!', '#f2c51f', '#1b1d20'] : ['노란 칸에서 받기', '#5b6168', '#fff']; }
+  if (G.ph === 'air5a' || G.ph === 'air5b') return ggIn(G) ? [G.ph === 'air5a' ? '손등에 올리기!' : '받기!', '#f2c51f', '#1b1d20'] : ['노란 칸에서 받기', '#5b6168', '#fff'];
+  if (G.ph === 'ready5') return ['다섯 알 던지기', '#e3a53b', '#fff'];
+  if (G.ph === 'palm') return ['다시 던지기', '#e3a53b', '#fff'];
+  return ['처음부터 다시', '#e3a53b', '#fff'];
 }
-// 놀이 자세: 오른손만 앞으로 (왼손은 손 흔들기용으로 비워 둔다). 공기놀이는 쪼그려 앉는다
+// 원기둥 손: 손목(PIV)에서 th 방향으로 len. (2026-11-24) 단색
+function ggHand(g, th, len){
+  g.save(); g.translate(PIV[0], PIV[1]); g.rotate(th);
+  g.fillStyle = 'rgba(0,0,0,.18)'; g.beginPath(); g.roundRect(-HW + 3, -len + 3, HW * 2, len + 6, HW); g.fill();       // 그림자
+  g.fillStyle = '#efc6a4'; g.beginPath(); g.roundRect(-HW, -len, HW * 2, len + 4, HW); g.fill();
+  g.fillStyle = '#c98e6a'; g.beginPath(); g.arc(0, 0, 12, 0, 7); g.fill();                                              // 손목 축
+  g.restore();
+}
+function ggDraw(g, G){
+  const t = G.t, h = ggH(G), flying = ggAir(G), five = G.stage >= 5, need = ggNeed(G);
+  g.fillStyle = '#4a3426'; g.fillRect(0, 0, LW, LH);
+  g.fillStyle = '#d8b86c'; g.fillRect(MAT[0], MAT[1], MAT[2] - MAT[0], MAT[3] - MAT[1]); g.strokeStyle = '#b8282e'; g.lineWidth = 4; g.strokeRect(MAT[0] + 2, MAT[1] + 2, MAT[2] - MAT[0] - 4, MAT[3] - MAT[1] - 4);   // 돗자리
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '22px ' + FONT_D; g.fillStyle = '#ffd23f';
+  g.fillText(G.ph === 'done' ? '5단 끝!' : G.stage + '단 · ' + GG_TIP[G.stage], 120, 20);
+  g.font = '12px ' + FONT_B; g.fillStyle = '#e9e2d0';
+  g.fillText(five ? (G.ph === 'palm' ? '손등 위 다섯 알 · 한 번 더 던져서 받아요' : '다섯 알을 던져서 손등으로 받아요')
+    : GG_PLAN[G.stage].map((n, i) => i < G.step ? '●' : i === G.step ? '◎' : '○').join(' ') + '   이번에 ' + need + '알 · 받는 칸 ' + Math.round(GG_ZONE[G.stage] * 100) + '%', 120, 44);
+  // 겨누는 길 (점선) + 처음 닿을 알 표시: 던지기 전 · 떠 있는 동안 더 잡을 때
+  const aim = !five && !G.dash && (G.ph === 'ready' || (G.ph === 'air' && G.got.length < need));
+  if (aim) { const L = reach(G.th), [ex, ey] = ray(G.th, L); g.setLineDash([5, 5]); g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 2; g.beginPath(); g.moveTo(...ray(G.th, L0)); g.lineTo(ex, ey); g.stroke(); g.setLineDash([]); }
+  const hit = aim ? ggFirst(G, G.th) : -1;
+  G.floor.forEach((f, i) => { if (i === hit) { g.strokeStyle = 'rgba(255,255,255,' + (.55 + .4 * Math.sin(t * 12)) + ')'; g.lineWidth = 2.5; g.beginPath(); g.arc(f.x, f.y, 12, 0, 7); g.stroke(); } stone(g, f.x, f.y, f.c, 8); });
+  const hth = G.dash ? G.dash.th : G.th; ggHand(g, hth, G.len);
+  const [tx, ty] = ray(hth, G.len - 4); G.got.forEach((f, i) => stone(g, tx + (i - (G.got.length - 1) / 2) * 7, ty - (i % 2) * 4, f.c, 6.5));    // 잡은 알은 손끝에
+  if (G.ph === 'palm') for (let i = 0; i < 5; i++) stone(g, PIV[0], PIV[1] - 12 - i * 5, GG_C[i], 6);                                              // 손등 위 다섯 알
+  if (!five) for (let i = 0; i < Math.min(4, G.held - 1); i++) stone(g, 24 + i * 12, MAT[3] - 12, GG_C[i + 1], 5.5);                              // 모은 알 (왼쪽 아래, 공은 빼고)
+  // 공: 손목 위로 떠오른다 (높을수록 크고 그림자는 작게)
+  if (flying) { const n = five ? 5 : 1; g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(PIV[0], PIV[1] - 4, 10 - h * 4, 4 - h * 1.5, 0, 0, 7); g.fill();
+    for (let i = 0; i < n; i++) stone(g, PIV[0] + (n > 1 ? (i - 2) * 10 : 0), PIV[1] - 16 - h * 120 - (n > 1 ? (i % 2) * 6 : 0), GG_C[n > 1 ? i : 0], 8 + h * 3); }
+  else if (G.ph === 'ready' || G.ph === 'intro') stone(g, PIV[0], PIV[1] - 2, GG_C[0], 7);
+  else if (G.ph === 'ready5') for (let i = 0; i < 5; i++) stone(g, PIV[0] - 16 + i * 8, PIV[1] - 2 - (i % 2) * 3, GG_C[i], 6);
+  // 오른쪽 높이 막대: 공중전화 게이지와 같은 칸 (옅은 칸 · 노란 받는 칸 · 흰 바늘), 테두리 판 없이
+  const {x:gx, y0, y1} = GAUGE, zoneTop = y1 - GG_ZONE[Math.min(5, G.stage)] * (y1 - y0), hot = flying && ggIn(G) && !(G.ph === 'air' && G.got.length < need);
+  g.fillStyle = 'rgba(255,255,255,.14)'; g.fillRect(gx, y0, 12, y1 - y0);
+  g.fillStyle = hot ? '#f2c51f' : 'rgba(227,165,59,.5)'; g.fillRect(gx, zoneTop, 12, y1 - zoneTop); g.fillStyle = '#e3a53b'; g.fillRect(gx, zoneTop, 12, 1);
+  g.font = '10px ' + FONT_B; g.fillStyle = hot ? '#1b1d20' : '#f6e7c1'; g.save(); g.translate(gx + 6, (zoneTop + y1) / 2); g.rotate(-Math.PI / 2); g.fillText('받기', 0, 0); g.restore();
+  if (flying) { const my = y1 - h * (y1 - y0); g.fillStyle = '#fff'; g.fillRect(gx - 3, my - 1.5, 18, 3); }
+  // 아래 큰 버튼
+  const [label, col, ink] = ggButton(G), pulse = col === '#f2c51f' ? 1 + .05 * Math.sin(t * 20) : 1;
+  g.save(); g.translate(120, 302); g.scale(pulse, pulse); g.fillStyle = col; g.fillRect(-92, -13, 184, 26);
+  g.font = '18px ' + FONT_D; g.fillStyle = ink; g.fillText(label, 0, 1); g.restore();
+  // 처음 설명
+  if (G.ph === 'intro') { g.fillStyle = 'rgba(10,10,12,.9)'; g.fillRect(12, 60, 216, 196); g.fillStyle = '#e3a53b'; g.fillRect(12, 60, 216, 3);
+    g.font = '18px ' + FONT_D; g.fillStyle = '#ffd23f'; g.fillText('공기놀이 하는 법', 120, 82); g.font = '12px ' + FONT_B;
+    ['① 버튼을 눌러 공을 위로 던져요', '② 점선이 알에 닿을 때 누르면', '    손이 뻗어 한 알을 잡아 와요', '    (두 알을 잡는 차례면 두 번)', '③ 오른쪽 막대의 공이 노란 칸에', '    오면 눌러 받아요', '버튼 = E · 스페이스 · 화면 누르기'].forEach((l, i) => { g.fillStyle = i === 6 ? '#e3a53b' : '#fff'; g.fillText(l, 120, 106 + i * 20); }); }
+  if (t - G.msgT < 1.2) { g.font = '22px ' + FONT_D; g.strokeStyle = '#000'; g.lineWidth = 4; g.strokeText(G.msg, 106, 100); g.fillStyle = G.msgC; g.fillText(G.msg, 106, 100); }
+}
+// 놀이 자세: 오른손(armL)만 앞으로 (왼손 armR은 손 흔들기용으로 비워 둔다). 공기놀이는 쪼그려 앉는다
 function pose(ch, squat, armX){
-  const u = ch.userData; u.armR.rotation.x = armX;
-  if (squat) { u.legL.rotation.x = u.legR.rotation.x = -1.4; u.inner.position.y = -.3; u.armR.rotation.x = armX + .35; }   // 방석 옆 바닥에 앉는다 (썰매보다 조금 낮게)
+  const u = ch.userData; u.armL.rotation.x = armX;   // armL = 캐릭터 오른팔
+  if (squat) { u.legL.rotation.x = u.legR.rotation.x = -1.4; u.inner.position.y = -.3; u.armL.rotation.x = armX + .35; }   // 방석 옆 바닥에 앉는다 (썰매보다 조금 낮게)
 }
 
 // ───────────────────────── 가방 키링 (상품) ─────────────────────────
@@ -308,7 +382,7 @@ function keyringMesh(k){
   else if (k === 6) { const b = new THREE.Mesh(new THREE.ConeGeometry(.055, .11, 10), krMat(0xe02a3a)); b.rotation.x = Math.PI; c.add(b); const l = new THREE.Mesh(new THREE.ConeGeometry(.045, .025, 6), krMat(0x3f9a3a)); l.position.y = .066; c.add(l); }
   else if (k === 7) { const h = new THREE.Mesh(new THREE.SphereGeometry(.055, 10, 8), krMat(0xf7f1ea)); c.add(h); [-1, 1].forEach(sx => { const e = new THREE.Mesh(new THREE.SphereGeometry(.022, 8, 6), krMat(0xf7f1ea)); e.scale.set(1, 2.6, .7); e.position.set(sx * .026, .085, 0); c.add(e); }); }
   else { const d = new THREE.Mesh(new THREE.BoxGeometry(.08, .08, .08), krMat(0xf4f4f0)); d.rotation.set(.5, .6, .2); c.add(d); }
-  c.rotation.y = Math.PI / 2;
+  // (2026-11-23) 장식 면이 뒤(-z, 카메라 쪽)를 보게: 예전엔 90° 돌아가 옆을 봐서 뒤에서 잘 안 보였다
   g.traverse(o => { if (o.isMesh) o.castShadow = true; });
   return g;
 }
@@ -371,7 +445,7 @@ function layout(kind, watch){
   const h = rps ? Math.min(innerHeight * .46, 330) : Math.min(innerHeight * (touch() ? .52 : .66), 460), w = rps ? h * RPS_W / RPS_H : h * LW / LH, dpr = Math.min(2, devicePixelRatio || 1);
   cv.style.width = Math.round(w) + 'px'; cv.style.height = Math.round(h) + 'px'; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
   cx.setTransform(cv.width / (rps ? RPS_W : LW), 0, 0, cv.height / (rps ? RPS_H : LH), 0, 0);
-  ui.querySelector('#ar-pad').style.display = !rps && !watch && touch() ? 'flex' : 'none';
+  ui.querySelector('#ar-pad').style.display = !rps && kind !== 'gonggi' && !watch && touch() ? 'flex' : 'none';   // 공기놀이는 화면 안 큰 버튼을 누른다
   ui.querySelectorAll('#ar-pad button').forEach(b => { b.style.display = kind === 'gacha' && b.dataset.k !== 'f' ? 'none' : ''; if (b.dataset.k === 'f') b.textContent = kind === 'gacha' ? '돌리기 · 열기' : kind === 'gonggi' ? '탁!' : '발사'; if (kind === 'gonggi' && b.dataset.k !== 'f') b.style.display = 'none'; });
   ui.querySelector('#ar-rps').style.display = rps && !watch ? 'flex' : 'none';
   ui.querySelector('#ar-vs').style.display = rps ? 'flex' : 'none';
@@ -386,9 +460,9 @@ function menu(on){
 function drawMenu(g, t){
   g.fillStyle = '#05060a'; g.fillRect(0, 0, LW, LH); STARS.forEach(([x, y, sp, c]) => { g.fillStyle = ['#7d8cff', '#ff8c8c', '#e6e6a0'][c]; g.fillRect(x, (y + t * sp) % LH, 1.5, 1.5); });
   g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '26px ' + FONT_D; g.fillStyle = '#ffd23f'; g.fillText('별빛 오락', 120, 70);
-  g.font = '700 12px ' + FONT_B; g.fillStyle = '#fff'; g.fillText('게임을 골라요', 120, 104);
+  g.font = '12px ' + FONT_B; g.fillStyle = '#fff'; g.fillText('게임을 골라요', 120, 104);
   g.font = '18px ' + FONT_D; g.fillStyle = '#7fd0ff'; g.fillText('1  은하 대작전', 120, 150); g.fillStyle = '#f28c28'; g.fillText('2  벽돌 깨기', 120, 184);
-  if ((t * 2 | 0) % 2) { g.font = '700 11px ' + FONT_B; g.fillStyle = '#cfd6e0'; g.fillText('100원 넣었다 치고~', 120, 240); }
+  if ((t * 2 | 0) % 2) { g.font = '11px ' + FONT_B; g.fillStyle = '#cfd6e0'; g.fillText('100원 넣었다 치고~', 120, 240); }
   drawEnemy(g, 60, 150, 1, t); drawShip(g, 120, 280);
 }
 

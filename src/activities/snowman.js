@@ -23,9 +23,9 @@ import { hud } from '../ui/hud.js';
 import { defineActivity, begin, stopActivity } from './registry.js';
 import { SNOW } from '../map/layout.js';
 
-// BODY · HEAD: 몸통 · 머리에 필요한 눈덩이 수. 지금 5 · 3은 테스트용이고 나중에 늘린다 (늘려도 크기는 비율로 계산되고, 동기화는 한 사람 99개 · 16명까지 받는다).
+// BODY · HEAD: 몸통 · 머리에 필요한 눈덩이 수. (2026-11-23) 10 · 5로 늘림 (예전 5 · 3은 테스트용) (늘려도 크기는 비율로 계산되고, 동기화는 한 사람 99개 · 16명까지 받는다).
 // ROLL: 다 굴리는 거리(게임 단위, 약 13.6m). MELT: 완성 뒤 녹을 때까지, FADE: 그중 녹는 모습을 보여 주는 시간.
-export const RULE = {BODY:5, HEAD:3, ROLL:16, MELT:180000, FADE:15000};
+export const RULE = {BODY:10, HEAD:5, ROLL:16, MELT:180000, FADE:15000};
 const need = () => RULE.BODY + RULE.HEAD, R0 = .1 * UNIT, R1 = SNOWMAN.BALL * UNIT, SITE = SNOW.site, F = SNOW.field;
 const inField = (x, z) => x > F.x0 && x < F.x1 && z > F.z0 && z < F.z1;
 const axis = new THREE.Vector3();
@@ -55,7 +55,7 @@ let rig, label, labelText = '', shown = -1, bumpAt = -1e9, hit, myBall;
 function setLabel(text){
   if (text === labelText) return; labelText = text;
   if (label) { root.remove(label); label.material.map.dispose(); label.material.dispose(); }
-  label = pillSprite(text, 'rgba(255,255,255,.92)', '#2b3f55', .8); label.position.set(SITE.x, W.groundY(SITE.x, SITE.z) + 5.3, SITE.z); root.add(label);
+  label = pillSprite(text, 'rgba(255,255,255,.92)', '#2b3f55', .8); label.position.set(SITE.x, W.groundY(SITE.x, SITE.z) + 6.2, SITE.z); root.add(label);
 }
 function rollBall(m, w, r, moved){
   const dx = Math.sin(w.r), dz = Math.cos(w.r); m.scale.setScalar(r); m.position.set(w.x + dx * (r + .5), W.groundY(w.x, w.z) + r * .96, w.z + dz * (r + .5));
@@ -65,8 +65,8 @@ function rollBall(m, w, r, moved){
 function holdBall(m, w, ch, r){
   const y = ch ? ch.position.y : W.groundY(w.x, w.z), dx = Math.sin(w.r), dz = Math.cos(w.r), bob = ch ? Math.abs(Math.sin(ch.userData.phase || 0)) * .06 : 0;
   m.scale.setScalar(r); m.position.set(w.x + dx * .12, y + 2.05 + r * .92 + bob, w.z + dz * .12);
-  // 큰 눈덩이는 두 손으로 든다. 손을 흔드는 동안만 왼손을 뗀다 (2026-11-23 흔드는 손은 왼손)
-  if (ch) { const u = ch.userData; u.armR.rotation.x = -2.95; u.armR.rotation.z = -.28; if (!waving(ch)) { u.armL.rotation.x = -2.95; u.armL.rotation.z = .28; } }
+  // 큰 눈덩이는 두 손으로 든다. 손을 흔드는 동안만 왼손(armR)을 뗀다 (2026-11-23 흔드는 손은 왼손)
+  if (ch) { const u = ch.userData; u.armL.rotation.x = -2.95; u.armL.rotation.z = .28; if (!waving(ch)) { u.armR.rotation.x = -2.95; u.armR.rotation.z = -.28; } }
 }
 // 눈밭과 눈사람 자리 표시 (2026-11-20 3차 더 잘 보이게): 눈밭 전체를 잔디 없이 눈으로 덮고(겹침 방지 polygonOffset), 둘레 말뚝 줄,
 // 자리는 눈을 걷어 낸 맨땅 원(2026-11-21, 예전 눈 단 · 깃발 말뚝 snowmanStage는 쓰지 않는다), 눈덩이를 들고 있으면 자리 위에 내려오는 화살표가 뜬다
@@ -94,7 +94,7 @@ function markArea(){
   arrow = new THREE.Group();
   const cone = new THREE.Mesh(new THREE.ConeGeometry(.55, 1.1, 18), new THREE.MeshLambertMaterial({color:0xe4572e, emissive:0x5a1408})); cone.rotation.x = Math.PI; arrow.add(cone);
   const ring = new THREE.Mesh(new THREE.TorusGeometry(.5, .09, 8, 24), cone.material); ring.rotation.x = Math.PI / 2; ring.position.y = .95; arrow.add(ring);
-  arrow.position.set(SITE.x, W.groundY(SITE.x, SITE.z) + 7.8, SITE.z); arrow.visible = false; root.add(arrow);
+  arrow.position.set(SITE.x, W.groundY(SITE.x, SITE.z) + 8.7, SITE.z); arrow.visible = false; root.add(arrow);
   W.mmRect(F.x0, F.z0, F.x1, F.z1, '#f4f8fb'); W.mmCircle(SITE.x, SITE.z, (SNOWMAN.RB + 1.5) * UNIT, '#a8957a');
 }
 const newBall = () => { const m = mesh(ballGeo(), snowAOMaterial(), 0, 0, 0, root); m.castShadow = true; m.visible = false; return m; };
@@ -118,7 +118,7 @@ function updateSnowman(now){
   if (hit[2] > 0) { const dx = me.x - SITE.x, dz = me.z - SITE.z, d = Math.hypot(dx, dz), rr = hit[2] + RAD + .05;
     if (d < rr) { const k = d > 1e-3 ? rr / d : 1; me.x = SITE.x + (d > 1e-3 ? dx * k : rr); me.z = SITE.z + (d > 1e-3 ? dz * k : 0); } }
   if (n >= need()) { const left = Math.max(0, Math.ceil((SM.tc + RULE.MELT - wall) / 1000)); setLabel(melt > 0 ? '녹는 중...' : '완성! 녹기까지 ' + Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0')); }
-  else setLabel(n === 0 ? '눈덩이를 굴려 와요 · 몸통 0/' + RULE.BODY : phase(n));
+  else setLabel(phase(n));   // (2026-11-24 21차) '눈덩이를 굴려 와요' 문구는 뺐다
 }
 const complete = () => total() >= need();
 
@@ -141,7 +141,7 @@ const snowman = defineActivity({
   setup(){
     rig = snowmanRig(); rig.obj.position.set(SITE.x, W.groundY(SITE.x, SITE.z) + .05, SITE.z); root.add(rig.obj);   // 맨땅 원 위 (2026-11-21: 눈 단 없앰)
     W.circle(SITE.x, SITE.z, 0); hit = W.circles[W.circles.length - 1];
-    spotLabel('함께 눈사람 만들기', SITE.x, W.groundY(SITE.x, SITE.z) + 6.4, SITE.z);
+    spotLabel('함께 눈사람 만들기', SITE.x, W.groundY(SITE.x, SITE.z) + 7.3, SITE.z);
     markArea();
     myBall = newBall(); reset(); updateSnowman(0);
   },
@@ -158,7 +158,7 @@ const snowman = defineActivity({
   quit(){ me.ballR = 0; myBall.visible = false; },
   frame(dt, now, moved){
     updateSnowman(now);
-    if (arrow) { arrow.visible = S.mode === 'snow' && !!S.game && S.game.carry; if (arrow.visible) { arrow.position.y = W.groundY(SITE.x, SITE.z) + 7.8 + Math.sin(now / 1000 * 4) * .35; arrow.rotation.y = now / 1000; } }
+    if (arrow) { arrow.visible = S.mode === 'snow' && !!S.game && S.game.carry; if (arrow.visible) { arrow.position.y = W.groundY(SITE.x, SITE.z) + 8.7 + Math.sin(now / 1000 * 4) * .35; arrow.rotation.y = now / 1000; } }
     if (S.mode !== 'snow') return;
     const g = S.game; myBall.visible = true;
     if (!g.carry) {

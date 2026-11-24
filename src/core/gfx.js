@@ -64,16 +64,16 @@ export function canvasTex(w, h, draw){
   return t;
 }
 export function pillSprite(text, bg, fg, hgt){
-  // (2026-11-21) 모든 3D 이름표 · 자리 표시를 같은 모양으로: 어두운 반투명 직사각형 + 왼쪽 호박색 띠 + 밝은 글씨 (bg · fg 인자는 무시)
+  // (2026-11-21) 모든 3D 이름표 · 자리 표시를 같은 모양으로: 어두운 반투명 직사각형 + 위쪽 호박색 띠 + 밝은 글씨 (테두리 없음) (bg · fg 인자는 무시)
   // (2026-11-21) 글씨가 뭉개지던 것: 예전엔 높이 52px 캔버스를 화면에서 4~5배 키워 보여 줬다 → 3배 해상도로 그리고 밉맵 · 비등방 필터를 켠다
   const K = 3, c = document.createElement('canvas'), g = c.getContext('2d'), fs = 32 * K, font = '600 ' + fs + 'px ' + FONT_UI;
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8; tex.generateMipmaps = true; tex.minFilter = THREE.LinearMipmapLinearFilter;
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true})); sp.renderOrder = 10;
   const draw = () => {
     g.font = font; c.width = Math.ceil(g.measureText(text).width) + 44 * K; c.height = 52 * K;
-    g.font = font; g.fillStyle = 'rgba(16,18,20,.78)'; g.fillRect(0, 0, c.width, c.height); g.strokeStyle = 'rgba(255,255,255,.28)'; g.lineWidth = 2 * K; g.strokeRect(K, K, c.width - 2 * K, c.height - 2 * K);
-    g.fillStyle = '#e3a53b'; g.fillRect(0, 0, 7 * K, c.height);
-    g.fillStyle = '#f2efe8'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, c.width / 2 + 3 * K, c.height / 2 + 2 * K);
+    g.font = font; g.fillStyle = 'rgba(16,18,20,.78)'; g.fillRect(0, 0, c.width, c.height);   // (2026-11-24 21차) 테두리 선 없음
+    g.fillStyle = '#e3a53b'; g.fillRect(0, 0, c.width, 5 * K);   // (2026-11-24 21차) 호박색 띠는 위쪽만
+    g.fillStyle = '#f2efe8'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, c.width / 2, c.height / 2 + 2 * K);
     sp.scale.set(c.width / c.height * hgt, hgt, 1);
   };
   draw();

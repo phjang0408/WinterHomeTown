@@ -45,19 +45,20 @@ export function animChar(ch, dt, moved, st, now){
     u.legL.rotation.x = s * .8; u.legR.rotation.x = -s * .8; u.armL.rotation.x = -s * .6; u.armR.rotation.x = s * .6;
     u.inner.position.y = Math.abs(Math.cos(u.phase)) * .07 * u.amp;
   }
-  // (2026-11-23) 손 흔들기는 왼손, 나머지 동작(내려치기 · 던지기 · 놀이)은 오른손
+  // (2026-11-23 3차) 팔 이름 주의: 몸이 +z를 보므로 armR(x +0.44)은 캐릭터의 '왼팔', armL(x -0.44)이 '오른팔'이다 (뒤에서 보면 화면 오른쪽).
+  //   손 흔들기는 왼팔(armR), 내려치기 · 던지기 · 놀이는 오른팔(armL)
   let rz = .18, lz = -.18;
   if (u.em) {
     const e = (now - u.em.t0) / 1000, k = u.em.k;
-    if (k === 1) { if (e > 1.6) u.em = null; else { lz = -2.6 - Math.sin(e * 12) * .35; u.armL.rotation.x = 0; } }
-    else if (k === 2 || k === 4) { if (e > .55) u.em = null; else u.armR.rotation.x = e < .2 ? -2.9 * (e / .2) : -2.9 + 2.1 * Math.min(1, (e - .2) / .1); }
-    else if (k === 3) { if (e > .4) u.em = null; else u.armR.rotation.x = -2.7 * Math.sin(PI * e / .4); }
+    if (k === 1) { if (e > 1.6) u.em = null; else { rz = 2.6 + Math.sin(e * 12) * .35; u.armR.rotation.x = 0; } }
+    else if (k === 2 || k === 4) { if (e > .55) u.em = null; else u.armL.rotation.x = e < .2 ? -2.9 * (e / .2) : -2.9 + 2.1 * Math.min(1, (e - .2) / .1); }
+    else if (k === 3) { if (e > .4) u.em = null; else u.armL.rotation.x = -2.7 * Math.sin(PI * e / .4); }
     else u.em = null;
   }
   u.armR.rotation.z += (rz - u.armR.rotation.z) * Math.min(1, dt * 14);
   u.armL.rotation.z += (lz - u.armL.rotation.z) * Math.min(1, dt * 14);   // (2026-11-20) 놀이가 바꾼 왼팔도 제자리로
 }
-// 손 흔드는 중인가: 놀이 자세가 왼팔을 덮어쓰지 않게 (왼손은 흔드는 손)
+// 손 흔드는 중인가: 놀이 자세가 흔드는 팔(armR = 캐릭터 왼팔)을 덮어쓰지 않게
 export const waving = ch => !!(ch && ch.userData.em && ch.userData.em.k === 1);
 // 감정 표현 코드: 1 손 흔들기, 2 내려치기, 3 던지기, 4 딱지 성공
 export const emote = (ch, k) => { ch.userData.em = {k, t0:performance.now()}; };

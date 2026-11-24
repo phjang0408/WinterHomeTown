@@ -42,12 +42,12 @@ export function drawRoof(g, x0, y0){
   const {w:W, h:H} = ROOF; g.save(); g.beginPath(); g.rect(x0, y0, W, H); g.clip(); g.translate(x0, y0);
   const gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#2c5585'); gr.addColorStop(1, '#1d3c63'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
   g.strokeStyle = '#f4f6f7'; g.lineWidth = 6; g.strokeRect(12, 12, W - 24, H - 24); g.fillStyle = '#d8322a'; g.fillRect(12, H - 46, W - 24, 34);
-  g.fillStyle = '#f4f6f7'; g.beginPath(); g.arc(120, 100, 66, 0, P2); g.fill(); g.strokeStyle = '#2c5585'; g.lineWidth = 9; g.lineCap = 'round';
-  for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3, c = Math.cos(a), sn = Math.sin(a); g.beginPath(); g.moveTo(120, 100); g.lineTo(120 + c * 46, 100 + sn * 46); g.stroke();
-    [.55].forEach(t => { const px = 120 + c * 46 * t, py = 100 + sn * 46 * t; [-1, 1].forEach(k => { const b = a + k * .7; g.beginPath(); g.moveTo(px, py); g.lineTo(px + Math.cos(b) * 16, py + Math.sin(b) * 16); g.stroke(); }); }); }
-  g.textBaseline = 'middle'; g.textAlign = 'left'; fit(g, '동화상가', '', 150, F.bhs, 390); outlined(g, '동화상가', 216, 98, '#f4f6f7', [['#10243d', 12]]);
-  g.textAlign = 'right'; setFont(g, 800, 28, F.ng); g.fillStyle = '#cfe2f5'; g.fillText('1층  마트 · 분식 · 약국 · 세탁', W - 44, 66); g.fillText('2층  학원 · 미용실 · 치과', W - 44, 112);
-  g.textAlign = 'center'; setFont(g, 800, 22, F.ng); g.fillStyle = '#fff'; g.fillText('D O N G H W A   S H O P P I N G   C E N T E R', W / 2, H - 28);
+  // (2026-11-24 21차) 글은 '동화상가'만: 층 안내 · 영문 줄을 빼고 눈 결정 표식 + 이름을 가운데로
+  fit(g, '동화상가', '', 170, F.bhs, 600); const tw = g.measureText('동화상가').width, gx = (W - (132 + 34 + tw)) / 2, ex = gx + 66, ey = 104;
+  g.fillStyle = '#f4f6f7'; g.beginPath(); g.arc(ex, ey, 66, 0, P2); g.fill(); g.strokeStyle = '#2c5585'; g.lineWidth = 9; g.lineCap = 'round';
+  for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3, c = Math.cos(a), sn = Math.sin(a); g.beginPath(); g.moveTo(ex, ey); g.lineTo(ex + c * 46, ey + sn * 46); g.stroke();
+    [.55].forEach(t => { const px = ex + c * 46 * t, py = ey + sn * 46 * t; [-1, 1].forEach(k => { const b = a + k * .7; g.beginPath(); g.moveTo(px, py); g.lineTo(px + Math.cos(b) * 16, py + Math.sin(b) * 16); g.stroke(); }); }); }
+  g.textBaseline = 'middle'; g.textAlign = 'left'; outlined(g, '동화상가', gx + 132 + 34, ey + 2, '#f4f6f7', [['#10243d', 12]]);
   grime(g, W, H, 77, .6); g.restore();
 }
 export function drawBoardAtlas(g){ g.fillStyle = '#777'; g.fillRect(0, 0, 1024, 1024); VSIGNS.forEach((_, i) => drawVertical(g, i, i * 128, 0)); drawRoof(g, ROOF.x, ROOF.y); }

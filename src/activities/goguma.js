@@ -25,21 +25,21 @@ const STALLS = [
 const ITEMS = {1:{prop:'goguma', s:2.2, eat:'군고구마 먹기', done:'후~ 다 먹었다. 속까지 따뜻해!'}, 2:{prop:'bananaMilk', opts:{n:1, straw:true}, s:1.6}, 3:{prop:'hotteok', s:2.0, eat:'호떡 먹기', done:'꿀이 쭉~ 다 먹었다!'}};
 STALLS.forEach(t => { t.front = at(t.pos, 0, 1.55); t.back = at(t.pos, 0, -1.05); });
 
-// 손에 든 물건: 오른팔(armR) 끝에 붙인다. 남은 입(it[1])만큼 줄고, 먹는 중이면 팔을 입으로 올린다
+// 손에 든 물건: 오른팔(armL = 캐릭터 오른팔, 2026-11-23에 바로잡음) 끝에 붙인다. 남은 입(it[1])만큼 줄고, 먹는 중이면 팔을 입으로 올린다
 function holdIn(w, ch, it, now){
   if (!ch) return;
   const u = ch.userData, id = it ? it[0] : 0, def = ITEMS[id];
-  if (w.hand && (w.hand.parent !== u.armR || w.handId !== id)) { if (w.hand.parent) w.hand.parent.remove(w.hand); w.hand = null; }
+  if (w.hand && (w.hand.parent !== u.armL || w.handId !== id)) { if (w.hand.parent) w.hand.parent.remove(w.hand); w.hand = null; }
   if (!def) return;
-  if (!w.hand) { w.hand = buildProp(def.prop, def.opts); w.hand.scale.setScalar(def.s); const fz = id === 2 ? 1 : -1; if (fz > 0) w.hand.position.set(0, -.62, .12); else w.hand.position.set(0, -.5, -.03); w.hand.rotation.x = -1.2 * fz; u.armR.add(w.hand); w.handId = id; }   // (2026-11-22) 군고구마 · 호떡은 손바닥 쪽, 손 위쪽으로 올려 쥔다
+  if (!w.hand) { w.hand = buildProp(def.prop, def.opts); w.hand.scale.setScalar(def.s); const fz = id === 2 ? 1 : -1; if (fz > 0) w.hand.position.set(0, -.62, .12); else w.hand.position.set(0, -.46, .1);   /* (2026-11-24) 군고구마 · 호떡을 손 위로 더 올려 쥔다 */ w.hand.rotation.x = -1.2 * fz; u.armL.add(w.hand); w.handId = id; }   // (2026-11-22) 군고구마 · 호떡은 손바닥 쪽, 손 위쪽으로 올려 쥔다
   w.hand.visible = it[1] > 0; if (!w.hand.visible) return;
   if (id !== 2) w.hand.scale.set(def.s, def.s * (.45 + .55 * it[1] / 3), def.s);
   const st = w.st || 0;
   if (id === 2) { if (st !== ST.PLAT) return; const k = (now / 1000) % 4; const sip = k < 1.1 ? Math.sin(k / 1.1 * Math.PI) : 0;   // 평상: 4초마다 한 모금
-    u.armR.rotation.x = -.5 - 1.75 * sip; u.armR.rotation.z = .25 + .35 * sip; w.hand.rotation.x = .5 + .45 * sip; return; }   // (2026-11-21) 병이 거꾸로 들리던 것: 팔 각도와 더해 평소엔 똑바로, 마실 땐 입 쪽으로 기울게
+    u.armL.rotation.x = -.5 - 1.75 * sip; u.armL.rotation.z = -.25 - .35 * sip; w.hand.rotation.x = .5 + .45 * sip; return; }   // (2026-11-21) 병이 거꾸로 들리던 것: 팔 각도와 더해 평소엔 똑바로, 마실 땐 입 쪽으로 기울게
   if (st !== 0) return;                                                    // 다른 놀이 중에는 팔을 그 놀이에 맡긴다
-  if (it[2]) { const k = Math.sin(now / 1000 * PI2 / BITE) * .5 + .5; u.armR.rotation.x = -2.1 - .35 * k; u.armR.rotation.z = .55; }
-  else { u.armR.rotation.x = -.75; u.armR.rotation.z = .3; }
+  if (it[2]) { const k = Math.sin(now / 1000 * PI2 / BITE) * .5 + .5; u.armL.rotation.x = -2.1 - .35 * k; u.armL.rotation.z = -.55; }
+  else { u.armL.rotation.x = -.75; u.armL.rotation.z = -.3; }
 }
 function eat(){
   if (!me.it || !ITEMS[me.it[0]] || !ITEMS[me.it[0]].eat || me.it[2]) return;

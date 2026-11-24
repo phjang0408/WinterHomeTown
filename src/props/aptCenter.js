@@ -15,7 +15,7 @@ const centerTex = () => once('center', () => decalMaterial(canvasTex(1024, 256, 
   g.fillStyle = '#27496d'; g.fillRect(0, 0, 820, 130); g.fillStyle = '#f4f6f7'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '92px ' + FONT_D; g.fillText('동화 주민센터', 450, 70);
   g.strokeStyle = '#8fc0e8'; g.lineWidth = 8; g.lineCap = 'round'; for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; g.beginPath(); g.moveTo(92, 66); g.lineTo(92 + Math.cos(a) * 38, 66 + Math.sin(a) * 38); g.stroke(); }
   g.fillStyle = '#2f7d5b'; g.fillRect(830, 0, 96, 256); g.fillStyle = '#fff'; g.font = '58px ' + FONT_D; ['주', '민', '센', '터'].forEach((c, i) => g.fillText(c, 878, 36 + i * 62));
-  g.fillStyle = '#e9e4d6'; g.fillRect(0, 140, 400, 116); g.fillStyle = '#34465c'; g.font = '800 30px ' + FONT_B; g.fillText('우리 동네 소식', 200, 164);
+  g.fillStyle = '#e9e4d6'; g.fillRect(0, 140, 400, 116); g.fillStyle = '#34465c'; g.font = '30px ' + FONT_B; g.fillText('우리 동네 소식', 200, 164);
   [[14, 186, 110, 62, '#fbfbf6'], [138, 184, 120, 66, '#f3ecc4'], [272, 188, 112, 60, '#fdfdfb']].forEach(([x, y, w, h, c], k) => { g.fillStyle = c; g.fillRect(x, y, w, h); g.fillStyle = k === 1 ? '#b8552f' : '#3f6fa8'; g.fillRect(x + 8, y + 8, w - 16, 8); g.fillStyle = '#9aa3ab'; for (let l = 0; l < 3; l++) g.fillRect(x + 8, y + 24 + l * 11, (w - 16) * (l === 2 ? .6 : 1), 4); });
   g.fillStyle = '#f4f6f7'; g.fillRect(420, 140, 400, 116); g.fillStyle = '#2f7d5b'; g.font = '44px ' + FONT_D; g.fillText('경로당 · 작은도서관', 620, 198); }), {alpha:true, rough:.7}));
 defineProp('communityCenter', {label:'주민센터', category:'건물', isNewStyle:true, blocksCamera:true, colliders:[{r:[-7.5 * U, -4.5 * U, 7.5 * U, 4.5 * U]}, {r:[-2.3 * U, 4.5 * U, 2.3 * U, 6.6 * U]}, {c:[-5.6 * U, 6.2 * U, .5 * U]}],
@@ -56,7 +56,7 @@ defineProp('communityCenter', {label:'주민센터', category:'건물', isNewSty
 // ── 정문 문주: 돌 기둥 둘, 한쪽에 단지 이름 벽, 차단기 ──
 const gateTex = () => once('gate', () => decalMaterial(canvasTex(1024, 256, (g, W, H) => { g.clearRect(0, 0, W, H); g.fillStyle = '#2b3a4a'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '150px ' + FONT_D; g.fillText('동화아파트', 560, 120);
   g.strokeStyle = '#3f6fa8'; g.lineWidth = 14; g.lineCap = 'round'; for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; g.beginPath(); g.moveTo(110, 118); g.lineTo(110 + Math.cos(a) * 70, 118 + Math.sin(a) * 70); g.stroke(); }
-  g.fillStyle = '#5f6b75'; g.font = '800 36px ' + FONT_B; g.fillText('DONGHWA APARTMENT', 560, 222); }), {alpha:true, rough:.6}));
+  g.fillStyle = '#5f6b75'; g.font = '36px ' + FONT_B; g.fillText('DONGHWA APARTMENT', 560, 222); }), {alpha:true, rough:.6}));
 // (2026-11-17 2차) 문주 기둥을 없애고 차단기만 둔다: 노란 함 + 빨강 · 흰 줄 차단봉 (길을 가로질러 6.3m)
 defineProp('aptGate', {label:'단지 입구 차단기', category:'경계', isNewStyle:true, usage:"W.place('aptGate', {x: 186, z: 137.5, rot: Math.PI / 2});  // 함은 +x 끝, 봉은 -x 쪽으로 6.3m. 이름 벽은 aptNameWall",
   colliders:[{r:[2.85 * U, .85 * U, 3.55 * U, 1.55 * U]}], build(){

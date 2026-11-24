@@ -18,7 +18,7 @@ import { KITE } from '../map/layout.js';
 
 const K = {MIN:1.5, MAX:45, SIZE:2.4, PULL:1.3};                // 높이(게임 단위), 연 배율, 한 번 당길 때 오르는 속도
 const WD = new THREE.Vector3(KITE.wind[0], 0, KITE.wind[1]).normalize(), SIDE = new THREE.Vector3(-WD.z, 0, WD.x);
-const ST_ = KITE.stall, front = (() => { const c = Math.cos(ST_.rot), s = Math.sin(ST_.rot); return {x:ST_.x + 1.3 * s, z:ST_.z + 1.3 * c}; })();
+const FRONTS = KITE.stalls.map(t => ({x:t.x + 1.3 * Math.sin(t.rot), z:t.z + 1.3 * Math.cos(t.rot)}));   // (2026-11-24 21차) 연 가게 둘
 const wind = t => Math.max(.1, Math.min(1, .55 + .3 * Math.sin(t * .21) + .15 * Math.sin(t * .67 + 1)));
 const TOPS = [0xd23c32, 0xe8b02a, 0x3c9a5a, 0x2f5fa8];
 
@@ -43,7 +43,7 @@ function placeFlyer(f, x, y, z, h, t, seed){
   pos.needsUpdate = true;
 }
 // 줄 잡은 오른팔
-function holdArm(ch){ if (!ch) return; const u = ch.userData; u.armR.rotation.x = -1.9; u.armR.rotation.z = .35; }
+function holdArm(ch){ if (!ch) return; const u = ch.userData; u.armL.rotation.x = -1.9; u.armL.rotation.z = -.35; }   // (2026-11-23) 연줄은 오른손(armL = 캐릭터 오른팔)
 
 let mine = null;
 // ── 얼레 (2026-11-21): 연타 대신 '감기'. E(또는 화면 E 버튼)를 누르고 있거나, 얼레 그림을 빙빙 돌리면 줄이 감겨 연이 올라간다.
@@ -78,11 +78,9 @@ const kite = defineActivity({
   id:'kite', st:ST.KITE, free:true,
   get speedMul(){ return S.game && S.game.view ? .7 : .95; },             // (2026-11-22) 연 보기 중에도 천천히 걷는다 (W = 화면 앞)
   setup(){
-    W.place('kiteStall', {x:ST_.x, z:ST_.z, rot:ST_.rot});
-    spotLabel('연날리기', ST_.x, W.groundY(ST_.x, ST_.z) + 3.4, ST_.z);
-    W.mmCircle(ST_.x, ST_.z, 1.6, '#e4572e');
+    KITE.stalls.forEach(t => { W.place('kiteStall', {x:t.x, z:t.z, rot:t.rot}); spotLabel('연날리기', t.x, W.groundY(t.x, t.z) + 3.4, t.z); W.mmCircle(t.x, t.z, 1.6, '#e4572e'); });
   },
-  offer(offer){ const d = Math.hypot(me.x - front.x, me.z - front.z); if (d < 2.6) offer(d, 2.6, '연 받기', kite.start); },
+  offer(offer){ FRONTS.forEach(f => { const d = Math.hypot(me.x - f.x, me.z - f.z); if (d < 2.6) offer(d, 2.6, '연 받기', kite.start); }); },
   start(){
     if (!REEL.el) makeReel();
     begin(kite, {h:3, v:0, best:3, view:false}); me.kt = [3]; REEL.spin = 0;

@@ -87,7 +87,7 @@ defineProp('fireLane', {label:'소방차 전용구역 (바닥 표지)', category
 // ── 음식물 쓰레기통: 회색 몸통, 주황 뚜껑, 바퀴 둘 ──
 const foodTex = () => once('food', () => decalMaterial(canvasTex(256, 256, (g, W, H) => { g.fillStyle = '#f6f4ee'; g.fillRect(0, 0, W, H); g.fillStyle = '#e8742a'; g.fillRect(0, 0, W, 92);
   g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '62px ' + FONT_D; g.fillText('음식물', 128, 50); g.fillStyle = '#2b2f33'; g.font = '62px ' + FONT_D; g.fillText('쓰레기', 128, 142);
-  g.font = '800 22px ' + FONT_B; g.fillStyle = '#6b7278'; g.fillText('물기를 꼭 짜서 버려요', 128, 214); }), {rough:.6}));
+  g.font = '22px ' + FONT_B; g.fillStyle = '#6b7278'; g.fillText('물기를 꼭 짜서 버려요', 128, 214); }), {rough:.6}));
 defineProp('foodWasteBin', {label:'음식물 쓰레기통', category:'분리수거', isNewStyle:true, colliders:[{c:[0, 0, .3 * U]}], build(o = {}){
   const P = new Parts(), lv = [[.1, .19, .215], [.13, .2, .225], [.5, .22, .25], [.84, .238, .272], [.845, .255, .29], [.9, .255, .29]];
   P.add('pla', loft(lv.map(([y, hx, hz]) => roundedRect(hx * 2, hz * 2, .05, 3).map(p => V(p.x, y, p.y)))), 0x8b9297);

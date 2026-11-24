@@ -14,7 +14,7 @@ import { placeTower, TOWER } from '../../props/shopTowers.js';
 import { GROUND, slab, curb, bedStrip, TREES, LAMPS } from '../base.js';   // curb(x0, z0, x1, z1, 높이, 바닥 y)
 import { mulberry } from '../../props/kit.js';
 import { UNIT as U } from '../../config.js';
-import { LOOP, SHOPS_N, SHOPS_S, CROSS_N, CROSS_S, NL_SHOPS, PIT, BIG, BENCHES, PHONES, FOUNTAIN, SNOW, STN_AT } from '../layout.js';
+import { LOOP, SHOPS_N, SHOPS_S, CROSS_N, CROSS_S, NL_SHOPS, NL_BEDS, PIT, BIG, BENCHES, PHONES, FOUNTAIN, SNOW, STN_AT, GONGGI } from '../layout.js';
 import { placeBig, MEAT, MART, BATH } from '../../props/bigShops.js';
 import { flatXZ, lathe } from '../../core/meshkit.js';
 import { paverMaterial, concreteMaterial } from '../../core/texkit.js';
@@ -154,7 +154,7 @@ export default {
       // 벤치: 광장 안 분수를 보고 넷 + 동서 길 양옆 여덟 (길을 본다)
       // (2026-11-21) 광장 벤치는 둥글게: 네 귀퉁이에 둘씩, 분수를 본다
       [45, 135, 225, 315].flatMap(a0 => [-13, 13].map(d => (a0 + d) * PI / 180)).forEach(a => BENCHES.push({x:F.x + Math.cos(a) * 10.2, z:F.z + Math.sin(a) * 10.2, rot:Math.atan2(-Math.cos(a), -Math.sin(a))}));
-      [-29, -20, 20, 29].forEach(dx => { BENCHES.push({x:F.x + dx, z:F.z - hw - 1.2, f:1}); BENCHES.push({x:F.x + dx, z:F.z + hw + 1.2, f:-1}); });
+      [-29, 29].forEach(dx => { BENCHES.push({x:F.x + dx, z:F.z - hw - 1.2, f:1}); BENCHES.push({x:F.x + dx, z:F.z + hw + 1.2, f:-1}); });   // (2026-11-24 21차) 동서 길 벤치 여덟 → 넷
       // 가로등: 광장 네 귀 + 길 따라
       [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => W.place('parkLamp', {x:F.x + sx * 8.6, z:F.z + sz * 8.6}));
       [[-24.5, -hw - 1.3], [24.5, -hw - 1.3], [-34, hw + 1.3], [34, hw + 1.3], [hw + 1.3, -19], [-hw - 1.3, 19]].forEach(([dx, dz]) => W.place('parkLamp', {x:F.x + dx, z:F.z + dz}));
@@ -166,7 +166,7 @@ export default {
     // (2026-11-17) 낮춘 마당 안의 나무 · 정자는 없앴다. 옹벽 밑(지금까지 벤치가 있던 자리)은 계단 둘레를 비우고 모두 화단, 벤치는 안쪽 네모 길로
     pitBeds();
     // (2026-11-18 2차) 피크닉 테이블은 없앴다 (너무 현대적)
-    [[301, 143.3, 1], [343, 143.3, 1], [287, 193.4, -1], [329, 193.4, -1], [371, 193.4, -1]].forEach(([x, z, f]) => BENCHES.push({x, z, f}));
+    // (2026-11-24 21차) 낮춘 마당 가장자리(옹벽 앞) 벤치 다섯은 없앴다
     // (2026-11-17) 공원 둘레 보도 벤치: 입구(계단 머리 · 횡단보도)를 피해, 등은 화단 쪽
     [238, 250, 278, 290, 356, 370, 402].forEach(x => BENCHES.push({x, z:210.95, f:-1}));   // (2026-11-20) 남쪽 입구가 북쪽과 같아져 벤치 자리도 북쪽과 같게                 // 남쪽 뒷길 북쪽 보도: 화단 띠 앞, 공원 쪽을 본다
     [238, 250, 278, 290, 356, 370, 402].forEach(x => BENCHES.push({x, z:130.9, f:-1}));                  // 윗길 남쪽 보도: 공원 둘레 화단 앞, 길 쪽을 본다
@@ -176,7 +176,8 @@ export default {
     // 북쪽 상가 3채 자리 (2026-11-16 삭제): 나무 화단과 벤치를 둔 쉼터
     // (2026-11-17) 북쪽 쉼터 화단은 모두 같은 모양: 폭 20, 가운데 가로등, 양옆 나무 둘, 앞에 벤치 둘 (동쪽 육교 계단 x 408~411은 비움)
     // (2026-11-22 15차) 상가 · 문구점이 들어와 동쪽 둘만 남긴다 (386 → 390: 초록 동과 간격). 나머지 자리는 벽돌 바닥
-    [390, 423].forEach((x, i) => { bedStrip(x - 10, 98.5, x + 10, 106.5); [-6, 6].forEach((d, k) => tree(x + d, 102.5, 1, i + k)); LAMPS.push({x, z:102.5, y:.21});
+    // (2026-11-24 21차) 상가 묶음이 공원 가운데로 가며 육교와 상가 묶음 사이를 화단으로 채운다 (NL_BEDS, 폭에 맞춰 나무 간격)
+    NL_BEDS.forEach(([x, w], i) => { bedStrip(x - w / 2, 98.5, x + w / 2, 106.5); [-1, 1].forEach((d, k) => tree(x + d * (w / 2 - 4), 102.5, 1, i + k)); LAMPS.push({x, z:102.5, y:.21});
       [x - 4.2, x + 4.2].forEach(bx => BENCHES.push({x:bx, z:106.95, f:1})); });   // 등은 화단, 앉으면 공원 쪽 길을 본다
     // ── 고깃집 · 마트 (정면 북쪽) + 뒤 주차장 ──
     bigShopsAndLots();
@@ -188,6 +189,8 @@ export default {
     W.mmLabel(STN_AT.x, STN_AT.z + 1, '문구점', 9);
     // (16차) 게임존 · 키링존 이름표: 미니맵과 떠 있는 이름표 (놀이 중에는 숨는다)
     { const c = Math.cos(STN_AT.rot), s = Math.sin(STN_AT.rot); STATIONERY_ZONES.forEach(([t, lx, lz, h]) => { const x = STN_AT.x + (lx * c + lz * s) * U, z = STN_AT.z + (-lx * s + lz * c) * U; W.mmLabel(x, z, t, 7); spotLabel(t, x, h || 4.3, z); }); }
+    // (2026-11-23 3차) 공기놀이 마당: 공원 동쪽 잔디 (딱지 대결 마당 남쪽)
+    { const y = W.groundY(GONGGI.x, GONGGI.z); W.place('gonggiSet', {x:GONGGI.x, z:GONGGI.z, y}); spotLabel('공기놀이', GONGGI.x, y + 3.4, GONGGI.z); W.mmLabel(GONGGI.x, GONGGI.z, '공기놀이', 7); }
     // 공중전화 부스 둘: 문구점 동쪽 옆에 나란히, 열린 쪽이 남쪽 (2026-11-22 15차)
     W.placeMany('phoneBooth', PHONES.slice(3, 5));
   },

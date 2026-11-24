@@ -278,12 +278,13 @@ export function buildRiverside(){
   // 산책로 가로등 · 물가 쪽 나무
   /* (2026-11-17) 물가 길 · 갈대 쪽 나무(z 330)는 없앴다 */
   run(20, 120, 14).forEach((x, i) => pine(x, i % 2 ? 299.6 : 330.6, i));   // 눈밭 가장자리 (가운데는 눈덩이 과녁 마당)
-  // 얼음 썰매장: 평평한 얼음판(미끄럽다), 둘레 조명. (2026-11-20 2차) 판자 벽은 없애고 낮은 고무 테두리(밟고 지나간다)만 둔다
+  // 얼음 썰매장: 평평한 얼음판(미끄럽다). (2026-11-20 2차) 판자 벽은 없애고 낮은 고무 테두리(밟고 지나간다)만 둔다
   { const S = SLED, yI = by + .06, H = .95 * U, T = .25;
     slab('ice', S.x0, S.z0, S.x1, S.z1, yI); W.addSlippery((x, z) => x > S.x0 && x < S.x1 && z > S.z0 && z < S.z1); W.addHeight((x, z) => x > S.x0 && x < S.x1 && z > S.z0 && z < S.z1 ? yI : null, 1);
     const edge = (x0, z0, x1, z1) => GROUND.add('board', box(x0, by, z0, x1, by + .09, z1, .03), 0x2f6fb5);
     edge(S.x0, S.z0, S.x1, S.z0 + T); edge(S.x0, S.z1 - T, S.x1, S.z1); edge(S.x0, S.z0 + T, S.x0 + T, S.z1 - T); edge(S.x1 - T, S.z0 + T, S.x1, S.z1 - T);
-    run(S.x0 + 10, S.x1 - 10, 23).forEach(x => { lamps.push({x, z:S.z0 - 1.6, y:by}); lamps.push({x, z:S.z1 + 1.6, y:by}); });
+    // (2026-11-24 21차) 둘레 조명은 없애고, 썰매장 북쪽 벤치 마당의 벤치 둘 사이(x 260 · 300 · 340 · 380)에 가로등 하나씩
+    [260, 300, 340, 380].forEach(x => lamps.push({x, z:284 + 1.75, y:by}));
     W.mmRect(S.x0, S.z0, S.x1, S.z1, '#d6e8f2'); W.mmLabel((S.x0 + S.x1) / 2, S.zc, '얼음 썰매장', 13);
 }
 }

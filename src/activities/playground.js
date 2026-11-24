@@ -23,8 +23,17 @@ const V = new THREE.Vector3(), atLocal = (obj, x, y, z) => { obj.updateMatrixWor
 const yawToward = (fx, fz, tx, tz) => Math.atan2(tx - fx, tz - fz);
 
 // ── 시소 (2026-11-20 2차: 두 대) ──
-const saws = SEESAWS.map(c => ({c, base:null, beam:null, th:SEESAW_M.tilt, busy:[false, false], used:[false, false]}));
+// (2026-11-24) 게이지: 내 쪽이 바닥에 닿을 때(초록 칸) E로 땅을 차면 세기가 오르고 더 높이 오르내린다. 가득 차면 몸이 위로 붕 떴다가 앉는다.
+//   혼자 타도 세기만큼 시소가 오르내린다. 둘이 타면 예전처럼 번갈아 오르내리고, 바늘은 내 쪽 높이를 따른다.
+const saws = SEESAWS.map(c => ({c, base:null, beam:null, th:SEESAW_M.tilt, busy:[false, false], used:[false, false], amp:[0, 0]}));
 const ssSeat = (q, i) => atLocal(q.beam, (i ? 1 : -1) * SEESAW_M.seat * UNIT, SEESAW_M.seatY * UNIT, 0);
+const ssPhase = phaser(2.4, .5, 1.3);
+const ssAmp = w => w === me ? PUMP.amp : (w.sa === undefined ? 0 : w.sa);
+const POP = {T:.95, H:1.6};   // 뜨는 시간(초) · 높이(m)
+let popT = 0;
+const popY = (t0, now) => { const t = (now - t0) / (POP.T * 1000); return t > 0 && t < 1 ? POP.H * UNIT * 4 * t * (1 - t) : 0; };
+// 내 쪽이 얼마나 바닥에 가까운가 (1 = 바닥): 바늘 · 누를 때 판정
+function ssLow(){ const q = saws[me.seat >> 1], i = me.seat & 1, M = SEESAW_M.tilt; return (1 + (i ? -1 : 1) * q.th / M) / 2; }
 // (x, z)에서 가장 가까운 시소 자리 → [시소, 자리]
 function ssNearest(x, z){ let best = null, bd = 1e9; saws.forEach(q => [0, 1].forEach(i => { const p = ssSeat(q, i), d = Math.hypot(x - p.x, z - p.z); if (d < bd) { bd = d; best = [q, i, p, d]; } })); return best; }
 defineActivity({
@@ -33,22 +42,35 @@ defineActivity({
     saws.forEach(q => { const c = q.c; q.base = W.place('seesaw', {x:c.x, z:c.z, rot:c.rot, s:c.s, part:'base'});
       q.beam = buildProp('seesaw', {part:'beam'}); q.beam.position.y = SEESAW_M.pivot * UNIT; q.base.add(q.beam); q.beam.rotation.z = q.th; });
     SIT.set(ST.SEESAW, {arm:-1.0, y:.06});
-    POSES.set(ST.SEESAW, (w, ch) => {
+    POSES.set(ST.SEESAW, (w, ch, now) => {
       const [q, i] = w === me ? [saws[me.seat >> 1], me.seat & 1] : ssNearest(w.x, w.z), p = ssSeat(q, i);
-      ch.position.set(p.x, p.y - .5, p.z); ch.rotation.set(0, q.c.rot + (i ? -PI / 2 : PI / 2), 0); q.busy[i] = true; w.y = p.y - .5;
+      // 뜨는 중: 나는 popT, 다른 사람은 세기 100이 보이는 동안
+      let up = 0;
+      if (w === me) up = popT ? popY(popT, now) : 0;
+      else { if (w.sa >= .995) { if (!w.ssPop) w.ssPop = now; up = popY(w.ssPop, now); } else w.ssPop = 0; }
+      ch.position.set(p.x, p.y - .5 + up, p.z); ch.rotation.set(0, q.c.rot + (i ? -PI / 2 : PI / 2), 0); q.busy[i] = true; q.amp[i] = ssAmp(w); w.y = p.y - .5 + up;
     });
   },
   offer(offer){
     const n = ssNearest(me.x, me.z); if (!n) return; const [q, i, p, d] = n;
     if (d < 3.2 && !seatTaken(p.x, p.z, ST.SEESAW)) offer(d, 3.2, '시소 타기', () => {
-      me.st = ST.SEESAW; me.seat = saws.indexOf(q) * 2 + i; me.x = p.x; me.z = p.z;
-      me.onStand = () => { const s = ssSeat(q, i); me.x = s.x + Math.sin(q.c.rot) * 1.5; me.z = s.z + Math.cos(q.c.rot) * 1.5; me.y = undefined; };
+      me.st = ST.SEESAW; me.seat = saws.indexOf(q) * 2 + i; me.x = p.x; me.z = p.z; popT = 0;
+      pumpStart(.15, () => ssLow() > .78, '시소', '땅 차기', () => { if (popT) return; popT = performance.now(); sfx(300, 760, .3, 'triangle', .06); });
+      me.onStand = () => { const s = ssSeat(q, i); me.x = s.x + Math.sin(q.c.rot) * 1.5; me.z = s.z + Math.cos(q.c.rot) * 1.5; me.y = undefined; popT = 0; pumpStop(); };
     });
   },
   frame(dt, now){
     saws.forEach((q, k) => { q.used[0] = q.busy[0]; q.used[1] = q.busy[1]; q.busy[0] = q.busy[1] = false;
-      const M = SEESAW_M.tilt, both = q.used[0] && q.used[1], target = both ? M * Math.sin(now / 1000 * 1.7 + k) : q.used[1] ? -M : M;   // 앉은 쪽이 내려간다 (왼쪽 자리 = -x = 기울기 +)
-      q.th += (target - q.th) * Math.min(1, dt * (both ? 8 : 3)); q.beam.rotation.z = q.th; });
+      const M = SEESAW_M.tilt, both = q.used[0] && q.used[1];
+      let target = M;   // 아무도 없으면 왼쪽(-x)이 내려앉은 채
+      if (both) target = M * Math.sin(now / 1000 * 1.7 + k);
+      else if (q.used[0] || q.used[1]) { const i = q.used[1] ? 1 : 0, a = q.amp[i], b = (1 - Math.cos(ssPhase(k, now, a))) / 2;   // 앉은 쪽이 내려간다 (왼쪽 자리 = -x = 기울기 +)
+        target = (i ? -M : M) * (1 - 2 * Math.min(1, .15 + a) * b); }
+      q.th += (target - q.th) * Math.min(1, dt * (both ? 8 : 6)); q.beam.rotation.z = q.th; });
+    if (me.st === ST.SEESAW) {
+      pumpFrame(dt, ssLow());
+      if (popT) { if (now - popT > POP.T * 1000) { popT = 0; PUMP.amp = .5; } else { PUMP.amp = 1; me.sa = [100]; } }   // 뜨는 동안 세기 100 (다른 사람 화면에서도 뜬다)
+    }
   },
 });
 
@@ -72,7 +94,7 @@ defineActivity({
   offer(offer){
     const i = dkNearest(me.x, me.z), d = DUCKS[i], dd = Math.hypot(me.x - d.x, me.z - d.z);
     if (dd < 2.6 && !seatTaken(d.x, d.z, ST.DUCK)) offer(dd, 2.6, '오리 타기', () => { me.st = ST.DUCK; me.seat = i; me.x = d.x; me.z = d.z;
-      pumpStart(.2, () => Math.sin(dkPhase(i, performance.now(), PUMP.amp)) > .78, '오리', '오리가 앞으로 숙일 때 밀어요.');
+      pumpStart(.2, () => Math.sin(dkPhase(i, performance.now(), PUMP.amp)) > .78, '오리');
       me.onStand = () => { me.x = d.x + Math.cos(d.rot) * 1.6; me.z = d.z - Math.sin(d.rot) * 1.6; me.y = undefined; if (me.char) me.char.rotation.order = 'XYZ'; pumpStop(); }; });
   },
   frame(dt, now){
@@ -120,12 +142,12 @@ defineActivity({
   frame(dt, now){
     MG.w *= Math.exp(-.35 * dt); if (MG.w < .01) MG.w = 0;
     MG.ang += MG.w * dt; MG.obj.rotation.y = MG.ang;
-    // 미는 사람: 오른팔을 앞으로 (2026-11-23 놀이 손은 오른손, 왼손은 흔드는 손), 밀 때마다 몸을 숙인다
+    // 미는 사람: 오른팔(armL)을 앞으로 (2026-11-23 놀이 손은 오른손, 왼손 armR은 흔드는 손), 밀 때마다 몸을 숙인다
     const lean = c => { const e = (performance.now() - (c.pushT || 0)) / 1000; return e < .25 ? .35 * Math.sin(e / .25 * PI) : 0; };
     // (2026-11-22) 미는 사람이 등으로 미는 것처럼 보이던 것: 기울기를 세계 x축이 아니라 몸 기준(YXZ)으로 줘서 얼굴 쪽(앞)으로 숙인다
-    if (me.st === ST.SPIN && me.char) { const u = me.char.userData; u.armR.rotation.x = -1.35; me.char.rotation.order = 'YXZ'; me.char.rotation.x = lean(me); }
+    if (me.st === ST.SPIN && me.char) { const u = me.char.userData; u.armL.rotation.x = -1.35; me.char.rotation.order = 'YXZ'; me.char.rotation.x = lean(me); }
     else if (me.char && me.st !== ST.DUCK && me.char.rotation.order !== 'XYZ') me.char.rotation.order = 'XYZ';
-    else if (me.st === ST.RIDE && me.char) { const u = me.char.userData; u.armR.rotation.x = -1.1; }
+    else if (me.st === ST.RIDE && me.char) { const u = me.char.userData; u.armL.rotation.x = -1.1; }
   },
   remote(R, p){
     R.mgPhi = p.mg[1];
@@ -134,7 +156,7 @@ defineActivity({
   },
   remoteFrame(R){
     if (!R.char) return; const u = R.char.userData;
-    if (R.st === ST.SPIN) { u.armR.rotation.x = -1.35; const e = (performance.now() - (R.pushT || 0)) / 1000; R.char.rotation.order = 'YXZ'; R.char.rotation.x = e < .25 ? .35 * Math.sin(e / .25 * PI) : 0; }
-    else if (R.st === ST.RIDE) u.armR.rotation.x = -1.1;
+    if (R.st === ST.SPIN) { u.armL.rotation.x = -1.35; const e = (performance.now() - (R.pushT || 0)) / 1000; R.char.rotation.order = 'YXZ'; R.char.rotation.x = e < .25 ? .35 * Math.sin(e / .25 * PI) : 0; }
+    else if (R.st === ST.RIDE) u.armL.rotation.x = -1.1;
   },
 });

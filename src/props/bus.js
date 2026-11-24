@@ -44,7 +44,7 @@ function atlas(){
     { const [x, y, w, h] = R_.side; g.fillStyle = '#f7f7f2'; g.fillRect(x, y, w, h); g.fillStyle = '#1f6a45'; g.fillRect(x, y, 230, h);
       g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.font = '150px ' + FONT_D; g.fillText('01', x + 115, y + 130);
       g.fillStyle = '#20252b'; g.textAlign = 'left'; g.font = '58px ' + FONT_D; g.fillText('동화마을 ↔ 강변공원', x + 262, y + 70);
-      g.font = '800 34px ' + FONT_B; g.fillStyle = '#4b5560'; g.fillText('동화아파트 · 동화상가 · 동화역 · 강변', x + 264, y + 150);
+      g.font = '34px ' + FONT_B; g.fillStyle = '#4b5560'; g.fillText('동화아파트 · 동화상가 · 동화역 · 강변', x + 264, y + 150);
       g.strokeStyle = '#1f6a45'; g.lineWidth = 6; g.beginPath(); g.moveTo(x + 264, y + 205); g.lineTo(x + 800, y + 205); g.stroke();
       for (let i = 0; i < 6; i++) { g.fillStyle = '#ffffff'; g.beginPath(); g.arc(x + 274 + i * 104, y + 205, 13, 0, 7); g.fill(); g.stroke(); } }
     // 회사 글씨 (투명 바탕): 몸통 옆에 붙인다

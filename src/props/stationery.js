@@ -12,6 +12,7 @@ import { assemble, quad, quadZ, mulberry } from './kit.js';
 import { UNIT, FONT_D, FONT_B } from '../config.js';
 import { drawRpsFace, RPS_W, RPS_H } from './rpsArt.js';
 import { drawStationeryWide, drawStationeryTall } from './signArt/otherSigns.js';
+import { textSignMat } from './shops.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z), U = UNIT;
 const once = (() => { const m = new Map(); return (k, f) => { if (!m.has(k)) m.set(k, f()); return m.get(k); }; })();
@@ -29,12 +30,12 @@ const signMat = () => once('stSign', () => decalMaterial(canvasTex(2048, 272, g 
   g.fillStyle = '#f7f6ee'; g.fillRect(0, 0, 2048, 272); g.fillStyle = '#e9e27a'; g.fillRect(0, 0, 470, 272); g.fillRect(1578, 0, 470, 272);
   g.strokeStyle = '#b9b48a'; g.lineWidth = 6; g.strokeRect(3, 3, 2042, 266); [470, 1578].forEach(x => { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, 272); g.stroke(); });
   g.fillStyle = '#2a2f36'; g.textBaseline = 'middle'; g.textAlign = 'center';
-  g.font = '700 50px ' + FONT_B; ['문구 · 완구', '팬 시', '액세서리'].forEach((t, i) => g.fillText(t, 235, 62 + i * 76));
-  g.font = '700 56px ' + FONT_B; g.fillText('복 사', 1690, 92); g.fillText('코 팅', 1690, 188);
+  g.font = '50px ' + FONT_B; ['문구 · 완구', '팬 시', '액세서리'].forEach((t, i) => g.fillText(t, 235, 62 + i * 76));
+  g.font = '56px ' + FONT_B; g.fillText('복 사', 1690, 92); g.fillText('코 팅', 1690, 188);
   g.fillText('사 진', 1910, 92); g.fillText('인 화', 1910, 188);
   g.fillStyle = '#1f2a44'; g.font = '190px ' + FONT_D; g.fillText('별빛', 760, 118); g.font = '118px ' + FONT_D; g.fillText('문구', 1310, 82); g.fillText('슈퍼', 1310, 196);
   g.fillStyle = '#d83a2e'; g.beginPath(); g.arc(1110, 82, 24, 0, 7); g.fill(); g.fillStyle = '#c0392b'; g.fillRect(1100, 70, 20, 4);
-  g.fillStyle = '#1f2a44'; g.font = '800 46px ' + FONT_B; g.textAlign = 'left'; g.fillText('T. 123-4567', 600, 232);
+  g.fillStyle = '#1f2a44'; g.font = '46px ' + FONT_B; g.textAlign = 'left'; g.fillText('T. 123-4567', 600, 232);
 }), {rough:.55}));
 
 // ───────── 건물 몸체: 붉은 벽돌 2층, 1층 앞이 통째로 열린 가게 (폭 11m, 깊이 7m, 높이 7.2m) ─────────
@@ -105,8 +106,8 @@ defineProp('stationeryShop', {label:'문구점 건물 (별빛문구)', category:
     // 왼쪽 2층 작은 창, 옆벽 창
     P.add('gls', box(-4.6, 4.9, hd - .12, -3.6, 5.7, hd - .1), 0x33424e); con(box(-4.68, 4.8, hd - .02, -3.52, 4.9, hd + .08), 0xd8d6cf);
     [-1, 1].forEach(s => P.add('gls', box(s * hw - (s > 0 ? -.005 : .02), 4.7, -1.2, s * hw + (s > 0 ? .02 : -.005), 5.8, .2), 0x33424e));
-    // 계량기 함, 가스관, 실외기
-    con(box(4.85, 1.2, hd, 5.35, 1.8, hd + .14, .02), 0xa9adb0); P.add('met', tube([V(-hw - .05, .4, 2), V(-hw - .05, 6.3, 2)], .03, {radial:6}), 0xd9b23a);
+    // 가스관, 실외기 (2026-11-23 계량기 함은 앞 창 '뽑기' 포스터를 가려 지웠다)
+    P.add('met', tube([V(-hw - .05, .4, 2), V(-hw - .05, 6.3, 2)], .03, {radial:6}), 0xd9b23a);
     P.add('met', box(-hw - .55, 4.2, -1.5, -hw - .02, 4.85, -.7, .02), 0xe6e8ea); P.add('mat', xf(new THREE.CylinderGeometry(.25, .25, .02, 18), {rz:Math.PI / 2, x:-hw - .56, y:4.52, z:-1.1}), 0x3a3f44);
     // 간판: 1층 위를 가로지르는 큰 판
     P.add('mat', box(-hw + .15, H1 - .4, hd, hw - .15, H1 + 1.15, hd + .16, .02), 0x3a3f45);
@@ -149,7 +150,7 @@ defineProp('shopAwning', {label:'줄무늬 차양', category:'문구점', isNewS
 const GACHA_C = [0xd83a2e, 0x2f6fb5, 0xf2b632, 0xe8742a, 0x3f8a5a, 0xb0558a];
 const gachaLabel = () => once('gachaLabel', () => decalMaterial(canvasTex(512, 128, g => { const T = ['공룡', '반지', '스티커', '탱탱볼', '캐릭터', '자동차'];
   T.forEach((t, i) => { const x = (i % 4) * 128, y = Math.floor(i / 4) * 64; g.fillStyle = ['#fff3a8', '#ffd1dc', '#c8f0ff', '#d8ffc8', '#ffe0b0', '#e8d8ff'][i]; g.fillRect(x, y, 128, 64);
-    g.fillStyle = '#d83a2e'; g.font = '800 15px ' + FONT_B; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('500원', x + 64, y + 16); g.fillStyle = '#20252b'; g.font = '26px ' + FONT_D; g.fillText(t, x + 64, y + 44); }); }), {rough:.5}));
+    g.fillStyle = '#d83a2e'; g.font = '15px ' + FONT_B; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('500원', x + 64, y + 16); g.fillStyle = '#20252b'; g.font = '26px ' + FONT_D; g.fillText(t, x + 64, y + 44); }); }), {rough:.5}));
 defineProp('gachaRow', {label:'뽑기 기계 줄', category:'문구점', isNewStyle:true, colliders:[{r:[-1.05 * U, -.3 * U, 1.05 * U, .3 * U]}],
   variants:[{label:'두 대', opts:{n:2}}],
   usage:"W.place('gachaRow', {x, z, rot, n: 4});  // 한 대 폭 0.42m, 받침대 높이 0.42m", build(o = {}){
@@ -181,7 +182,7 @@ const arcadeScreen = () => once('arcScreen', () => new THREE.MeshBasicMaterial({
   g.fillStyle = '#ffffff'; g.font = '700 22px monospace'; g.fillText('1UP 001200', 14, 26);
   // 아래 절반: 제목판 (지어낸 게임 이름)
   const gr = g.createLinearGradient(0, 256, 0, 512); gr.addColorStop(0, '#ff4f8a'); gr.addColorStop(1, '#ffb23f'); g.fillStyle = gr; g.fillRect(0, 256, 512, 256);
-  g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '120px ' + FONT_D; g.fillText('별똥별', 256, 370); g.font = '800 34px ' + FONT_B; g.fillText('우주 대작전', 256, 460); })}));
+  g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '120px ' + FONT_D; g.fillText('별똥별', 256, 370); g.font = '34px ' + FONT_B; g.fillText('우주 대작전', 256, 460); })}));
 defineProp('miniArcade', {label:'작은 오락기', category:'문구점', isNewStyle:true, colliders:[{r:[-.33 * U, -.3 * U, .33 * U, .3 * U]}],
   variants:[{label:'파랑', opts:{c:0x2f6fb5}}, {label:'노랑', opts:{c:0xf2b632}}],
   usage:"W.place('miniArcade', {x, z, rot, c});  // 폭 0.62m, 높이 1.3m. 앞(+z)에 낮은 걸상을 둔다", build(o = {}){
@@ -223,15 +224,45 @@ defineProp('rpsMachine', {label:'가위바위보 오락기', category:'문구점
     const face = new THREE.Mesh(quadZ(-hw + .01, y0 + .1, hw - .01, y1 - .01, .152, [0, 0, 1, 1]), rpsFace());   // 앞판 그림 (600 × 480 비율에 가깝게)
     return assemble(P, [['pnt', plasticMaterial({rough:.36})], ['pla', plasticMaterial({rough:.22}), false], ['snw', snowMaterial({seed:78}), false]], [.66, 1.45, .45], [face]); }});
 
-// ───────── 공기놀이 자리 (2026-11-23): 빨간 방석 + 플라스틱 공기알 다섯 ─────────
-//   공기알은 실제(지름 약 2cm)보다 두 배 크게 해서 멀리서도 보이게. 방석 0.55m 정사각, 두께 4cm
-defineProp('gonggiSet', {label:'공기놀이 방석', category:'문구점', isNewStyle:true, small:true,
-  usage:"W.place('gonggiSet', {x, z, rot});  // 방석 0.55m, 공기알 5 (놀이: activities/arcade.js 공기놀이)", build(){
+// ───────── 공기놀이 마당 (2026-11-23 2차): 3m 돗자리 + 큰 공기알 다섯 ─────────
+//   돗자리는 엮은 짚 무늬 그림(지어낸 것) 한 장, 가장자리 천 띠. 공기알은 멀리서도 보이게 지름 약 13cm로 크게
+const ggMat = () => once('ggMat', () => decalMaterial(canvasTex(512, 512, g => { g.fillStyle = '#e2c27a'; g.fillRect(0, 0, 512, 512);
+  for (let y = 0; y < 512; y += 8) { g.fillStyle = (y / 8) % 2 ? 'rgba(150,110,40,.22)' : 'rgba(255,240,190,.25)'; g.fillRect(0, y, 512, 4); }
+  g.fillStyle = 'rgba(120,80,30,.35)'; for (let x = 0; x < 512; x += 64) g.fillRect(x, 0, 3, 512);
+  g.strokeStyle = '#b8282e'; g.lineWidth = 26; g.strokeRect(13, 13, 486, 486); g.strokeStyle = '#2f6fb5'; g.lineWidth = 6; g.strokeRect(34, 34, 444, 444);
+  g.strokeStyle = 'rgba(184,40,46,.55)'; g.lineWidth = 5; g.beginPath(); g.arc(256, 256, 120, 0, 7); g.stroke(); }), {rough:.9}));
+defineProp('gonggiSet', {label:'공기놀이 마당 (돗자리)', category:'문구점', isNewStyle:true, small:true, groundPreview:true,
+  usage:"W.place('gonggiSet', {x, z, rot});  // 돗자리 3m, 공기알 5 (놀이: activities/arcade.js 공기놀이)", build(){
     const P = new Parts(), R = mulberry(31), C = [0xe8402a, 0xf2c51f, 0x2f8fd6, 0x5fb24a, 0xb05bd6];
-    P.add('cus', box(-.275, 0, -.275, .275, .04, .275, .015), 0xb8282e); P.add('cus', box(-.2, .0405, -.2, .2, .042, .2, .002), 0xd8c07a);   // 방석 + 가운데 수 무늬 판
-    C.forEach((c, i) => { const a = i / 5 * Math.PI * 2 + R() * .4, r = .08 + R() * .1; P.add('pla', xf(new THREE.IcosahedronGeometry(.022, 0), {x:Math.cos(a) * r, y:.058, z:Math.sin(a) * r, rx:R() * 3, ry:R() * 3}), c); });
-    P.bake('cus', groundAO(.03, .75));
-    return assemble(P, [['cus', matteMaterial()], ['pla', plasticMaterial({rough:.3}), false]], [.55, .08, .55]); }});
+    P.add('cus', box(-1.5, 0, -1.5, 1.5, .025, 1.5, .01), 0xc9a964);
+    C.forEach((c, i) => { const a = i / 5 * Math.PI * 2 + R() * .5, r = .3 + R() * .4; P.add('pla', xf(new THREE.IcosahedronGeometry(.08, 0), {x:Math.cos(a) * r, y:.088, z:Math.sin(a) * r, rx:R() * 3, ry:R() * 3}), c); });
+    P.bake('cus', groundAO(.02, .8));
+    const top = new THREE.Mesh(quad([-1.49, .0262, 1.49], [1.49, .0262, 1.49], [1.49, .0262, -1.49], [-1.49, .0262, -1.49], [0, 0, 1, 1]), ggMat());
+    return assemble(P, [['cus', matteMaterial()], ['pla', plasticMaterial({rough:.3}), false]], [3, .17, 3], [top]); }});
+
+// ───────── 놀이 자리 바닥 표시 (2026-11-24 21차): 기계 앞 서는 자리에 회색 네모 + E 키 그림. 여기 서면 놀 수 있다는 표시 ─────────
+const padMat = (w, d) => once('pad' + w + 'x' + d, () => decalMaterial(canvasTex(Math.round(256 * w / d), 256, g => {
+  const W = g.canvas.width, H = g.canvas.height;
+  g.fillStyle = 'rgba(72,76,82,.86)'; g.fillRect(0, 0, W, H);
+  g.strokeStyle = 'rgba(236,234,228,.92)'; g.lineWidth = 9; g.strokeRect(16, 16, W - 32, H - 32);
+  g.fillStyle = '#e3a53b'; g.fillRect(16, 16, W - 32, 12);                                     // 기계 쪽(위) 끝에 호박색 띠
+  g.strokeStyle = '#fff'; g.lineWidth = 7; g.strokeRect(W / 2 - 52, 78, 104, 104);             // E 키
+  g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '84px ' + FONT_D; g.fillText('E', W / 2, 134);
+}), {alpha:true, rough:.85}));
+defineProp('playPad', {label:'놀이 자리 바닥 표시', category:'문구점', isNewStyle:true, small:true, groundPreview:true,
+  usage:"W.place('playPad', {x, z, y, rot, w: .85, d: .8});  // 기계 앞 서는 자리 (위쪽 띠가 기계 쪽)", build(o = {}){
+    const w = o.w || .85, d = o.d || .8;
+    const top = new THREE.Mesh(quad([-w / 2, .004, d / 2], [w / 2, .004, d / 2], [w / 2, .004, -d / 2], [-w / 2, .004, -d / 2], [0, 0, 1, 1]), padMat(w, d));
+    return assemble(new Parts(), [], [w, .004, d], [top]); }});
+
+// ───────── 게임 설명판 (2026-11-23): 오락기 · 뽑기 · 가위바위보 위에 얹는 작은 판 (게임 이름 + 한 줄 설명) ─────────
+defineProp('gameBoard', {label:'게임 설명판', category:'문구점', isNewStyle:true, small:true,
+  usage:"W.place('gameBoard', {x, z, y, rot, text, sub, bg, fg, w: .9, h: .42});  // 기계 위에 얹는다", build(o = {}){
+    o = {text:'벽돌 깨기', sub:'공을 튕겨 벽돌 부수기', bg:'#3b1d1a', fg:'#ffb74d', ...o};   // (2026-11-24) 갤러리처럼 글 없이 부를 때의 기본값
+    const w = o.w || .9, h = o.h || .42, P = new Parts();
+    P.add('frm', box(-w / 2, 0, -.03, w / 2, h, .03, .012), 0x2d3238);
+    const face = new THREE.Mesh(quadZ(-w / 2 + .025, .025, w / 2 - .025, h - .025, .031), textSignMat(o, false, (w - .05) / (h - .05)));
+    return assemble(P, [['frm', matteMaterial()]], [w, h, .06], [face]); }});
 
 // ───────── 구역 표지 (2026-11-22): '게임존' · '키링존' ─────────
 //   zoneSign: 기둥 둘 + 불 들어오는 간판 상자(테두리에 전구). 앞(+z)에 글. 폭 w(기본 2.2m), 높이 2.95m.
@@ -239,7 +270,7 @@ defineProp('gonggiSet', {label:'공기놀이 방석', category:'문구점', isNe
 const zoneFace = (text, sub, bg, fg) => once('zf' + text, () => decalMaterial(canvasTex(1024, 288, g => {
   g.fillStyle = bg; g.fillRect(0, 0, 1024, 288); g.strokeStyle = fg; g.lineWidth = 10; g.strokeRect(22, 22, 980, 244);
   g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '150px ' + FONT_D; g.lineJoin = 'round'; g.strokeStyle = '#1b1b1b'; g.lineWidth = 16; g.strokeText(text, 512, 128); g.fillStyle = fg; g.fillText(text, 512, 128);
-  g.font = '700 40px ' + FONT_B; g.fillStyle = '#ffffff'; g.fillText(sub, 512, 236);
+  g.font = '40px ' + FONT_B; g.fillStyle = '#ffffff'; g.fillText(sub, 512, 236);
 }), {rough:.4}));
 defineProp('zoneSign', {label:'구역 표지 (불 간판)', category:'문구점', isNewStyle:true, colliders:[{c:[-1, 0, .08 * U]}, {c:[1, 0, .08 * U]}],
   variants:[{label:'게임존', opts:{text:'게임존'}}, {label:'키링존', opts:{text:'키링존', bg:'#c2185b', sub:'가위바위보 · 뽑기'}}],
@@ -323,19 +354,23 @@ defineProp('hulaHoops', {label:'훌라후프 걸이', category:'문구점', isNe
 // ───────── 조립: 건물 + 앞에 놓는 물건. 맵에 놓을 때도 이 좌표대로 따로 놓는다 ─────────
 // [소품, 옵션, x, y, z, 회전] (미터, 건물 원점 기준, 가게 앞이 +z)
 export const STATIONERY_LAYOUT = [
-  ['stationeryShop', {}, 0, 0, 0], ['shopAwning', {w:9.6}, 0, 0, STN.D / 2 + .02],
-  // (2026-11-23) 오락기들은 가게 앞 한 줄로 (바닥 매트 · 불 간판은 없앴다. 이름표만 위에 뜬다)
-  //   왼쪽(서): 은하 대작전 오락기(파랑) · 벽돌 깨기 오락기(빨강) + 걸상 = 게임존. 가운데 음료 냉장고. 오른쪽(동): 뽑기 기계 줄 · 가위바위보 오락기 = 키링존
-  ['miniArcade', {c:0x2f6fb5}, -4.6, 0, 4.15], ['miniArcade', {c:0xd83a2e}, -3.75, 0, 4.15], ['kidStool', {}, -4.6, 0, 4.95], ['kidStool', {}, -3.75, 0, 4.95],
-  ['drinkFridge', {}, -2.2, 0, 3.98], ['gachaRow', {n:4}, 1.2, 0, 4.25], ['rpsMachine', {}, 3.35, 0, 4.12],
+  ['stationeryShop', {}, 0, 0, 0],   // (2026-11-24) 차양막은 뺐다 (기계 · 설명판을 가렸다)
+  // (2026-11-23 3차) 놀이 기계는 1.3배 크기 그대로 가게 앞벽에 붙인다 (z 3.88m, 등이 벽). 가운데 문(x -2.6 ~ 2.6)은 비운다.
+  //   기계마다 위에 게임 설명판(gameBoard)을 단다 (예전 '게임존' · '키링존' 이름표 대신).
+  //   왼쪽(서): 벽돌 깨기(빨강) · 은하 대작전(파랑) + 걸상 · 음료 냉장고. 오른쪽(동): 뽑기 기계 셋 · 가위바위보
+  ['miniArcade', {c:0xd83a2e, s:1.3}, -3.06, 0, 3.88], ['miniArcade', {c:0x2f6fb5, s:1.3}, -4.01, 0, 3.88], ['drinkFridge', {}, -4.97, 0, 3.85],
+  ['kidStool', {}, -3.06, 0, 4.78], ['kidStool', {}, -4.01, 0, 4.78],
+  // (2026-11-24 21차) 기계 앞 서는 자리 바닥 표시 (오락기 둘 · 뽑기 줄 · 가위바위보)
+  ['playPad', {w:.85, d:.8}, -4.01, 0, 4.78], ['playPad', {w:.85, d:.8}, -3.06, 0, 4.78], ['playPad', {w:1.75, d:.8}, 3.54, 0, 4.83], ['playPad', {w:.85, d:.8}, 5.0, 0, 4.81],
+  ['gachaRow', {n:3, s:1.3}, 3.54, 0, 3.88], ['rpsMachine', {s:1.3}, 5.0, 0, 3.86],
   ['hulaHoops', {}, -5.85, 0, 3.65],
-  //   가게 동쪽 옆: 공기놀이 자리 (방석 + 공기알 다섯). 아이스크림 냉장고는 마트 앞으로 옮겼다
-  ['gonggiSet', {}, 7.2, 0, 2.4]];
-// 놀이 자리 (activities/arcade.js): 건물 원점 기준 미터, 기계 위치와 방향 r. 사람은 기계 앞(+z를 r만큼 돌린 쪽) 0.8m에 선다
-export const STATIONERY_ARCADES = [{kind:'cab', game:1, x:-4.6, z:4.15}, {kind:'cab', game:2, x:-3.75, z:4.15}, {kind:'gacha', x:1.2, z:4.25}, {kind:'rps', x:3.35, z:4.12},
-  {kind:'gonggi', x:7.2, z:2.4, r:Math.PI / 2}];
-// 떠 있는 이름표 (건물 원점 기준 미터, 높이는 게임 단위): 미니맵 · 이름표. 간판을 가리지 않게 간판 위(2층 벽 앞)에 띄운다
-export const STATIONERY_ZONES = [['게임존', -4.2, 5.4, 6.3], ['키링존', 2.3, 5.4, 6.3], ['공기놀이', 7.2, 2.4, 3.4]];
+  ['gameBoard', {text:'벽돌 깨기', sub:'공을 튕겨 벽돌 부수기', bg:'#3b1d1a', fg:'#ffb74d', w:.9}, -3.06, 1.93, 3.88],
+  ['gameBoard', {text:'은하 대작전', sub:'비행기로 외계 함대 쏘기', bg:'#14213d', fg:'#7fd3ff', w:.9}, -4.01, 1.93, 3.88],
+  ['gameBoard', {text:'행운 뽑기', sub:'손잡이 돌려 키링 뽑기 · 8가지', bg:'#a3154a', fg:'#ffe9a0', w:1.7}, 3.54, 1.76, 3.88],
+  ['gameBoard', {text:'가위바위보', sub:'기계를 이기면 키링 상품', bg:'#173f9e', fg:'#ffd23f', w:.9}, 5.0, 1.91, 3.86]];
+// 놀이 자리 (activities/arcade.js): 건물 원점 기준 미터, 기계 위치와 방향 r. 사람은 기계 앞(+z를 r만큼 돌린 쪽) d m(기본 0.8)에 선다. 공기놀이는 공원(layout.js GONGGI)
+export const STATIONERY_ARCADES = [{kind:'cab', game:1, x:-4.01, z:3.88, d:.9}, {kind:'cab', game:2, x:-3.06, z:3.88, d:.9}, {kind:'gacha', x:3.54, z:3.88, d:.95}, {kind:'rps', x:5.0, z:3.86, d:.95}];
+export const STATIONERY_ZONES = [];   // (2026-11-23 3차) '게임존' · '키링존' 이름표는 빼고 기계마다 설명판(gameBoard)을 단다
 export const STATIONERY_PLAY = {ttakji:[-2.2, 6.9]};     // 딱지치기 자리 (건물 원점 기준, 미터)
 defineProp('stationeryCorner', {label:'문구점 (조립 예시)', category:'문구점', isNewStyle:true, blocksCamera:true,
   usage:"STATIONERY_LAYOUT.forEach(([n, o, x, y, z, r]) => W.place(n, {...o, x: cx + x * UNIT, y: y * UNIT, z: cz + z * UNIT, rot: r || 0}));", build(){

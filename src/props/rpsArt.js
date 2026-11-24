@@ -74,7 +74,7 @@ export function drawRpsFace(g, st = {}){
   // 동전 넣는 판 (오른쪽)
   g.fillStyle = '#b9bec4'; g.fillRect(468, 120, 104, 220); g.strokeStyle = '#7d848b'; g.lineWidth = 3; g.strokeRect(468, 120, 104, 220);
   g.fillStyle = '#8d949b'; g.beginPath(); g.ellipse(520, 168, 18, 34, 0, 0, 7); g.fill(); g.fillStyle = '#2c2f33'; g.fillRect(516, 140, 8, 56);
-  g.fillStyle = '#26292d'; g.fillRect(488, 214, 64, 20); g.fillStyle = '#e6e6e6'; g.font = '700 14px ' + FONT_B; g.fillText('100원', 520, 225);
+  g.fillStyle = '#26292d'; g.fillRect(488, 214, 64, 20); g.fillStyle = '#e6e6e6'; g.font = '14px ' + FONT_B; g.fillText('100원', 520, 225);
   g.fillStyle = '#9aa0a6'; g.beginPath(); g.arc(520, 290, 26, 0, 7); g.fill(); g.fillStyle = '#5c6268'; g.fillRect(514, 268, 12, 44);
   // 아래 글: 버튼 자리 (x 200 · 300 · 400)
   g.font = '34px ' + FONT_D; [['가위', 200], ['바위', 300], ['보', 400]].forEach(([t, x]) => { g.strokeStyle = '#111'; g.lineWidth = 7; g.strokeText(t, x, 446); g.fillStyle = '#ffd23f'; g.fillText(t, x, 446); });

@@ -38,7 +38,7 @@ export function textSignMat(o, vertical, aspect){
       if (o.accent) { const [a, b, c] = o.accent, tw = g.measureText(o.text).width; let x = W / 2 - tw / 2; g.textAlign = 'left';
         chars.forEach((ch, k) => { g.fillStyle = k >= a && k < b ? c : (o.fg || '#20252b'); T(ch, x, ty, fs * .06); x += g.measureText(ch).width; }); }
       else T(o.text, W / 2, ty, fs * .06);
-      if (o.sub) { g.textAlign = 'center'; g.fillStyle = o.fg || '#20252b'; g.font = '800 ' + Math.round(H * .2) + 'px ' + FONT_B; T(o.sub, W / 2, H * .82, H * .012); } } });
+      if (o.sub) { g.textAlign = 'center'; g.fillStyle = o.fg || '#20252b'; g.font = Math.round(H * .2) + 'px ' + FONT_B; T(o.sub, W / 2, H * .82, H * .012); } } });
   const m = decalMaterial(t, {rough:.6}); textSigns.set(key, m); return m;
 }
 
@@ -115,7 +115,7 @@ defineProp('shopStairs', {label:'상가 계단', category:'상가', isNewStyle:t
 
 // ── 간판 세 가지. 원점은 아래 가운데, 뒤(z = 0)가 벽에 붙는 면 ──
 defineProp('signFascia', {label:'가로 간판', category:'상가', isNewStyle:true, small:true,
-  variants:[{label:'동화마트', opts:{v:0}}, {label:'참새분식', opts:{v:1}}, {label:'새봄약국', opts:{v:3}}, {label:'CBQ치킨', opts:{v:8}}, {label:'왕별노래방', opts:{v:9}}],
+  variants:[{label:'동화마트', opts:{v:0}}, {label:'참새분식', opts:{v:1}}, {label:'새봄약국', opts:{v:3}}, {label:'왕별노래방', opts:{v:9}}],
   usage:"W.place('signFascia', {x, z, y: 3.78 * UNIT, rot: 0, v: 0});  // 4m × 0.75m, v: 0~9 (가게 이름). 글자를 직접: {text, sub, bg, fg, accent, w, h}", build(o = {}){
     const i = (o.v || 0) % SHOPS.length, w = o.w || 4, h = o.h || .75, P = new Parts();
     P.add('mat', box(-w / 2, 0, 0, w / 2, h, .14, .02), 0x2d3238);
@@ -143,7 +143,7 @@ defineProp('signRoof', {label:'옥상 간판', category:'상가', isNewStyle:tru
 // ── 조립 예시: 몸체 + 계단 + 가로 간판 5 + 세로 간판 3 + 옥상 간판. 맵에 놓을 때도 이 좌표대로 따로따로 놓으면 된다 ──
 export const SHOP_LAYOUT = [
   ['shopBuilding', {}, 0, 0, 0], ['shopStairs', {}, 0, 0, SB.Z + SB.TD], ['shopStairs', {w:SB.PW * 2}, 0, 0, -SB.Z, Math.PI], ['signRoof', {}, 0, SB.Y2 + .06, 2.6],   // 여섯째 값은 돌리는 각도 (뒤 계단)
-  ...SB.bays.map((c, i) => ['signFascia', {v:[0, 1, 3, 5, 2][i]}, c, 3.78, SB.Z + .06]).filter(e => e[2] !== 0),
+  ...SB.bays.map((c, i) => ['signFascia', {v:[3, 1, 4, 5, 2][i]}, c, 3.78, SB.Z + .06]).filter(e => e[2] !== 0),   // (2026-11-24) 동화마트 → 새봄약국 ('동화 마트'는 남쪽 큰 마트 이름). 가운데 칸은 통로라 빠진다
   ...[[-6.3, 0], [2.1, 1], [6.3, 4]].map(([x, v]) => ['signVertical', {v}, x, 4.9, SB.Z + .12])];
 defineProp('shopComplex', {label:'상가 (조립 예시)', category:'상가', isNewStyle:true, blocksCamera:true,
   usage:"SHOP_LAYOUT.forEach(([name, o, x, y, z, r]) => W.place(name, {...o, x: cx + x * UNIT, y: y * UNIT, z: cz + z * UNIT, rot: r || 0}));", build(){

@@ -17,7 +17,7 @@ export const POLE_WIRES = [[-1.05, 10.45, .012, 0x2b2e31], [1.05, 10.45, .012, 0
 const rAt = y => POLE.r0 + (POLE.r1 - POLE.r0) * y / POLE.H;
 let plate = null;
 const plateMat = () => plate || (plate = decalMaterial(canvasTex(128, 192, g => { g.fillStyle = '#f4f4ef'; g.fillRect(0, 0, 128, 192); g.strokeStyle = '#1d4f91'; g.lineWidth = 8; g.strokeRect(4, 4, 120, 184);
-  g.fillStyle = '#1d4f91'; g.textAlign = 'center'; g.font = '800 30px ' + FONT_B; g.fillText('동화', 64, 52); g.font = '800 40px ' + FONT_B; g.fillText('3A', 64, 104); g.fillText('127', 64, 156); }), {rough:.6}));
+  g.fillStyle = '#1d4f91'; g.textAlign = 'center'; g.font = '30px ' + FONT_B; g.fillText('동화', 64, 52); g.font = '40px ' + FONT_B; g.fillText('3A', 64, 104); g.fillText('127', 64, 156); }), {rough:.6}));
 
 defineProp('utilityPole', {label:'전봇대', category:'도로', isNewStyle:true, colliders:[{c:[0, 0, .3 * U]}],
   variants:[{label:'변압기', opts:{v:1}}, {label:'통신 단자함', opts:{v:2}}],

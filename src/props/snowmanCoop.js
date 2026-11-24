@@ -14,7 +14,8 @@ import { snowAOMaterial, matteMaterial, plasticMaterial, snowMaterial } from '..
 import { mulberry } from './kit.js';
 import { UNIT } from '../config.js';
 
-export const SNOWMAN = {RB:.85, RH:.55, BALL:.5};   // (2026-11-20 키움) 몸통 · 머리 최대 반지름, 다 굴린 눈덩이 반지름 (미터)   // 몸통 · 머리 최대 반지름, 다 굴린 눈덩이 반지름 (미터)
+// (2026-11-23) 몸통 10개 · 머리 5개로 늘려 크기도 키움: 몸통 = 눈덩이 10개 부피(0.5m × ∛10 ≈ 1.08m), 머리는 예전 비율(몸통의 0.65배)
+export const SNOWMAN = {RB:1.08, RH:.70, BALL:.5};   // (2026-11-20 키움) 몸통 · 머리 최대 반지름, 다 굴린 눈덩이 반지름 (미터)   // 몸통 · 머리 최대 반지름, 다 굴린 눈덩이 반지름 (미터)
 const FLAT_B = -.8, FLAT_H = -.86;                     // 단위 구의 바닥을 이 높이에서 평평하게 자른다 (놓인 면 · 몸통과 맞닿는 면)
 
 // 울퉁불퉁한 단위 구. flat이 있으면 그 아래를 평평하게 눌러 바닥에 앉게 한다.

@@ -119,7 +119,7 @@ defineProp('spiralSlide', {label:'U자 미끄럼틀', category:'놀이터', isNe
     mt(box(dx0, H - .07, dz0, dx1, H, dz1, .012), WOOD); [dx0, dx1].forEach(x => pl(tube([V(x, H - .12, dz0), V(x, H - .12, dz1)], .04, {radial:8}), BLUE)); [dz0, dz1].forEach(z => pl(tube([V(dx0, H - .12, z), V(dx1, H - .12, z)], .04, {radial:8}), BLUE));
     [[dx0, GRN], [dx1, 0xe8742a]].forEach(([x, c]) => { pl(box(x - .025, H + .08, dz0 + .08, x + .025, H + .95, dz1 - .08, .014), c); pl(tube([V(x, H + 1.05, dz0), V(x, H + 1.05, dz1)], .03, {radial:8}), RED); });
     [[dx0, T => T[0]], [dx1, T => T[2]]].forEach(([x, f]) => pl(box(Math.min(x, f(S.stair)), H + .08, dz1 - .025, Math.max(x, f(S.stair)), H + .95, dz1 + .025, .014), YEL));
-    pl(tube([V(dx0, H + 1.35, dz0), V(dx1, H + 1.35, dz0)], .032, {radial:8}), RED);                                           // 출발 손잡이 봉
+    // (2026-11-24) 출발 쪽 위 빨간 손잡이 봉은 내려갈 때 앞을 가려 뺐다
     pl(xf(new THREE.ConeGeometry(1.55, .95, 4), {ry:PI / 4, x:cx, y:H + 2.6, z:cz}), RED); P.add('snw', xf(new THREE.ConeGeometry(1.42, .9, 4), {ry:PI / 4, x:cx, y:H + 2.72, z:cz}));
     pl(xf(new THREE.SphereGeometry(.09, 10, 8), {x:cx, y:H + 3.2, z:cz}), YEL);
     // 계단: 디딤판 18장, 옆판, 난간
@@ -140,9 +140,9 @@ const boothTex = () => once('booth', () => decalMaterial(canvasTex(512, 512, (g,
   g.fillStyle = '#ef8a2c'; g.fillRect(0, 128, 256, 256); g.fillStyle = '#fff'; g.beginPath(); g.arc(128, 208, 52, 0, 7); g.fill(); g.fillStyle = '#ef8a2c'; g.font = '54px ' + FONT_D; g.fillText('☎', 128, 212);
   g.fillStyle = '#fff'; g.font = '44px ' + FONT_D; g.fillText('공중전화', 128, 322);
   g.fillStyle = '#fbfbf7'; g.fillRect(256, 128, 256, 256); g.fillStyle = '#c8362c'; g.fillRect(256, 128, 256, 56); g.fillStyle = '#fff'; g.font = '34px ' + FONT_D; g.fillText('긴급 전화 무료', 384, 158);
-  g.fillStyle = '#2c3136'; g.font = '800 26px ' + FONT_B; ['화재 · 구조  119', '범죄 신고  112', '동전 · 카드 겸용'].forEach((t, i) => g.fillText(t, 384, 224 + i * 48));
+  g.fillStyle = '#2c3136'; g.font = '26px ' + FONT_B; ['화재 · 구조  119', '범죄 신고  112', '동전 · 카드 겸용'].forEach((t, i) => g.fillText(t, 384, 224 + i * 48));
   // 전화기 앞면 (맨 아래)
-  g.fillStyle = '#9aa2a8'; g.fillRect(0, 384, 256, 128); g.fillStyle = '#20262b'; g.fillRect(24, 398, 120, 36); g.fillStyle = '#7fd08a'; g.font = '800 20px ' + FONT_B; g.fillText('카드를 넣으세요', 84, 417);
+  g.fillStyle = '#9aa2a8'; g.fillRect(0, 384, 256, 128); g.fillStyle = '#20262b'; g.fillRect(24, 398, 120, 36); g.fillStyle = '#7fd08a'; g.font = '20px ' + FONT_B; g.fillText('카드를 넣으세요', 84, 417);
   for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) { g.fillStyle = '#e9ecee'; g.fillRect(30 + c * 38, 444 + r * 16, 30, 12); }
   g.fillStyle = '#f08a2a'; g.fillRect(168, 398, 70, 100); g.fillStyle = '#2a2f34'; g.fillRect(182, 408, 42, 14);
 }), {rough:.55}));

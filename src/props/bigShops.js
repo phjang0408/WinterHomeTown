@@ -142,7 +142,7 @@ defineProp('cartCorral', {label:'카트 보관대', category:'큰 가게', isNew
 
 // ───────── 주차장 표지: 기둥 위 파란 'P' 판 ─────────
 const pMat = () => once('pSign', () => decalMaterial(canvasTex(256, 320, g => { g.fillStyle = '#1d5fb8'; g.fillRect(0, 0, 256, 320); g.strokeStyle = '#fff'; g.lineWidth = 10; g.strokeRect(10, 10, 236, 300);
-  g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '190px ' + FONT_D; g.fillText('P', 128, 130); g.font = '800 40px ' + FONT_B; g.fillText('고객 주차장', 128, 262); })));
+  g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '190px ' + FONT_D; g.fillText('P', 128, 130); g.font = '40px ' + FONT_B; g.fillText('고객 주차장', 128, 262); })));
 defineProp('parkingSign', {label:'주차장 표지', category:'큰 가게', isNewStyle:true, small:true, colliders:[{c:[0, 0, .2 * U]}],
   usage:"W.place('parkingSign', {x, z, rot});  // 높이 2.6m, 판이 +z를 본다", build(){
     // (2026-11-17) 기둥은 판 뒤(-z)로 빼고, 판은 두께 6cm 상자로: 앞에서 기둥이 판을 가리지 않는다
@@ -154,7 +154,7 @@ defineProp('parkingSign', {label:'주차장 표지', category:'큰 가게', isNe
 export const BIG_SIGNS = {
   meat:[['signFascia', {text:'솔밭 숯불갈비', sub:'생갈비 · 양념갈비 · 삼겹살', bg:'#2b2420', fg:'#f4e3c3', accent:[3, 7, '#ffb74d'], w:9.5, h:1.0}, -3.6, 3.45, 5.12],
     ['signFascia', {text:'점심 특선', bg:'#b71c1c', fg:'#ffffff', w:1.8, h:.5}, -6.8, 2.2, 4.92], ['foodWasteBin', {}, 7.6, 0, 6.2]],   // 주차장 표지는 뒤 주차장 입구(강변도로 쪽)에 둔다
-  mart:[['signFascia', {text:'우리동네 마트', sub:'신선식품 · 생활용품 · 배달', bg:'#1d5fb8', fg:'#ffffff', accent:[0, 4, '#ffeb3b'], w:13, h:1.7}, 0, 4.85, 5.56],
+  mart:[['signFascia', {text:'동화 마트', sub:'신선식품 · 생활용품 · 배달', bg:'#1d5fb8', fg:'#ffffff', accent:[0, 2, '#ffeb3b'], w:13, h:1.7}, 0, 4.85, 5.56],
     ['signFascia', {text:'24시', bg:'#ffeb3b', fg:'#1d5fb8', w:1.6, h:1.0}, 8.4, 5.2, 5.56],
     ['fruitStand', {}, -5.2, 0, 6.6], ['fruitStand', {}, -7.4, 0, 6.6], ['cartCorral', {}, 3.8, 0, 7.0, Math.PI / 2], ['shoppingCart', {}, 6.4, 0, 6.6, -.4], ['drinkFridge', {}, 8.6, 0, 6.2], ['drinkFridge', {}, 9.5, 0, 6.2],
     ['iceFreezer', {}, -9.6, 0, 6.4]],   // (2026-11-23) 아이스크림 냉장고는 문구점 앞에서 마트 앞(과일 좌판 서쪽)으로

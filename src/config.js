@@ -5,14 +5,14 @@ export const RAD = 0.45;         // 캐릭터 충돌 반지름
 export const UNIT = 1 / 0.85;    // 1미터 = 약 1.18 게임 단위 (게임 1단위 ≈ 0.85m). 소품은 미터로 만들고 이 값을 곱한다.
 // 글꼴 (Google Fonts, 무료). 간판·제목은 굵은 견고딕 느낌의 블랙한산스, 작은 글씨·본문은 돋움 느낌의 나눔고딕.
 // 블랙한산스는 굵기가 하나뿐이라 굵기(700 등)를 붙이지 않는다 (붙이면 브라우저가 억지로 더 굵게 그린다).
-export const FONT_D = '"Black Han Sans","Nanum Gothic","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
+export const FONT_D = '"Do Hyeon","Nanum Gothic","Apple SD Gothic Neo","Malgun Gothic",sans-serif';   // (2026-11-24 21차) 제목 글꼴: Black Han Sans → 도현 (덜 굵은 고딕). 본문 FONT_B는 나눔고딕 보통 굵기로 쓴다
 export const FONT_B = '"Nanum Gothic","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
 // 화면 UI 글씨 (2026-11-21): 머리 위 이름표 · 자리 표시 등 3D 안의 UI 글씨도 같은 글꼴
 export const FONT_UI = '"IBM Plex Sans KR","Barlow Condensed","Apple SD Gothic Neo","Malgun Gothic",sans-serif';
 export const FONTS_TO_LOAD = ['600 16px "IBM Plex Sans KR"', '600 16px "Barlow Condensed"', '32px "Black Han Sans"', '16px "Nanum Gothic"', '800 16px "Nanum Gothic"', '32px "Song Myung"', '32px "Do Hyeon"', '32px "Jua"', '32px "Gugi"', '32px "Yeon Sung"', '700 32px "Gaegu"', '500 32px "Sunflower"', '700 32px "Sunflower"', '700 32px "Nanum Myeongjo"', '800 32px "Nanum Myeongjo"', '900 32px "Gothic A1"'];   // (2026-11-23) 간판 그림 글꼴 (props/signArt/)
 
-export const ADJ = ['킹왕짱','폭풍간지','떡실신','완소','엽기','폼생폼사','숭구리당당','뽀대나는','zI존','지못미','뭥미','뽐뿌'];
-export const NOUN = ['차도남','초글링','초딩','본좌','도토리','허접','쌈짱','얼짱','뷁','잉여','일촌'];
+export const ADJ = ['킹왕짱','폭풍간지','떡실신한','완소','엽기','폼생폼사','뽀대나는','zI존','지못미'];
+export const NOUN = ['차도남','초글링','초딩','본좌','도토리','허접','쌈짱','얼짱','잉여','일촌','엄친아','꽃미남'];
 export const COLORS = [
   {j:0xd9695c,h:0xf4ecd8,css:'#d9695c'},{j:0x3f8a97,h:0xf2c66d,css:'#3f8a97'},
   {j:0xe2a84b,h:0x5b6f8c,css:'#e2a84b'},{j:0x6f86b8,h:0xf3d9d2,css:'#6f86b8'},
