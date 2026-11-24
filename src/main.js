@@ -33,10 +33,13 @@ import './props/aptStreet.js';
 import { W } from './world/world.js';
 import { initPerf } from './ui/perf.js';
 const FAR = {snowDrift:110, grassTuft:90, reedClump:150, tactileStrip:90, wheelStop:90, laneDelineator:120, noParkingSign:100, foodWasteBin:100, shrubBall:150, shrubCluster:150,
-  planterIsland:150, hedgeRow:180, parkLamp:220, roadFence:200, railFence:160, bench:150, bikeShelter:170, carSedan:220, carSUV:220, carMini:220, truck1t:220, deliveryVan:220,
+  planterIsland:150, hedgeRow:180, parkLamp:220, roadFence:200, railFence:160, bench:150, bikeShelter:170, barricade:160, carSedan:220, carSUV:220, carMini:220, truck1t:220, deliveryVan:220,
   bareTree:330, pineTree:330, signFascia:160, signVertical:160};
 Object.entries(FAR).forEach(([n, f]) => { const d = getProp(n); if (d) d.far = f; });
 import { finalizeBatches, spotLabels } from './world/builders.js';
+import { batchStatic } from './world/batch.js';
+import { tagPrims } from './core/gfx.js';
+import { QUALITY } from './core/quality.js';
 import { buildMap } from './map/index.js';
 import { SPAWN } from './map/layout.js';
 import { ACTS, current, findAction, stopActivity } from './activities/index.js';
@@ -118,15 +121,19 @@ function frame(dt, now){
 
 async function boot(){
   try { if (document.fonts && document.fonts.load) await Promise.race([Promise.all(FONTS_TO_LOAD.map(f => document.fonts.load(f, '겨울동화'))), new Promise(r => setTimeout(r, 1800))]); } catch (e) {}
-  buildMap();
+  tagPrims(true); buildMap(); tagPrims(false);
   ACTS.forEach(a => a.setup && a.setup());
   setupVehicles();
   finalizeBatches();
+  W.lodScale = QUALITY.lod; W.farScale = QUALITY.far;
+  { const t = performance.now(), r = batchStatic(); W.batchInfo = {...r, ms:Math.round(performance.now() - t)}; }   // (2026-11-24) 같은 소품 묶기 · 같은 재질 합치기 (world/batch.js)
   initFootprints(); initSnow();
   dressMe(); drawMiniBase(); bindUi();
   onFrame(frame);
   onFrame(() => W.cull(camera.position), 95);   // 거리 숨김 (카메라가 자리 잡은 뒤)
   onFrame(initPerf(), 99);   // 성능 창 (P 키)
+  // (2026-11-24) 셰이더 미리 짓기: 거리 숨김 · LOD로 가려진 칸까지 잠깐 보이게 하고 한 번에 컴파일한다 → 처음 가는 곳에서 끊기지 않게
+  try { W.cullers.forEach(c => { c.o.visible = true; if (c.lo) c.lo.visible = true; }); renderer.compile(scene, camera); } catch (e) {}
   start();
   if (location.search.includes('debug')) window.__town = {S, me, W, findAction, renderer, scene, usedProps, propNames};   // 개발용: 콘솔에서 상태를 들여다본다
   window.__townReady = true;

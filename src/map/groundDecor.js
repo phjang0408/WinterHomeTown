@@ -91,6 +91,6 @@ export function decorateGround(regions, curbs, trees){
   const a = noise2(907, [32, 64, 128]), b = noise2(908, [8, 16]);
   const map = colorTex(256, 256, (u, v) => { const k = .86 + a(u, v) * .24 + (b(u, v) - .5) * .1; return [k, k, k]; }, [1 / 3, 1 / 3]);
   const mat = new THREE.MeshStandardMaterial({name:'groundDecal', vertexColors:true, transparent:true, depthWrite:false, map, normalMap:normalTex(128, 128, (u, v) => a(u, v), .005, [1 / 2, 1 / 2]), roughness:.92, metalness:0, envMapIntensity:LOOK.envIntensity});
-  const m = new THREE.Mesh(g, mat); m.receiveShadow = true; m.renderOrder = 1; root.add(m);
+  const m = new THREE.Mesh(g, mat); m.receiveShadow = true; m.renderOrder = 1; m.userData.split = {cell:110, far:300}; root.add(m);   // (2026-11-24) 맵 전체 한 장 → 110m 칸으로 잘라 화면 밖 · 먼 칸을 뺀다 (world/batch.js)
   return {blots:idx.length / 3, tufts:tufts.reduce((s, l) => s + l.length, 0), drifts:drifts.reduce((s, l) => s + l.length, 0)};
 }

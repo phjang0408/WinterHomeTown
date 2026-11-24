@@ -124,7 +124,7 @@ defineProp('playSet', {label:'놀이터 조합놀이대', category:'놀이터', 
     return assemble(P, [['pla', plasticMaterial()], ['mat', matteMaterial()], ['gls', plasticMaterial({rough:.15})], ['snw', snowMaterial({seed:43})]], [10.2, 3.3, 7.4]); }});
 
 // ── 흔들 놀이기구: 용수철 위의 오리 ──
-defineProp('springRider', {label:'흔들 놀이기구', category:'놀이터', isNewStyle:true, colliders:[{c:[0, 0, .34 * U]}], usage:"W.place('springRider', {x: 122, z: 166, rot: 1, color: 0xf0b429});", build(o = {}){
+defineProp('springRider', {dynamic:true, label:'흔들 놀이기구', category:'놀이터', isNewStyle:true, colliders:[{c:[0, 0, .34 * U]}], usage:"W.place('springRider', {x: 122, z: 166, rot: 1, color: 0xf0b429});", build(o = {}){
   const P = new Parts(), c = o.color || 0xf0b429, Y = .36;
   const out = new THREE.SplineCurve([[-.44, .06], [-.52, .22], [-.47, .4], [-.34, .33], [-.12, .3], [.06, .36], [.15, .54], [.29, .64], [.44, .58], [.56, .46], [.44, .41], [.4, .3], [.35, .12], [.18, 0], [-.2, -.02], [-.44, .06]].map(p => new THREE.Vector2(p[0], p[1]))).getPoints(60);
   [-.11, .11].forEach(x => P.add('pla', xf(extrudeProfile(new THREE.Shape(out), .035, {bevel:.01, bevelSegments:3}), {x, y:Y}), c));
@@ -138,7 +138,7 @@ defineProp('springRider', {label:'흔들 놀이기구', category:'놀이터', is
 
 // ── 시소 ──  (2026-11-20) 탈 수 있게 받침(part:'base')과 판(part:'beam')을 나눴다. 판은 원점이 축(높이 PIVOT)이고 기울지 않은 채로 만든다.
 export const SEESAW_M = {pivot:.52, seat:1.42, seatY:.075, tilt:.21};   // 축 높이, 앉는 자리 x, 판 위 앉는 높이, 한쪽이 땅(타이어)에 닿는 기울기
-defineProp('seesaw', {label:'시소', category:'놀이터', isNewStyle:true, colliders:[{r:[-1.7 * U, -.3 * U, 1.7 * U, .3 * U]}],
+defineProp('seesaw', {dynamic:true, label:'시소', category:'놀이터', isNewStyle:true, colliders:[{r:[-1.7 * U, -.3 * U, 1.7 * U, .3 * U]}],
   variants:[{label:'받침', opts:{part:'base'}}, {label:'판', opts:{part:'beam'}}], build(o = {}){
   const P = new Parts(), base = o.part !== 'beam', beam = o.part !== 'base';
   const tilt = o.part ? 0 : .13, T = g => { g.rotateZ(tilt); g.translate(0, o.part ? 0 : SEESAW_M.pivot, 0); return g; };

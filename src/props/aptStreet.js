@@ -17,7 +17,7 @@ const litMaterial = () => once('lit', () => new THREE.MeshBasicMaterial({name:'l
 const cyl = (r0, r1, h, seg = 12) => new THREE.CylinderGeometry(r0, r1, h, seg);
 
 // ── 회전놀이기구 (뺑뺑이): 무늬 강판 원판, 가운데 기둥, 스테인리스 손잡이 틀 여섯 개 ──
-defineProp('merryGoRound', {label:'회전놀이기구', category:'놀이터', isNewStyle:true, colliders:[{c:[0, 0, 1.3 * U]}],
+defineProp('merryGoRound', {dynamic:true, label:'회전놀이기구', category:'놀이터', isNewStyle:true, colliders:[{c:[0, 0, 1.3 * U]}],
   usage:"W.place('merryGoRound', {x: 92, z: 168});  // 지름 2.5m", build(){
     const P = new Parts(), R = 1.25, Y = .3, HT = 1.0, st = (g, c = STEEL) => P.add('met', g, c);
     P.add('dsk', xf(cyl(R, R, .045, 48), {y:Y - .022}), 0xffffff); st(xf(new THREE.TorusGeometry(R, .034, 8, 48), {rx:PI / 2, y:Y - .022}));

@@ -22,8 +22,9 @@ const ARM = [[.27, 0], [.268, .18], [.271, .38], [.275, .5], [.27, .6], [.235, .
 const REAR = [[-.30, 0], [-.272, .2], [-.228, .37], [-.19, .43]];
 
 const DETAIL = {
-  low:      {seg:2, k:.6, tex:.5},
-  standard: {seg:3, k:1,  tex:1},
+  far:      {seg:1, k:.3, tex:1, snow:4},    // (2026-11-24) 멀리서 보는 단순 모델 (LOD): 모서리 한 번 깎기, 곡선 마디 30%
+  low:      {seg:2, k:.6, tex:.5, snow:6},
+  standard: {seg:3, k:1,  tex:1,  snow:8},
 };
 
 // 곡선 위 s(미터) 지점의 위치·접선·법선 (법선은 앉는 쪽: 좌판은 위, 등받이는 앞)
@@ -74,12 +75,12 @@ function buildBench(o = {}){
 
   // 눈: 팔걸이 윗면 두 줄 + 등받이 맨 윗 각재 윗변
   const armTop = curveZY(ARM.slice(4).map(([z, y]) => [z, y + RAIL_H / 2 - .002]));
-  const pile = mound(.05, .03, 8), snowParts = [];
+  const pile = mound(.05, .03, D.snow), snowParts = [];
   [-FRAME_X, FRAME_X].forEach(x => { const s = sweep(armTop, pile, {segments:segs(20), up:new THREE.Vector3(-1, 0, 0)}); s.translate(x, 0, 0); snowParts.push(s); });
   const top = frameAt(seat, seatLen, at[5]), up = new THREE.Vector3(0, top.ty, top.tz);
   const edge = new THREE.Vector3(0, top.y + top.ny * SLAT_T / 2 + top.ty * SLAT_W / 2 - .003, top.z + top.nz * SLAT_T / 2 + top.tz * SLAT_W / 2 - .003);
   const ridge = new THREE.LineCurve3(new THREE.Vector3(-LEN / 2 + .05, 0, 0).add(edge), new THREE.Vector3(LEN / 2 - .05, 0, 0).add(edge));
-  snowParts.push(sweep(ridge, mound(.03, .022, 8).map(p => new THREE.Vector2(p.y, p.x)), {segments:8, up}));
+  snowParts.push(sweep(ridge, mound(.03, .022, D.snow).map(p => new THREE.Vector2(p.y, p.x)), {segments:D.snow, up}));
   const snowMesh = new THREE.Mesh(merge(snowParts), snow);
 
   for (const m of [frames, slats, snowMesh]) { m.castShadow = m.receiveShadow = true; inner.add(m); }
@@ -92,5 +93,6 @@ function mulberry(seed){ let t = seed >>> 0; return () => { t = (t + 0x6D2B79F5)
 defineProp('bench', {
   label:'공원 벤치', category:'쉼터', isNewStyle:true,
   colliders:[{r:[-.92 * UNIT, -.34 * UNIT, .92 * UNIT, .33 * UNIT]}],
+  lod:{near:36, opts:{detail:'far'}},   // (2026-11-24) 36m(게임 단위)보다 먼 칸은 단순 모델 (world/batch.js)
   build:buildBench,
 });

@@ -2,11 +2,12 @@
 import * as THREE from '../lib/three.js';
 import { setRoot } from './gfx.js';
 import { setupRenderer, makeLights, makeEnvironment, LOOK } from './look.js';
+import { QUALITY } from './quality.js';
 
 export const canvas = document.getElementById('scene');
-export const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+export const renderer = new THREE.WebGLRenderer({canvas, antialias:QUALITY.aa, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, QUALITY.dpr));   // (2026-11-24) 화질 단계의 배율 상한 (core/quality.js)
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = QUALITY.soft ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
 setupRenderer(renderer);
 
 // 맑은 겨울 낮: 파란 하늘빛이 그늘을 푸르게 물들이고, 낮게 뜬 해가 긴 그림자를 만든다.
@@ -22,15 +23,14 @@ scene.add(hemi, lights.amb);
 export const SUN_OFF = new THREE.Vector3(-70, 78, 75);
 scene.environment = makeEnvironment(renderer, SUN_OFF);   // PBR 소품의 하늘 반사광
 scene.add(sun, sun.target); sun.castShadow = true;
-const small = Math.min(window.innerWidth, window.innerHeight) < 700;
-sun.shadow.mapSize.set(small ? 2048 : 4096, small ? 2048 : 4096);
+sun.shadow.mapSize.set(QUALITY.shadow, QUALITY.shadow);
 sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.14;
 export function shadowRange(r){ const c = sun.shadow.camera; c.left = -r; c.right = r; c.top = r; c.bottom = -r; c.near = 10; c.far = 340; c.updateProjectionMatrix(); }
 shadowRange(280);
 
 export const root = new THREE.Group(); scene.add(root); setRoot(root);
 
-function resize(){
+export function resize(){
   const w = canvas.clientWidth || window.innerWidth, h = canvas.clientHeight || window.innerHeight;
   renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
 }

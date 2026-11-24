@@ -37,7 +37,7 @@ export function layTrack(parent, {x0, x1, z, sx0 = x0, sx1 = x1, y = 0, ballast 
   add(railsGeo(len), M.rail, true); add(railTopGeo(len), M.top, false);
   const n = Math.floor((sx1 - sx0) / U / T.pitch), slp = new THREE.InstancedMesh(sleeperGeo(), M.sleeper, n), plt = new THREE.InstancedMesh(plateGeo(), M.plate, n), m4 = new THREE.Matrix4(), R = mulberry(Math.round(z * 10));
   for (let i = 0; i < n; i++) { const x = (sx0 - (x0 + x1) / 2) / U + (i + .5) * T.pitch + (R() - .5) * .02; m4.makeRotationY((R() - .5) * .012).setPosition(x, 0, 0); slp.setMatrixAt(i, m4); plt.setMatrixAt(i, m4); }
-  [slp, plt].forEach(m => { m.receiveShadow = true; m.castShadow = false; m.computeBoundingSphere(); g.add(m); });
+  [slp, plt].forEach(m => { m.receiveShadow = true; m.castShadow = false; m.computeBoundingSphere(); m.userData.split = {cell:40, far:280}; g.add(m); });   // (2026-11-24) 2,000개 넘는 침목을 40m 칸으로 잘라 먼 칸은 뺀다 (world/batch.js)
   return g;
 }
 defineProp('trackModule', {label:'선로 (10m 한 토막)', category:'간이역', isNewStyle:true,

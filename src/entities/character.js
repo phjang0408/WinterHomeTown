@@ -1,6 +1,7 @@
 // 캐릭터 모델과 애니메이션. 내 캐릭터와 다른 사람 캐릭터가 같이 쓴다.
 import * as THREE from '../lib/three.js';
 import { M, box, mesh } from '../core/gfx.js';
+import { merge } from '../core/meshkit.js';
 import { PI, TAU } from '../core/util.js';
 import { COLORS } from '../config.js';
 import { W } from '../world/world.js';
@@ -12,6 +13,22 @@ export const GEO = {
   scarf:new THREE.TorusGeometry(.31,.1,8,16).rotateX(PI / 2), ball:new THREE.IcosahedronGeometry(1,1), tiny:new THREE.SphereGeometry(.12,6,5),
   pack:new THREE.BoxGeometry(.44,.5,.2),
 };
+
+// (2026-11-24 최적화) 통째로 움직이는 묶음(몸통 · 팔 · 다리)마다, 그 바로 아래 단색 Lambert 메쉬들을 정점 색 한 메쉬로 합친다.
+//   사람 하나가 그리기 15회(+그림자 15회)에서 5회(+5회)로 준다. 노점 사람(npc.js)도 쓴다. 나중에 붙이는 것(키링 · 들고 있는 것)은 그대로 따로 붙는다.
+const RIG = new THREE.MeshLambertMaterial({vertexColors:true});
+export function bakeRig(g){
+  const groups = []; g.traverse(o => { if (o.isGroup) groups.push(o); });
+  for (const grp of groups) {
+    const ms = grp.children.filter(m => m.isMesh && !m.isInstancedMesh && m.visible && m.material && m.material.isMeshLambertMaterial && !m.material.map && !m.material.transparent);
+    if (ms.length < 2) continue;
+    const geos = ms.map(m => { m.updateMatrix(); const ge = m.geometry.clone().applyMatrix4(m.matrix), c = m.material.color, n = ge.attributes.position.count, a = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) { a[i * 3] = c.r; a[i * 3 + 1] = c.g; a[i * 3 + 2] = c.b; } ge.setAttribute('color', new THREE.BufferAttribute(a, 3)); return ge; });
+    const one = new THREE.Mesh(merge(geos), RIG); one.castShadow = ms.some(m => m.castShadow); one.receiveShadow = ms.some(m => m.receiveShadow);
+    ms.forEach(m => grp.remove(m)); grp.add(one); geos.forEach(ge => ge.dispose());
+  }
+  return g;
+}
 
 // 앉은 자세로 그릴 상태 코드와, 위치를 직접 정하는 특수 자세(그네 등). 놀이 모듈이 등록한다.
 export const SIT = new Map();     // st → {arm, y} 앉은 자세의 팔 각도와 몸 높이
@@ -31,7 +48,7 @@ export function makeChar(ci){
   mesh(GEO.beanie, jm, 0, 1.7, 0, inner); mesh(GEO.brim, hm, 0, 1.72, 0, inner); mesh(GEO.pom, hm, 0, 2.16, 0, inner);
   const extras = new THREE.Group(); g.add(extras);   // 썰매처럼 상태에 따라 붙는 것
   g.userData = {inner, legL, legR, armL, armR, extras, phase:0, amp:0, em:null};
-  return g;
+  return bakeRig(g);
 }
 
 export function animChar(ch, dt, moved, st, now){

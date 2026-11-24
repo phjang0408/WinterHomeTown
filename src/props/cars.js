@@ -10,7 +10,12 @@ import { carPaintMaterial, glassMaterial, matteMaterial, snowMaterial, decalMate
 import { quad, quadZ } from './kit.js';
 import { UNIT, FONT_D } from '../config.js';
 
-const V = (x, y, z) => new THREE.Vector3(x, y, z), K = 3;
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+// (2026-11-24) 멀리서 보는 단순 모델(LOD): o.lod이면 단면 고리 간격 2.5배, 바퀴 둘레 마디 절반. 짓는 동안만 바꾼다.
+//   모서리 마디 K는 그대로 둔다 (기둥 · 지붕판이 고리 점 번호로 붙어서).
+const K = 3; let LO = 0;
+const dz = v => LO ? v * 2.5 : v;
+function detail(o, f){ if (!o.lod) return f(); LO = 1; try { return f(); } finally { LO = 0; } }
 const RED = 0xc6281f;
 export const C = {glass:0x1d2730, tire:0x1d1f22, dark:0x14171a, trim:0x2b2f34, rim:0xc3c9ce, head:0xeef3f6, tail:0xb5261f, amber:0xe59a2b, plate:0xf3f3ef, chrome:0xd9dee2, hub:0xb4bac0, spoke:0xa3aab1};
 
@@ -42,8 +47,8 @@ function strut(a, b, w, t){ const g = new THREE.BoxGeometry(t, a.distanceTo(b), 
 // 바퀴 하나 (바깥면이 +x). 타이어는 무광, 휠은 광택.
 export function wheel(P, x, y, z, R, w, sideSign){
   const place = g => { g.rotateZ(-Math.PI / 2); if (sideSign < 0) g.rotateY(Math.PI); g.translate(x, y, z); return g; };
-  P.add('mat', place(lathe([[R - .085, -w / 2], [R - .02, -w / 2], [R, -w / 2 + .028], [R, w / 2 - .028], [R - .02, w / 2], [R - .085, w / 2], [R - .095, w / 2 - .03]], 16)), C.tire);
-  P.add('gls', place(lathe([[0, w / 2 - .012], [.05, w / 2 - .012], [.07, w / 2 - .03], [R - .13, w / 2 - .05], [R - .1, w / 2 - .028], [R - .09, w / 2 - .01]], 14)), C.rim);
+  P.add('mat', place(lathe([[R - .085, -w / 2], [R - .02, -w / 2], [R, -w / 2 + .028], [R, w / 2 - .028], [R - .02, w / 2], [R - .085, w / 2], [R - .095, w / 2 - .03]], LO ? 8 : 16)), C.tire);
+  P.add('gls', place(lathe([[0, w / 2 - .012], [.05, w / 2 - .012], [.07, w / 2 - .03], [R - .13, w / 2 - .05], [R - .1, w / 2 - .028], [R - .09, w / 2 - .01]], LO ? 7 : 14)), C.rim);
   P.add('gls', place(new THREE.CylinderGeometry(R - .088, R - .088, w - .024, 18)), C.hub);                                       // 휠 속을 옅은 회색으로 채운다 (안쪽에서도 뚫려 보이지 않게)
   for (let i = 0; i < 5; i++) { const g = new THREE.RingGeometry(.085, R - .135, 3, 1, i * Math.PI * .4 + .12, Math.PI * .4 - .34); g.rotateX(-Math.PI / 2); g.translate(0, w / 2 - .034, 0); P.add('gls', place(g), C.spoke); }
   P.add('gls', place(xf(new THREE.CylinderGeometry(.05, .055, .02, 12), {y:w / 2 - .006})), C.spoke);                             // 가운데 캡
@@ -80,8 +85,10 @@ function finish(P, D, decal, o, size){
   g.userData.info = {tris:triCount(g), draws:inner.children.length, materials:inner.children.length, sizeMeters:size};
   return g;
 }
-// 눈 이불: 윗면 점들(가로로 5개)을 따라 도톰하게 덮는다
+// 눈 이불: 윗면 점들(가로로 5개)을 따라 도톰하게 덮는다. (2026-11-24) 고리가 한 줄뿐이면(LOD 단순 모델) 덮지 않는다
+const snowOn = (P, g) => { if (g) P.add('snw', g); };
 export function blanket(rows, thick, seed){
+  if (rows.length < 2) return null;
   const m = rows.length, rings = rows.map((r, i) => { const u = i / (m - 1), k = Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, u))), .45) * (.82 + .18 * Math.sin(r[0].z * 9 + seed));
     const low = r.map(p => p.clone().setY(p.y + .004)), up = r.map((p, j) => V(p.x * .96, p.y + .012 + thick * k * (j === 0 || j === r.length - 1 ? .45 : 1), p.z)); return low.concat(up.reverse()); });
   return loft(rings);
@@ -91,11 +98,11 @@ export function blanket(rows, thick, seed){
 function passenger(S, o){
   const P = new Parts(), D = new Parts(), hw = prof(S.hw), top = prof(S.top), bot = prof(S.bot), roof = prof(S.roof), z0 = S.hw[0][0], z1 = S.hw[S.hw.length - 1][0], seed = o.v || 0;
   const Ra = S.R + .075, arch = z => { let y = 0; for (const a of S.axles) { const d = Math.abs(z - a); if (d < Ra) y = Math.max(y, S.R + Math.sqrt(Ra * Ra - d * d)); } return y; };
-  const body = steps(z0, z1, .07).map(z => ring(z, hw(z), Math.max(bot(z), arch(z)), top(z), S.rt, .045, S.crown));
+  const body = steps(z0, z1, dz(.07)).map(z => ring(z, hw(z), Math.max(bot(z), arch(z)), top(z), S.rt, .045, S.crown));
   P.add('pnt', loft(body), 0xffffff);
   // 유리 온실 + 지붕판 + 모서리 기둥(A필러~지붕 옆선~C필러)
   const g0 = S.roof[0][0], g1 = S.roof[S.roof.length - 1][0], rmax = Math.max(...S.roof.map(p => p[1]));
-  const gh = steps(g0, g1, .075).map(z => { const y0 = top(z) - .035, yr = Math.max(roof(z), y0 + .012); return ghRing(z, hw(z) - .045, y0, yr, S.tumble * (yr - y0) / (rmax - y0), S.rc, .015); });
+  const gh = steps(g0, g1, dz(.075)).map(z => { const y0 = top(z) - .035, yr = Math.max(roof(z), y0 + .012); return ghRing(z, hw(z) - .045, y0, yr, S.tumble * (yr - y0) / (rmax - y0), S.rc, .015); });
   P.add('gls', loft(gh), C.glass);
   const rz = gh.filter(r => r[0].z >= S.roofRange[0] && r[0].z <= S.roofRange[1]);
   P.add('pnt', loft(rz.map(r => r.slice(3, 8).map(p => p.clone().setY(p.y + .012))), {closed:false, facing:V(0, 1, 0)}), 0xffffff);
@@ -143,9 +150,9 @@ function passenger(S, o){
   P.add('mat', box(-hm + S.w + .05, bot(0) + .015, z0 + .25, hm - S.w - .05, top(0) - .1, z1 - .25), C.dark);
   // 눈: 지붕, 보닛, 트렁크
   if (o.snow !== 0) { const th = o.snow === undefined ? 1 : o.snow;
-    P.add('snw', blanket(rz.slice(1, -1).map(r => r.slice(3, 8)), .065 * th, seed));
-    P.add('snw', blanket(body.filter(r => r[0].z > g1 + .1 && r[0].z < z1 - .3).map(r => r.slice(7, 12)), .04 * th, seed + 3));
-    if (!S.suv && !S.hatch) P.add('snw', blanket(body.filter(r => r[0].z > z0 + .12 && r[0].z < g0 - .04).map(r => r.slice(7, 12)), .04 * th, seed + 5)); }
+    snowOn(P, blanket(rz.slice(1, -1).map(r => r.slice(3, 8)), .065 * th, seed));
+    snowOn(P, blanket(body.filter(r => r[0].z > g1 + .1 && r[0].z < z1 - .3).map(r => r.slice(7, 12)), .04 * th, seed + 3));
+    if (!S.suv && !S.hatch) snowOn(P, blanket(body.filter(r => r[0].z > z0 + .12 && r[0].z < g0 - .04).map(r => r.slice(7, 12)), .04 * th, seed + 5)); }
   return finish(P, D, plateMat(S.plates[seed % S.plates.length]), o, [hm * 2, rmax, z1 - z0]);
 }
 const SEDAN = {R:.325, w:.215, axles:[-1.34, 1.4], rt:.07, crown:.012, tumble:.16, rc:.09, roofRange:[-1.16, .52], pillars:[-.22], seams:[1.02, -.22, -1.18], handles:[.0, -1.0], mirror:.98,
@@ -172,9 +179,9 @@ const CAB = {R:.3, w:.2, z0:.82, z1:2.5, hwv:.86, hw:prof([[.82, .86], [2.2, .86
 function cabover(o, kind){
   const P = new Parts(), D = new Parts(), S = CAB, Ra = S.R + .07, seed = o.v || 0, hm = S.hwv;
   const arch = z => { const d = Math.abs(z - S.axle); return d < Ra ? S.R + Math.sqrt(Ra * Ra - d * d) : 0; };
-  const body = steps(S.z0, S.z1, .055).map(z => ring(z, S.hw(z), Math.max(S.bot(z), arch(z)), S.top(z), .05, .04, .008));
+  const body = steps(S.z0, S.z1, dz(.055)).map(z => ring(z, S.hw(z), Math.max(S.bot(z), arch(z)), S.top(z), .05, .04, .008));
   P.add('pnt', loft(body), 0xffffff);
-  const gh = steps(.84, 2.47, .05).map(z => { const y0 = S.top(z) - .03, yr = Math.max(S.roof(z), y0 + .012); return ghRing(z, S.hw(z) - .04, y0, yr, .09 * (yr - y0) / .8, .1, .012); });
+  const gh = steps(.84, 2.47, dz(.05)).map(z => { const y0 = S.top(z) - .03, yr = Math.max(S.roof(z), y0 + .012); return ghRing(z, S.hw(z) - .04, y0, yr, .09 * (yr - y0) / .8, .1, .012); });
   P.add('gls', loft(gh), C.glass);
   const rz = gh.filter(r => r[0].z >= .9 && r[0].z <= 2.06);
   P.add('pnt', loft(rz.map(r => r.slice(3, 8).map(p => p.clone().setY(p.y + .012))), {closed:false, facing:V(0, 1, 0)}), 0xffffff);
@@ -222,7 +229,7 @@ function cabover(o, kind){
     const q = s => { const x = s * (bx + .004), a = s > 0 ? .65 : -2.55, b = s > 0 ? -2.55 : .65; return quad([x, .82, a], [x, .82, b], [x, 2.42, b], [x, 2.42, a], [0, 0, 1, .5]); };
     D.add('d', q(1)); D.add('d', q(-1));
   }
-  [-1, 1].forEach(s => { if (o.snow !== 0) P.add('snw', blanket(rz.slice(1, -1).map(r => r.slice(3, 8)), .06, seed + s)); });
+  [-1, 1].forEach(s => { if (o.snow !== 0) snowOn(P, blanket(rz.slice(1, -1).map(r => r.slice(3, 8)), .06, seed + s)); });
   const truck = kind === 'truck', logo = truck ? null : {key:'logo', draw(g){ g.save(); g.translate(0, 512);
     g.fillStyle = '#f6f4ee'; g.fillRect(0, 378, 1024, 74); g.fillStyle = '#f0b429'; g.fillRect(0, 462, 1024, 14);
     g.strokeStyle = '#fff'; g.lineWidth = 18; g.lineCap = 'round'; for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; g.beginPath(); g.moveTo(150, 190); g.lineTo(150 + Math.cos(a) * 88, 190 + Math.sin(a) * 88); g.stroke(); }
@@ -231,15 +238,16 @@ function cabover(o, kind){
   return finish(P, D, plateMat(truck ? ['동화 7', '바 6417'] : ['동화 8', '아 2046'], logo), o, [truck ? hm * 2 : 1.8, truck ? 1.97 : 2.68, 5.1]);
 }
 
-const car = (S, color) => o => passenger(S, {color, ...o});
+const car = (S, color) => o => detail(o, () => passenger(S, {color, ...o}));
+const CAR_LOD = {near:45, opts:{lod:1}};   // (2026-11-24) 45보다 먼 칸은 단순 모델 (placeMany · batch.js)
 defineProp('carSedan', {label:'승용차 (세단)', category:'차량', isNewStyle:true, colliders:[{r:[-.95 * UNIT, -2.38 * UNIT, .95 * UNIT, 2.38 * UNIT]}],
-  usage:"W.placeMany('carSedan', [{x: 60, z: 150, rot: 0, color: 0xe8eaec}, ...]);", build:car(SEDAN, 0x8f98a1)});
+  usage:"W.placeMany('carSedan', [{x: 60, z: 150, rot: 0, color: 0xe8eaec}, ...]);", lod:CAR_LOD, build:car(SEDAN, 0x8f98a1)});
 defineProp('carSUV', {label:'SUV', category:'차량', isNewStyle:true, colliders:[{r:[-.98 * UNIT, -2.35 * UNIT, .98 * UNIT, 2.35 * UNIT]}],
-  usage:"W.placeMany('carSUV', [{x: 65, z: 150, rot: 0, color: 0x2b2e33}, ...]);", build:car(SUV, 0x39424d)});
+  usage:"W.placeMany('carSUV', [{x: 65, z: 150, rot: 0, color: 0x2b2e33}, ...]);", lod:CAR_LOD, build:car(SUV, 0x39424d)});
 defineProp('truck1t', {label:'1톤 트럭', category:'차량', isNewStyle:true, colliders:[{r:[-.92 * UNIT, -2.65 * UNIT, .92 * UNIT, 2.56 * UNIT]}],
-  usage:"W.place('truck1t', {x: 70, z: 150, rot: 0, color: 0x2e5fa3});", build:o => cabover({color:0x2e5fa3, ...o}, 'truck')});
+  usage:"W.place('truck1t', {x: 70, z: 150, rot: 0, color: 0x2e5fa3});", lod:CAR_LOD, build:o => detail(o, () => cabover({color:0x2e5fa3, ...o}, 'truck'))});
 defineProp('deliveryVan', {label:'택배 탑차', category:'차량', isNewStyle:true, colliders:[{r:[-.95 * UNIT, -2.65 * UNIT, .95 * UNIT, 2.56 * UNIT]}],
-  usage:"W.place('deliveryVan', {x: 75, z: 150, rot: 0});", build:o => cabover({color:0xeceeee, ...o}, 'van')});
+  usage:"W.place('deliveryVan', {x: 75, z: 150, rot: 0});", lod:CAR_LOD, build:o => detail(o, () => cabover({color:0xeceeee, ...o}, 'van'))});
 defineProp('carMini', {label:'경차', category:'차량', isNewStyle:true, colliders:[{r:[-.8 * UNIT, -1.8 * UNIT, .8 * UNIT, 1.8 * UNIT]}],
   variants:[{label:'황금색', opts:{color:0xd9a520}}, {label:'흰색', opts:{color:0xe9ebec, v:1}}, {label:'빨간색', opts:{color:0xb8322c, v:2}}],
-  usage:"W.placeMany('carMini', [{x: 60, z: 150, rot: 0, color: 0xd9a520}, ...]);", build:car(MINI, 0xd9a520)});
+  usage:"W.placeMany('carMini', [{x: 60, z: 150, rot: 0, color: 0xd9a520}, ...]);", lod:CAR_LOD, build:car(MINI, 0xd9a520)});

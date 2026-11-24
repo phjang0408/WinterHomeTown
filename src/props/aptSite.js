@@ -136,6 +136,7 @@ const TREE = [
   {th:2.05, kids:4, spread:.68, up:.15, len:.98, leader:true},
 ];
 defineProp('bareTree', {label:'겨울 나무', category:'조경', isNewStyle:true, colliders:[{c:[0, 0, .28 * U]}],
+  lod:{near:70, opts:{lite:true}},   // (2026-11-24) 70보다 먼 칸은 가지 세 단 (placeMany LOD)
   variants:[1, 2, 3, 4, 5, 6].map(k => ({label:'둥근 수형 ' + k, opts:{v:k - 1}})),
   usage:"W.placeMany('bareTree', [{x: 50, z: 135, rot: 1.2}, ...], {v: 0});  // v: 0~5 (모두 둥근 수형). lite: 가지 세 단",
   build(o = {}){

@@ -12,6 +12,8 @@ export const W = {
   heights: [], slippery: [], bounds: () => true,
   mm: {shapes: [], labels: []},
   trees: [], pines: [], lamps: [], stats: {},
+  placed: [],                // (2026-11-24) W.place로 놓은 것 기록: 맵을 다 지은 뒤 world/batch.js가 같은 것끼리 인스턴스로 묶는다
+  lodScale: 1, farScale: 1,  // 화질 단계(core/quality.js)의 LOD · 숨김 거리 배율
 
   // 지면 높이: 먼저 등록된 함수부터 물어보고, 숫자를 돌려준 첫 함수의 값을 쓴다.
   // prio: 클수록 먼저 묻는다. 보도처럼 넓게 덮는 높이는 prio -1로 맨 뒤에 둬서, 계단 · 테라스 같은 소품 높이가 이긴다.
@@ -59,6 +61,7 @@ export const W = {
     tally(this.stats, name, 1, obj);
     if (def.update) this.animated.push({obj, update:def.update});
     if (def.blocksCamera) this.blockers.push(obj);
+    if (!o.parent) this.placed.push({name, obj, opts:o});
     return obj;
   },
   // 같은 소품을 여러 곳에 놓는다. 소품을 한 번만 만들고 메쉬마다 인스턴스로 그려서, 몇 개를 놓아도 그리기 횟수가 늘지 않는다.
@@ -71,18 +74,22 @@ export const W = {
     const m4 = new THREE.Matrix4(), col = new THREE.Color(); proto.updateMatrixWorld(true);
     // 그리기 부담 (2026-11-16): 넓게 흩어진 목록은 CELL 칸으로 나눠 칸마다 인스턴스를 만든다 → 화면 밖 칸은 통째로 빠진다.
     // far(거리 숨김): 소품 정의의 far, 또는 작은 소품(small)은 기본 120 · 그 밖은 0(숨기지 않음). opts.far로 바꿀 수 있다.
-    const far = opts.far ?? def.far ?? (def.small ? 120 : 0), cells = new Map(), CELL = 90;
+    // LOD (2026-11-24): 소품 정의에 lod: {near, opts}가 있으면 near보다 먼 칸은 opts로 지은 단순 모델로 그린다. LOD가 있으면 칸을 조금 작게(60) 나눈다.
+    const far = opts.far ?? def.far ?? (def.small ? 120 : 0), lod = opts.lod === false || !def.lod || Object.entries(def.lod.opts).every(([k, v]) => opts[k] === v) ? null : def.lod, cells = new Map(), CELL = lod ? 60 : 90;
+    const low = lod && buildProp(name, {...(tinted ? {...opts, color:0xffffff} : opts), ...lod.opts}); if (low) low.updateMatrixWorld(true);
     list.forEach((it, k) => { const key = list.length < 16 ? 0 : Math.floor(it.x / CELL) + ':' + Math.floor(it.z / CELL); if (!cells.has(key)) cells.set(key, []); cells.get(key).push(k); });
-    for (const ids of cells.values()) {
-      const part = new THREE.Group(); let cx = 0, cz = 0; ids.forEach(k => { cx += list[k].x; cz += list[k].z; }); cx /= ids.length; cz /= ids.length;
-      proto.traverse(m => { if (!m.isMesh) return;
-        const im = new THREE.InstancedMesh(m.geometry, m.material, ids.length); im.castShadow = m.castShadow && !(far && far <= 150); im.receiveShadow = m.receiveShadow;   // 작은 소품은 그림자를 그리지 않는다
+    const inst = (src, ids, cast) => { const part = new THREE.Group();
+      src.traverse(m => { if (!m.isMesh) return;
+        const im = new THREE.InstancedMesh(m.geometry, m.material, ids.length); im.castShadow = m.castShadow && cast; im.receiveShadow = m.receiveShadow;
         ids.forEach((k, n) => { const i = list[k]; im.setMatrixAt(n, m4.multiplyMatrices(M[k], m.matrixWorld)); if (tinted && m.userData.tint) im.setColorAt(n, col.set(i.color === undefined ? 0xffffff : i.color)); });
         im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; im.computeBoundingSphere(); part.add(im); });
-      group.add(part);
-      if (far) { let r = 0; ids.forEach(k => { r = Math.max(r, Math.hypot(list[k].x - cx, list[k].z - cz)); }); this.cullers.push({o:part, x:cx, z:cz, r, far}); }
+      group.add(part); return part; };
+    for (const ids of cells.values()) {
+      let cx = 0, cz = 0; ids.forEach(k => { cx += list[k].x; cz += list[k].z; }); cx /= ids.length; cz /= ids.length;
+      const part = inst(proto, ids, !(far && far <= 150)), lo = low && inst(low, ids, !(far && far <= 150));   // 작은 소품은 그림자를 그리지 않는다
+      if (far || lo) { let r = 0; ids.forEach(k => { r = Math.max(r, Math.hypot(list[k].x - cx, list[k].z - cz)); }); this.cullers.push({o:part, lo, near:lod && lod.near, x:cx, z:cz, r, far}); }
     }
-    root.add(group);
+    group.userData.prop = name; root.add(group);
     if (def.colliders && opts.collide !== false) for (const i of list) { const x = i.x, z = i.z, c = Math.cos(i.rot || 0), s = Math.sin(i.rot || 0), k = i.s || 1, tx = (dx, dz) => [x + (dx * c + dz * s) * k, z + (-dx * s + dz * c) * k];
       for (const q of def.colliders) { if (q.c) { const p = tx(q.c[0], q.c[1]); this.circle(p[0], p[1], q.c[2] * k); }
         else if (q.r) { const ps = [tx(q.r[0], q.r[1]), tx(q.r[2], q.r[1]), tx(q.r[0], q.r[3]), tx(q.r[2], q.r[3])]; this.rect(Math.min(...ps.map(p => p[0])), Math.min(...ps.map(p => p[1])), Math.max(...ps.map(p => p[0])), Math.max(...ps.map(p => p[1]))); } } }
@@ -90,5 +97,8 @@ export const W = {
   },
   updateAnimated(dt, now){ for (const a of this.animated) a.update(a.obj, dt, now); },
   // 거리 숨김: 카메라에서 far보다 먼 칸은 그리지 않는다 (그림자도 같이 빠진다)
-  cull(cam){ for (const c of this.cullers) c.o.visible = Math.hypot(cam.x - c.x, cam.z - c.z) - c.r < c.far; },
+  // LOD가 있는 칸(lo): near 안쪽은 원래 모델, 바깥은 단순 모델. far가 0이면 숨기지 않는다.
+  cull(cam){ const L = this.lodScale, F = this.farScale;
+    for (const c of this.cullers) { const d = Math.hypot(cam.x - c.x, cam.z - c.z) - c.r, keep = !c.far || d < c.far * F;
+      if (c.lo) { const near = d < c.near * L; c.o.visible = keep && near; c.lo.visible = keep && !near; } else c.o.visible = keep; } },
 };

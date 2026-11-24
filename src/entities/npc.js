@@ -4,7 +4,7 @@
 //   가까이 오면 그쪽을 보고, 사면 머리 위에 말풍선이 잠깐 뜬다.
 import * as THREE from '../lib/three.js';
 import { M, mesh, pillSprite } from '../core/gfx.js';
-import { GEO } from './character.js';
+import { GEO, bakeRig } from './character.js';
 
 const SKIN = 0xf2d2b8, DARK = 0x3d4652;
 export function makeVendor(kind){
@@ -33,7 +33,7 @@ export function makeVendor(kind){
   }
   g.traverse(m => { if (m.isMesh) m.castShadow = true; });
   g.userData = {inner, armL, armR, kind, bubble:null, bubbleT:0, face:0};
-  return g;
+  return bakeRig(g);   // (2026-11-24) 몸통 · 팔 · 다리마다 한 메쉬로
 }
 // 매 프레임: 일하는 손짓 + 가까운 사람 보기 + 말풍선 시간
 export function animVendor(v, dt, now, near, nx, nz, baseRot){

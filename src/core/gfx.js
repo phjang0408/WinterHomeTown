@@ -5,6 +5,9 @@ import { FONT_D, FONT_B, FONT_UI } from '../config.js';
 
 let root = null;
 export const setRoot = g => { root = g; };
+// (2026-11-24) 맵을 짓는 동안 만든 도형(flat · box · mesh)에 표시를 남긴다 → world/batch.js가 같은 재질끼리 합친다. 움직일 도형은 userData.dynamic = true
+let primOn = false;
+export const tagPrims = v => { primOn = v; };
 
 const cache = {};
 export const M = c => cache[c] || (cache[c] = new THREE.MeshLambertMaterial({color:c}));
@@ -34,16 +37,16 @@ export function flat(x0, z0, x1, z1, c, y, parent){
   if (m.material.map && m.material.map === snowMap) { const uv = m.geometry.attributes.uv;
     for (let i = 0; i < uv.count; i++) uv.setXY(i, (x0 + uv.getX(i) * (x1 - x0)) / SNOW_TILE, -(z0 + (1 - uv.getY(i)) * (z1 - z0)) / SNOW_TILE); }
   m.rotation.x = -PI / 2; m.position.set((x0 + x1) / 2, y === undefined ? 0.01 : y, (z0 + z1) / 2);
-  m.receiveShadow = true; (parent || root).add(m); return m;
+  m.receiveShadow = true; m.userData.prim = primOn; (parent || root).add(m); return m;
 }
 export function box(x0, z0, x1, z1, h, mat, y0, parent){
   const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, h, z1 - z0), typeof mat === 'number' ? M(mat) : mat);
   m.position.set((x0 + x1) / 2, (y0 || 0) + h / 2, (z0 + z1) / 2);
-  m.castShadow = m.receiveShadow = true; (parent || root).add(m); return m;
+  m.castShadow = m.receiveShadow = true; m.userData.prim = primOn; (parent || root).add(m); return m;
 }
 export function mesh(geo, mat, x, y, z, parent){
   const m = new THREE.Mesh(geo, typeof mat === 'number' ? M(mat) : mat); m.position.set(x, y, z);
-  m.castShadow = true; (parent || root).add(m); return m;
+  m.castShadow = true; m.userData.prim = primOn; (parent || root).add(m); return m;
 }
 // 웹 한글 글꼴은 글자 묶음(unicode-range)별로 따로 내려받는다. 아직 안 받은 묶음의 글자를 캔버스에 그리면 그 글자만 다른 글꼴로 구워진다.
 // 그래서 그림을 그리는 동안 쓴 글꼴·글자를 기록해 두고, 빠진 글자가 있으면 받은 뒤 다시 그린다.
