@@ -22,7 +22,8 @@ defineActivity({
       const fx = Math.sin(b.rot), fz = Math.cos(b.rot), sx = Math.cos(b.rot), sz = -Math.sin(b.rot);   // 앞 방향 · 옆 방향
       const seat = o => ({x:b.x + sx * o + fx * .1, z:b.z + sz * o + fz * .1});
       const side = [-.65, .65].sort((p, q) => { const a = seat(p), c = seat(q); return Math.hypot(me.x - a.x, me.z - a.z) - Math.hypot(me.x - c.x, me.z - c.z); }).find(o => { const s = seat(o); return !seatTaken(s.x, s.z, ST.BENCH); });
-      if (side !== undefined) offer(d, 2.6, '벤치에 앉기', () => { const s = seat(side); me.st = ST.BENCH; me.x = s.x; me.z = s.z; me.r = b.rot; me.onStand = () => { me.x = b.x + fx * 1.15 + sx * side; me.z = b.z + fz * 1.15 + sz * side; }; }); });
+      if (side !== undefined) offer(d, 2.6, '벤치에 앉기', () => { const s = seat(side); me.st = ST.BENCH; me.x = s.x; me.z = s.z; me.r = b.rot; me.onStand = () => { let k = 1.15; while (k < 3 && W.blocked(b.x + fx * k + sx * side, b.z + fz * k + sz * side, me.y)) k += .15;   // (2026-11-24) 비스듬한 벤치(분수 둘레)는 충돌 상자가 커서 앞으로 더 나와 선다
+        me.x = b.x + fx * k + sx * side; me.z = b.z + fz * k + sz * side; }; }); });
   },
 });
 

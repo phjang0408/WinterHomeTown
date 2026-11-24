@@ -246,8 +246,8 @@ const padMat = (w, d) => once('pad' + w + 'x' + d, () => decalMaterial(canvasTex
   g.fillStyle = 'rgba(72,76,82,.86)'; g.fillRect(0, 0, W, H);
   g.strokeStyle = 'rgba(236,234,228,.92)'; g.lineWidth = 9; g.strokeRect(16, 16, W - 32, H - 32);
   g.fillStyle = '#e3a53b'; g.fillRect(16, 16, W - 32, 12);                                     // 기계 쪽(위) 끝에 호박색 띠
-  g.strokeStyle = '#fff'; g.lineWidth = 7; g.strokeRect(W / 2 - 52, 78, 104, 104);             // E 키
-  g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '84px ' + FONT_D; g.fillText('E', W / 2, 134);
+  g.strokeStyle = '#fff'; g.lineWidth = 7; g.strokeRect(W / 2 - 52, H / 2 - 52, 104, 104);      // E 키 (판 한가운데)
+  g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '84px ' + FONT_D; g.fillText('E', W / 2, H / 2 + 4);
 }), {alpha:true, rough:.85}));
 defineProp('playPad', {label:'놀이 자리 바닥 표시', category:'문구점', isNewStyle:true, small:true, groundPreview:true,
   usage:"W.place('playPad', {x, z, y, rot, w: .85, d: .8});  // 기계 앞 서는 자리 (위쪽 띠가 기계 쪽)", build(o = {}){
@@ -257,8 +257,8 @@ defineProp('playPad', {label:'놀이 자리 바닥 표시', category:'문구점'
 
 // ───────── 게임 설명판 (2026-11-23): 오락기 · 뽑기 · 가위바위보 위에 얹는 작은 판 (게임 이름 + 한 줄 설명) ─────────
 defineProp('gameBoard', {label:'게임 설명판', category:'문구점', isNewStyle:true, small:true,
-  usage:"W.place('gameBoard', {x, z, y, rot, text, sub, bg, fg, w: .9, h: .42});  // 기계 위에 얹는다", build(o = {}){
-    o = {text:'벽돌 깨기', sub:'공을 튕겨 벽돌 부수기', bg:'#3b1d1a', fg:'#ffb74d', ...o};   // (2026-11-24) 갤러리처럼 글 없이 부를 때의 기본값
+  usage:"W.place('gameBoard', {x, z, y, rot, text, bg, fg, w: .9, h: .42});  // 기계 위에 얹는다", build(o = {}){
+    o = {text:'벽돌 깨기', bg:'#3b1d1a', fg:'#ffb74d', ...o};   // (2026-11-24) 부제목 없이 이름만   // (2026-11-24) 갤러리처럼 글 없이 부를 때의 기본값
     const w = o.w || .9, h = o.h || .42, P = new Parts();
     P.add('frm', box(-w / 2, 0, -.03, w / 2, h, .03, .012), 0x2d3238);
     const face = new THREE.Mesh(quadZ(-w / 2 + .025, .025, w / 2 - .025, h - .025, .031), textSignMat(o, false, (w - .05) / (h - .05)));
@@ -361,13 +361,14 @@ export const STATIONERY_LAYOUT = [
   ['miniArcade', {c:0xd83a2e, s:1.3}, -3.06, 0, 3.88], ['miniArcade', {c:0x2f6fb5, s:1.3}, -4.01, 0, 3.88], ['drinkFridge', {}, -4.97, 0, 3.85],
   ['kidStool', {}, -3.06, 0, 4.78], ['kidStool', {}, -4.01, 0, 4.78],
   // (2026-11-24 21차) 기계 앞 서는 자리 바닥 표시 (오락기 둘 · 뽑기 줄 · 가위바위보)
-  ['playPad', {w:.85, d:.8}, -4.01, 0, 4.78], ['playPad', {w:.85, d:.8}, -3.06, 0, 4.78], ['playPad', {w:1.75, d:.8}, 3.54, 0, 4.83], ['playPad', {w:.85, d:.8}, 5.0, 0, 4.81],
+  //   (2026-11-24) 세로로 길게(1.25m): 기계 쪽 끝은 그대로 두고 앞(남쪽)으로 늘림
+  ['playPad', {w:.85, d:1.25}, -4.01, 0, 5.0], ['playPad', {w:.85, d:1.25}, -3.06, 0, 5.0], ['playPad', {w:1.75, d:1.25}, 3.54, 0, 5.05], ['playPad', {w:.85, d:1.25}, 5.0, 0, 5.03],
   ['gachaRow', {n:3, s:1.3}, 3.54, 0, 3.88], ['rpsMachine', {s:1.3}, 5.0, 0, 3.86],
   ['hulaHoops', {}, -5.85, 0, 3.65],
-  ['gameBoard', {text:'벽돌 깨기', sub:'공을 튕겨 벽돌 부수기', bg:'#3b1d1a', fg:'#ffb74d', w:.9}, -3.06, 1.93, 3.88],
-  ['gameBoard', {text:'은하 대작전', sub:'비행기로 외계 함대 쏘기', bg:'#14213d', fg:'#7fd3ff', w:.9}, -4.01, 1.93, 3.88],
-  ['gameBoard', {text:'행운 뽑기', sub:'손잡이 돌려 키링 뽑기 · 8가지', bg:'#a3154a', fg:'#ffe9a0', w:1.7}, 3.54, 1.76, 3.88],
-  ['gameBoard', {text:'가위바위보', sub:'기계를 이기면 키링 상품', bg:'#173f9e', fg:'#ffd23f', w:.9}, 5.0, 1.91, 3.86]];
+  ['gameBoard', {text:'벽돌 깨기', bg:'#3b1d1a', fg:'#ffb74d', w:.9}, -3.06, 1.93, 3.88],
+  ['gameBoard', {text:'은하 대작전', bg:'#14213d', fg:'#7fd3ff', w:.9}, -4.01, 1.93, 3.88],
+  ['gameBoard', {text:'행운 뽑기', bg:'#a3154a', fg:'#ffe9a0', w:1.7}, 3.54, 1.76, 3.88],
+  ['gameBoard', {text:'가위바위보', bg:'#173f9e', fg:'#ffd23f', w:.9}, 5.0, 1.91, 3.86]];
 // 놀이 자리 (activities/arcade.js): 건물 원점 기준 미터, 기계 위치와 방향 r. 사람은 기계 앞(+z를 r만큼 돌린 쪽) d m(기본 0.8)에 선다. 공기놀이는 공원(layout.js GONGGI)
 export const STATIONERY_ARCADES = [{kind:'cab', game:1, x:-4.01, z:3.88, d:.9}, {kind:'cab', game:2, x:-3.06, z:3.88, d:.9}, {kind:'gacha', x:3.54, z:3.88, d:.95}, {kind:'rps', x:5.0, z:3.86, d:.95}];
 export const STATIONERY_ZONES = [];   // (2026-11-23 3차) '게임존' · '키링존' 이름표는 빼고 기계마다 설명판(gameBoard)을 단다

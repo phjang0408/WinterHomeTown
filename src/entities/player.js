@@ -30,7 +30,13 @@ export function dressMe(){
 }
 export const extrasHooks = [];   // 캐릭터에 붙는 소품(썰매 등)을 만드는 함수들
 
-export function standUp(){ if (me.onStand) { me.onStand(); me.onStand = null; } me.st = 0; me.seatAct = null; me.seatAlt = null; }
+export function standUp(){ if (me.onStand) { me.onStand(); me.onStand = null; } me.st = 0; me.seatAct = null; me.seatAlt = null; unstick(); }
+// (2026-11-24) 일어선 자리가 충돌체 안이면(비스듬한 벤치의 충돌 상자 등) 가장 가까운 빈자리로 옮긴다: 끼여서 못 움직이던 것
+function unstick(){
+  if (!W.blocked(me.x, me.z, me.y)) return;
+  for (let r = .25; r <= 4; r += .25) for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2, x = me.x + Math.cos(a) * r, z = me.z + Math.sin(a) * r;
+    if (!W.blocked(x, z, me.y)) { me.x = x; me.z = z; return; } }
+}
 export function wave(){ if (S.mode === 'intro' || me.st === 2) return false; me.em = [me.em[0] + 1, 1]; return true; }
 
 export function movePlayer(dt, speedMul = 1){
