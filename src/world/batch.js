@@ -177,6 +177,10 @@ function splitFlagged(out){
 export function batchStatic(){
   const out = {props:0, cells:0, merged:0, meshes:0, split:0}, blocked = new Set(), singles = [];
   W.blockers.forEach(b => b.traverse(o => blocked.add(o)));
+  // 카메라 가림 상자: 묶기 전에 따로 놓인 소품마다 상자를 잰다 (움직이는 소품 · 카메라 가림 건물은 빼고)
+  const bx = new THREE.Box3();
+  for (const p of W.placed) { const def = getProp(p.name); if (p.obj.parent !== root || def.dynamic || def.update || def.blocksCamera || blocked.has(p.obj)) continue; p.obj.updateWorldMatrix(true, true); W.camBox(p.name, bx.setFromObject(p.obj)); }
+  W.buildCamGrid(); out.camBoxes = W.camBoxes.length;
   instanceRepeats(blocked, singles, out);
   const cands = [];
   for (const p of singles) if (p.obj.parent === root) { const def = getProp(p.name); if (def.update || def.blocksCamera || def.dynamic || blocked.has(p.obj)) continue;

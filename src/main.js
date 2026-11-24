@@ -50,15 +50,17 @@ import { applyPeers, updateRemotes } from './entities/remotes.js';
 import { setupVehicles, updateVehicles } from './entities/vehicles.js';
 import { connect, netTick, net } from './net/index.js';
 import { hud } from './ui/hud.js';
-import { drawMiniBase, drawMini } from './ui/minimap.js';
+import { drawMiniBase, drawMini, miniEvery, toggleBigMap, bigOpen } from './ui/minimap.js';
+import { initMenu, openMenu, closeMenu, menuOpen, menuTab } from './ui/menu.js';
 import { initSnow, updateSnow } from './world/snowfall.js';
 
 const $ = id => document.getElementById(id);
 
 function updateCount(){
   $('count').textContent = S.remotes.size + 1;
-  $('net').textContent = net.online ? (S.remotes.size ? '함께 걷는 중' : '동네에 연결됨') : '혼자 걷는 중';
-  if (!$('roster').hidden) fillRoster();
+  $('net').textContent = net.online ? (S.remotes.size ? '동네 서버에 연결됨 · 함께 걷는 중' : '동네 서버에 연결됨') : '연결 안 됨 · 혼자 걷는 중';
+  $('net-dot').classList.toggle('on', !!net.online);
+  if (menuOpen() && menuTab() === 'server') fillRoster();   // (2026-11-24) 접속자 · 점수표는 메뉴의 서버 탭에
 }
 function fillRoster(){
   const scored = ACTS.filter(a => a.score).sort((a, b) => a.score.index - b.score.index);
@@ -78,25 +80,26 @@ function enter(){
   [[659, 0], [523, .45], [587, .9], [392, 1.35], [392, 2.1], [587, 2.55], [659, 3.0], [523, 3.45]].forEach(([f, t]) => after(t * 1000, () => sfx(f, f * .998, .5, 'sine', .06)));   // 딩동댕동 · 댕동딩동
   after(600, () => flash('겨울방학 시작! 동네로 놀러 가자'));
   shadowRange(75);
-  $('intro').hidden = true; ['top','mini','help','dock'].forEach(id => $(id).hidden = false); canvas.focus();
+  $('intro').hidden = true; ['top','mini','dock'].forEach(id => $(id).hidden = false); canvas.focus();
   if (coarse) after(3400, () => flash('왼쪽을 끌어 이동'));
 }
 function doWave(){ if (wave()) { emote(me.char, 1); sfx(620, 760, .1); } }
 function bindUi(){
   $('enter').onclick = enter;
   $('reroll').onclick = () => { me.a = rnd(ADJ.length); me.n = rnd(NOUN.length); me.ci = (me.ci + 1 + rnd(COLORS.length - 1)) % COLORS.length; dressMe(); };
-  $('roster-btn').onclick = () => { fillRoster(); $('roster').hidden = false; };
-  $('roster-close').onclick = () => { $('roster').hidden = true; };
+  initMenu({onOpen:t => { if (t === 'server') { updateCount(); fillRoster(); } }});   // (2026-11-24) 메뉴: 서버 · 설정 · 조작법 (ui/menu.js)
   $('res-close').onclick = () => { $('result').hidden = true; };
   $('res-again').onclick = () => { $('result').hidden = true; if (S.mode === 'walk' && hud.again) hud.again(); };
   $('game-quit').onclick = stopActivity; hud.onTopQuit = stopActivity; $('slam').onclick = () => current() && current().onAction && current().onAction();
   $('prompt').onclick = () => { const a = findAction(); if (a) a.run(); };
   $('wave').onclick = doWave;
-  $('snd').onclick = () => { audio.on = !audio.on; $('snd').textContent = audio.on ? '소리 켬' : '소리 끔'; $('snd').setAttribute('aria-pressed', audio.on); };
-  initInput({onEnter:enter, onWave:doWave, onEscape:() => {
+  // Esc 순서: 큰 지도 · 메뉴 닫기 → 결과 창 닫기 → 놀이 그만하기(input.js) → 메뉴 열기
+  initInput({onEnter:enter, onWave:doWave, onMap:() => toggleBigMap(), onEscape:() => {
+    if (bigOpen()) { toggleBigMap(false); return true; }
+    if (menuOpen()) { closeMenu(); return true; }
     if (!$('result').hidden) { $('result').hidden = true; return true; }
-    if (!$('roster').hidden) { $('roster').hidden = true; return true; }
-    return false; }});
+    if (S.game) return false;
+    openMenu(); return true; }});
 }
 
 let miniTick = 0;
@@ -116,7 +119,7 @@ function frame(dt, now){
   spotLabels.forEach(s => { s.visible = !hide; });   // (2026-11-21) 장소 이름표는 위아래로 흔들지 않고 가만히 떠 있다
   const act = findAction(); hud.prompt(act ? act.label : '', act && act.tone); updateAlt();
   updateCamera(dt, now); netTick(now);
-  if (S.mode !== 'intro' && ++miniTick % 6 === 0) drawMini();
+  if (S.mode !== 'intro' && ++miniTick % miniEvery() === 0) drawMini();
 }
 
 async function boot(){

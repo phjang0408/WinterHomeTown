@@ -57,6 +57,6 @@ export const hud = {
   aim(on){ document.getElementById('scene').classList.toggle('aim', on); },
   prompt(label, tone){ const pb = $('prompt'), k = label + '|' + (tone || ''); if (pb.dataset.l === k) return; pb.dataset.l = k; pb.hidden = !label; pb.className = tone || ''; pb.innerHTML = '<kbd>E</kbd>'; pb.append(label); },   // tone: 'food'(먹기)면 색이 바뀐다
   result(title, score, line, again){ $('res-title').textContent = title; $('res-score').textContent = score; $('res-line').textContent = line; $('result').hidden = false; hud.again = again; },
-  modalOpen(){ return !$('result').hidden || !$('roster').hidden; },
+  modalOpen(){ return !$('result').hidden || !$('menu').hidden; },
   again:null,
 };

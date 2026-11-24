@@ -74,6 +74,31 @@ export function animChar(ch, dt, moved, st, now){
   }
   u.armR.rotation.z += (rz - u.armR.rotation.z) * Math.min(1, dt * 14);
   u.armL.rotation.z += (lz - u.armL.rotation.z) * Math.min(1, dt * 14);   // (2026-11-20) 놀이가 바꾼 왼팔도 제자리로
+  waveTrail(ch, now);
+}
+// (2026-11-24) 손 흔들기 잔상: 흔드는 손(armR 끝)을 따라 희미한 흰 띠. 최근 0.26초 동안의 손 자리를 캐릭터 기준 좌표로 모아
+//   어깨→손 방향으로 폭을 준 띠(새것일수록 넓고 진하게)를 그린다. 흔들 때만 보이고, 한 사람당 메쉬 하나.
+const TRAIL_LIFE = 260, TRAIL_MAX = 48, TRAIL_W = .05, TRAIL_A = .42;
+const trailMat = new THREE.MeshBasicMaterial({vertexColors:true, transparent:true, depthWrite:false, side:THREE.DoubleSide});
+const tv = new THREE.Vector3(), ts = new THREE.Vector3();
+function waveTrail(ch, now){
+  const u = ch.userData, on = waving(ch); let T = u.trail;
+  if (!T) { if (!on) return;
+    const geo = new THREE.BufferGeometry(), idx = [];
+    for (let i = 0; i < TRAIL_MAX - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(TRAIL_MAX * 6), 3).setUsage(THREE.DynamicDrawUsage));
+    geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(TRAIL_MAX * 8), 4).setUsage(THREE.DynamicDrawUsage)); geo.setIndex(idx);
+    const mesh = new THREE.Mesh(geo, trailMat); mesh.frustumCulled = false; mesh.renderOrder = 2; ch.add(mesh); T = u.trail = {pts:[], mesh}; }
+  if (on) { u.armR.updateMatrix(); u.inner.updateMatrix();
+    const p = tv.set(0, -.56, 0).applyMatrix4(u.armR.matrix).applyMatrix4(u.inner.matrix).clone(), sh = ts.set(0, 0, 0).applyMatrix4(u.armR.matrix).applyMatrix4(u.inner.matrix).clone();
+    T.pts.push({p, d:p.clone().sub(sh).normalize(), t:now}); }
+  while (T.pts.length && (now - T.pts[0].t > TRAIL_LIFE || T.pts.length > TRAIL_MAX)) T.pts.shift();
+  const n = T.pts.length, geo = T.mesh.geometry; T.mesh.visible = n > 1; if (n < 2) return;
+  const P = geo.attributes.position.array, C = geo.attributes.color.array;
+  T.pts.forEach((q, i) => { const k = i / (n - 1), w = TRAIL_W * k, a = TRAIL_A * k * Math.max(0, 1 - (now - q.t) / TRAIL_LIFE);
+    for (let s = 0; s < 2; s++) { const o = (i * 2 + s) * 3, sg = s ? w : -w; P[o] = q.p.x + q.d.x * sg; P[o + 1] = q.p.y + q.d.y * sg; P[o + 2] = q.p.z + q.d.z * sg;
+      const c = (i * 2 + s) * 4; C[c] = C[c + 1] = C[c + 2] = 1; C[c + 3] = a; } });
+  geo.attributes.position.needsUpdate = geo.attributes.color.needsUpdate = true; geo.setDrawRange(0, (n - 1) * 6);
 }
 // 손 흔드는 중인가: 놀이 자세가 흔드는 팔(armR = 캐릭터 왼팔)을 덮어쓰지 않게
 export const waving = ch => !!(ch && ch.userData.em && ch.userData.em.k === 1);

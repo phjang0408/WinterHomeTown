@@ -7,11 +7,13 @@ import { current, doAction, doAlt, stopActivity } from '../activities/registry.j
 import { hud } from '../ui/hud.js';
 
 const KEYMAP = {KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',KeyD:'right',ArrowLeft:'camL',ArrowRight:'camR',ShiftLeft:'run',ShiftRight:'run'};
+// (2026-11-24) 시점을 위로: 음수 피치면 카메라가 캐릭터보다 낮아져 올려다본다 (마우스 · 터치 같이)
+export const PITCH_MIN = -.55;
 export const freeMove = () => S.mode === 'walk' || !!(current() && current().free);
 // 시점 돌리기 · 화면 조이스틱을 쓸 수 있는지 (자유 이동이거나, 놀이가 ctl을 켰을 때: 썰매)
 export const camFree = () => freeMove() || !!(current() && current().ctl);
 
-export function initInput({onEnter, onWave, onEscape}){
+export function initInput({onEnter, onWave, onEscape, onMap}){
   window.addEventListener('keydown', e => {
     if (e.target && e.target.tagName === 'BUTTON' && (e.code === 'Enter' || e.code === 'Space')) return;
     if (S.mode === 'intro') { if (e.code === 'Enter') onEnter(); return; }
@@ -19,6 +21,7 @@ export function initInput({onEnter, onWave, onEscape}){
     else if (e.code === 'KeyE' || e.code === 'Space' || e.code === 'Enter') { if (!e.repeat && !hud.modalOpen()) doAction(); if (e.code === 'Space') e.preventDefault(); }
     else if (e.code === 'KeyR') { if (!e.repeat && !hud.modalOpen()) doAlt(); }
     else if (e.code === 'Digit1') onWave();
+    else if (e.code === 'KeyM') { if (!e.repeat && onMap) onMap(); }   // (2026-11-24) 큰 지도
     else if (e.code === 'Escape') { if (!onEscape() && S.game) stopActivity(); }
   });
   window.addEventListener('keyup', e => { if (KEYMAP[e.code]) S.keys[KEYMAP[e.code]] = false; });
@@ -43,7 +46,7 @@ export function initInput({onEnter, onWave, onEscape}){
     const p = ptrs.get(e.pointerId); if (!p) return;
     const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
     if (ptrs.size === 2 && pinch) { const a = [...ptrs.values()], d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); S.cam.dist = clamp(S.cam.dist * pinch / d, 3, 18); pinch = d; return; }
-    if (camFree()) { const k = e.pointerType === 'touch' ? .008 : .006; S.cam.yaw = wrapA(S.cam.yaw - dx * k); S.cam.pitch = clamp(S.cam.pitch + dy * k * .8, .05, 1.2); }
+    if (camFree()) { const k = e.pointerType === 'touch' ? .008 : .006; S.cam.yaw = wrapA(S.cam.yaw - dx * k); S.cam.pitch = clamp(S.cam.pitch + dy * k * .8, PITCH_MIN, 1.2); }
   });
   const end = e => { if (S.joy && e.pointerId === S.joy.id) { S.joy = null; joyEl.hidden = true; return null; }
     const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = 0; if (!ptrs.size) canvas.classList.remove('drag'); return p; };

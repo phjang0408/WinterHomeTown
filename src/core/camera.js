@@ -1,4 +1,4 @@
-// 3인칭 카메라: 캐릭터 뒤를 따라가고, 벽에 막히면 앞으로 당겨진다. 놀이가 camera()를 주면 그 고정 시점을 쓴다.
+// 3인칭 카메라: 캐릭터 뒤를 따라가고, 벽 · 소품 · 땅에 막히면 앞으로 당겨진다(2026-11-24 소품 · 땅 추가). 놀이가 camera()를 주면 그 고정 시점을 쓴다.
 import * as THREE from '../lib/three.js';
 import { camera, sun, SUN_OFF } from './engine.js';
 import { S } from './state.js';
@@ -20,10 +20,14 @@ export function updateCamera(dt, now){
     head.set(me.x, me.char.position.y + 1.6, me.z);
     const cp = Math.cos(C.pitch); dir.set(Math.sin(C.yaw) * cp, Math.sin(C.pitch), Math.cos(C.yaw) * cp);
     ray.set(head, dir); ray.far = C.dist + .6;
-    const hit = ray.intersectObjects(W.blockers, true)[0], d = hit ? Math.max(1.4, hit.distance - .6) : C.dist;
+    const hit = ray.intersectObjects(W.blockers, true)[0]; let d = hit ? Math.max(1.4, hit.distance - .6) : C.dist;
+    // (2026-11-24) 카메라 당기기: 캐릭터와 카메라 사이에 소품(차 · 벤치 · 담 · 가게 등)이 있으면 그 앞으로 당긴다 (world.js camRay, 상자 판정)
+    const tb = W.camRay(head, dir, d + .3); if (tb !== null) d = Math.min(d, Math.max(.9, tb - .3));
+    // 아래에서 올려다볼 때(시점을 위로) 카메라가 땅에 묻히지 않게, 땅에 닿는 자리까지 당긴다
+    if (dir.y < .15) for (let t = .5; t < d; t += .3) { const y = head.y + dir.y * t; if (y < W.groundY(head.x + dir.x * t, head.z + dir.z * t, me.char.position.y) + .25) { d = Math.max(.8, t - .25); break; } }
     C.cur = d < C.cur ? d : C.cur + (d - C.cur) * Math.min(1, dt * 4);
     want.copy(head).addScaledVector(dir, C.cur);
-    const gy = W.groundY(want.x, want.z, me.char.position.y) + .4; if (want.y < gy) want.y = gy;
+    const gy = W.groundY(want.x, want.z, me.char.position.y) + .25; if (want.y < gy) want.y = gy;
     look.copy(head);
   }
   C.blend = Math.min(1, C.blend + dt * 1.6);

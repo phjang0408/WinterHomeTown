@@ -21,3 +21,9 @@ export const QUALITY = {choice:read(), level:'high', ...PRESETS.high};
 QUALITY.level = PRESETS[QUALITY.choice] ? QUALITY.choice : autoLevel();
 Object.assign(QUALITY, PRESETS[QUALITY.level]);
 export function saveQuality(choice){ try { localStorage.setItem(KEY, choice); } catch (e) {} }
+export const autoQuality = () => autoLevel();
+// (2026-11-24) 메뉴 설정에서 바꾼다: 고른 값(auto · high · medium · low)을 저장하고 QUALITY를 그 단계 값으로 바꾼다. 렌더러 반영은 ui/menu.js applyQuality
+export function setQuality(choice){
+  QUALITY.choice = PRESETS[choice] ? choice : 'auto'; QUALITY.level = PRESETS[QUALITY.choice] ? QUALITY.choice : autoLevel();
+  Object.assign(QUALITY, PRESETS[QUALITY.level]); saveQuality(QUALITY.choice); return QUALITY;
+}
