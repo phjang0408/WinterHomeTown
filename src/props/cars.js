@@ -113,6 +113,10 @@ function passenger(S, o){
   const hm = hw(0);
   S.seams.forEach(z => [-1, 1].forEach(s => P.add('mat', box(s * hm - .003, bot(z) + .1, z - .004, s * hm + .003, top(z) - S.rt * .6, z + .004), C.dark)));
   S.handles.forEach(z => [-1, 1].forEach(s => P.add('pnt', box(s * hm - .012, top(z) - .19, z - .07, s * hm + .012, top(z) - .16, z + .07, .008), 0xffffff)));
+  // (2026-11-25) 문콕 방지 스펀지 (o.guard): 앞문 · 뒷문 뒤쪽 모서리에 작은 파란 스펀지를 양쪽에, 두 문 같은 높이(예전 두 높이의 가운데)
+  if (o.guard) { const yAt = (z, t) => bot(z) + .1 + (top(z) - bot(z) - .1) * t, y = (yAt(S.seams[1], .6) + yAt(S.seams[2], .84)) / 2;
+    [S.seams[1], S.seams[2]].forEach(z => [-1, 1].forEach(sd => { const x = sd * hw(z), a = x - sd * .012, b = x + sd * .04;
+      P.add('mat', box(Math.min(a, b), y - .045, z - .015, Math.max(a, b), y + .045, z + .07, .01), 0x1f6fd0); })); }
   const mz = S.mirror; [-1, 1].forEach(s => { P.add('pnt', box(s * (hw(mz) + .02) - .1, top(mz) + .01, mz - .05, s * (hw(mz) + .02) + .1, top(mz) + .13, mz + .04, .03), 0xffffff);
     P.add('gls', box(s * (hw(mz) + .02) - .085, top(mz) + .025, mz - .056, s * (hw(mz) + .02) + .085, top(mz) + .115, mz - .05), 0x6f7d88); });
   [-1, 1].forEach(s => P.add('gls', tube(steps(g0 + .25, g1 - .2, .15).map(z => V(s * (hw(z) - .04), top(z) - .028, z)), .012, {radial:5}), S.suv ? C.dark : C.chrome));

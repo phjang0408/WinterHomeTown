@@ -6,7 +6,8 @@ import { clamp, wrapA } from './util.js';
 import { current, doAction, doAlt, stopActivity } from '../activities/registry.js';
 import { hud } from '../ui/hud.js';
 
-const KEYMAP = {KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',KeyD:'right',ArrowLeft:'camL',ArrowRight:'camR',ShiftLeft:'run',ShiftRight:'run'};
+// (2026-11-25) 이동은 WASD만, 방향키는 전부 시점: ← → 좌우로 돌리기, ↑ ↓ 위아래로 보기
+const KEYMAP = {KeyW:'up',KeyS:'down',KeyA:'left',KeyD:'right',ArrowLeft:'camL',ArrowRight:'camR',ArrowUp:'camU',ArrowDown:'camD',ShiftLeft:'run',ShiftRight:'run'};
 // (2026-11-24) 시점을 위로: 음수 피치면 카메라가 캐릭터보다 낮아져 올려다본다 (마우스 · 터치 같이)
 export const PITCH_MIN = -.55;
 export const freeMove = () => S.mode === 'walk' || !!(current() && current().free);
@@ -31,7 +32,7 @@ export function initInput({onEnter, onWave, onEscape, onMap}){
   canvas.addEventListener('pointerdown', e => {
     if (S.mode === 'intro') return;
     try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
-    if (e.pointerType === 'touch' && camFree() && !S.joy && e.clientX < window.innerWidth * .45) {
+    if (e.pointerType === 'touch' && camFree() && !S.joy && e.clientX > window.innerWidth * .55) {   // (2026-11-25) UI 좌우 반전: 조이스틱은 오른쪽 (오른손 엄지)
       S.joy = {id:e.pointerId, sx:e.clientX, sy:e.clientY, vx:0, vy:0, m:0};
       joyEl.style.left = e.clientX + 'px'; joyEl.style.top = e.clientY + 'px'; knob.style.transform = ''; joyEl.hidden = false; return;
     }
@@ -60,4 +61,5 @@ export function initInput({onEnter, onWave, onEscape, onMap}){
   canvas.addEventListener('wheel', e => { S.cam.dist = clamp(S.cam.dist * (e.deltaY > 0 ? 1.1 : .9), 3, 18); e.preventDefault(); }, {passive:false});
 }
 // 방향키 ←→ 로 시점 돌리기
-export function turnCamera(dt){ if (camFree()) S.cam.yaw = wrapA(S.cam.yaw + ((S.keys.camL ? 1 : 0) - (S.keys.camR ? 1 : 0)) * 1.9 * dt); }
+export function turnCamera(dt){ if (!camFree()) return; const K = S.keys; S.cam.yaw = wrapA(S.cam.yaw + ((K.camL ? 1 : 0) - (K.camR ? 1 : 0)) * 1.9 * dt);
+  if (K.camU || K.camD) S.cam.pitch = clamp(S.cam.pitch + ((K.camD ? 1 : 0) - (K.camU ? 1 : 0)) * 1.1 * dt, PITCH_MIN, 1.2); }   // ↑ = 위를 본다(피치 감소), ↓ = 내려다본다

@@ -53,11 +53,11 @@ function bigShopsAndLots(){
     for (let i = 0; i <= n; i++) GROUND.add('paint', flatXZ(x0 + i * BW - .07, z0, x0 + i * BW + .07, z0 + BD, .045), 0xf2f4f5);
     GROUND.add('paint', flatXZ(x0, z0 + BD - .07, x0 + n * BW, z0 + BD + .07, .045), 0xf2f4f5);
     for (let i = 0; i < n; i++) { const x = x0 + (i + .5) * BW; stops.push({x, z:z0 + 1.05 * U, rot:0}); if (R2() > .6) continue; const it = {x:x + (R2() - .5) * .2, z:z0 + BD / 2 + .2, rot:(R2() - .5) * .05,   /* (2026-11-17) 후면 주차: 앞이 강변도로 쪽 */ color:PAINT[Math.floor(R2() * PAINT.length)]};
-      const t = R2(), key = t < .45 ? 'carSedan/' + Math.floor(R2() * 3) : t < .75 ? 'carSUV/' + Math.floor(R2() * 2) : 'carMini/' + Math.floor(R2() * 3); (cars[key] || (cars[key] = [])).push(it); }
+      const t = R2(), key = t < .45 ? 'carSedan/' + Math.floor(R2() * 3) : t < .75 ? 'carSUV/' + Math.floor(R2() * 2) : 'carMini/' + Math.floor(R2() * 3); const gk = key + (Math.floor(it.x * 7 + it.z * 13) % 3 === 0 ? '/1' : '/0'); (cars[gk] || (cars[gk] = [])).push(it); }   // (2026-11-25) 문콕 방지 스펀지
     // 차 길 안내: 들어오는 화살표 두 개
     const [d0, d1] = b.drive; GROUND.add('paint', flatXZ((d0 + d1) / 2 - .12, 249.3, (d0 + d1) / 2 + .12, 250.8, .045), 0xf2f4f5); });
   W.placeMany('wheelStop', stops);
-  Object.entries(cars).forEach(([key, list]) => { const [name, v] = key.split('/'); W.placeMany(name, list, {v:+v, snow:+v === 2 ? .35 : 1}); });
+  Object.entries(cars).forEach(([key, list]) => { const [name, v, gd] = key.split('/'); W.placeMany(name, list, {v:+v, snow:+v === 2 ? .35 : 1, ...(gd === '1' ? {guard:1} : {})}); });
   W.mmLabel(BIG.meat.x, 236, '고깃집', 10); W.mmLabel(BIG.mart.x, 236, '마트', 10); W.mmLabel(BIG.bath.x, 236, '목욕탕', 10);
 }
 

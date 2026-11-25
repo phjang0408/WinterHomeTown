@@ -117,7 +117,7 @@ export default {
 
     // ── 주차 줄: 길 가장자리에서 칸이 바깥으로 이어진다 ──
     // axis 'x': x0부터 동쪽으로 n칸, 칸 깊이는 z0에서 dir 쪽으로. axis 'z': z0부터 남쪽으로 n칸, 깊이는 x0에서 dir 쪽으로.
-    const stops = [], cars = {}, islands = [], bays = LOW.bays, car = (name, v, it) => (cars[name + '/' + v] || (cars[name + '/' + v] = [])).push(it);
+    const stops = [], cars = {}, islands = [], bays = LOW.bays, car = (name, v, it, gd = name !== 'truck1t' && Math.floor(it.x * 7 + it.z * 13) % 3 === 0) => { const key = name + '/' + v + '/' + (gd ? 1 : 0); (cars[key] || (cars[key] = [])).push(it); };   // (2026-11-25) 세 대 중 한 대쯤 문콕 방지 스펀지
     // 절반쯤은 후면주차(앞이 길 쪽). 기존 난수 순서를 흐트리지 않게 위치로 따로 정한다.
     const backIn = (x, z) => { const h = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453; return h - Math.floor(h) < .5; };
     function bayRow({x0, z0, n, axis, dir, dis = [], fill = .5}){
@@ -162,7 +162,7 @@ export default {
       .forEach(r => curb(...r));
     W.placeMany('wheelStop', stops);
     W.placeMany('planterIsland', islands, {len:5, wid:1.2});
-    Object.entries(cars).forEach(([key, list]) => { const [name, v] = key.split('/'); W.placeMany(name, list, {v:+v, snow:+v === 2 ? .35 : 1}); });
+    Object.entries(cars).forEach(([key, list]) => { const [name, v, gd] = key.split('/'); W.placeMany(name, list, {v:+v, snow:+v === 2 ? .35 : 1, ...(gd === '1' ? {guard:1} : {})}); });
 
     // ── 도로 표시: 횡단보도, 마름모(횡단보도 예고), 방향 화살표, 과속방지턱 ──
     // 횡단보도 줄무늬는 차가 달리는 방향으로 길고, 건너는 방향으로 늘어선다.

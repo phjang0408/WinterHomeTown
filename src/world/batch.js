@@ -179,7 +179,11 @@ export function batchStatic(){
   W.blockers.forEach(b => b.traverse(o => blocked.add(o)));
   // 카메라 가림 상자: 묶기 전에 따로 놓인 소품마다 상자를 잰다 (움직이는 소품 · 카메라 가림 건물은 빼고)
   const bx = new THREE.Box3();
-  for (const p of W.placed) { const def = getProp(p.name); if (p.obj.parent !== root || def.dynamic || def.update || def.blocksCamera || blocked.has(p.obj)) continue; p.obj.updateWorldMatrix(true, true); W.camBox(p.name, bx.setFromObject(p.obj)); }
+  // (2026-11-25) 소품 정의에 camParts(opts) → 로컬 상자 목록이 있으면 통째 상자 대신 그 상자들을 쓴다 (미끄럼틀 계단 · 탑 · 판, 뺑뺑이: 큰 소품이라 통째 상자는 너무 크거나 움직여서 빠지던 것)
+  const v0 = new THREE.Vector3(), v1 = new THREE.Vector3();
+  for (const p of W.placed) { const def = getProp(p.name); if (p.obj.parent !== root) continue;
+    if (def.camParts) { p.obj.updateWorldMatrix(true, true); def.camParts(p.opts || {}).forEach(q => W.camBoxRaw(bx.set(v0.set(q[0], q[1], q[2]), v1.set(q[3], q[4], q[5])).applyMatrix4(p.obj.matrixWorld))); continue; }
+    if (def.dynamic || def.update || def.blocksCamera || blocked.has(p.obj)) continue; p.obj.updateWorldMatrix(true, true); W.camBox(p.name, bx.setFromObject(p.obj)); }
   W.buildCamGrid(); out.camBoxes = W.camBoxes.length;
   instanceRepeats(blocked, singles, out);
   const cands = [];

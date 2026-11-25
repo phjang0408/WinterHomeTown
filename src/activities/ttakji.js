@@ -41,7 +41,8 @@ function myRound(){
   g.zw = w; g.zc = side ? w / 2 : 1 - w / 2; g.g = .5; g.dir = 1; g.speed = 1.1 + .18 * g.mine;
   hud.zone(g.zc - g.zw / 2, g.zw); hud.gauge('내 차례! 바늘이 딱지 모서리(색칠된 칸)에 올 때 내려치세요', true);
 }
-function waitText(){ const g = S.game; hud.zone(0, 0); hud.gauge(g.waiting ? '맞은편에 올 사람을 기다려요 · 혼자면 동네 형이랑 해요' : g.oppName + ' 차례…', false); }
+function waitText(){ const g = S.game; hud.zone(0, 0); hud.gauge(g.waiting ? '맞은편에 올 사람을 기다려요 · 혼자면 동네 형이랑 해요' : g.oppName + ' 차례…', false);
+  hud.cpu(g.waiting ? () => { if (S.game && S.game.waiting) setOpp(S.game, null); } : null); }   // (2026-11-25) 동네 형 버튼은 위 놀이 카드 안
 // 한 번 친 뒤(나 · 상대 모두): 끝났는지 보고 다음 차례로
 function next(){
   const g = S.game; if (S.mode !== 'ttakji' || !g) return; g.busy = false; stat();
@@ -53,7 +54,7 @@ function end(){
   const r = g.myF > g.oppF ? '이겼다!' : g.myF < g.oppF ? '졌다…' : '비겼다';
   finish(ttakji, '딱지 대결 · ' + r, g.myF, () => ttakji.start(g.k, g.seat));
 }
-function setOpp(g, R){ g.R = R; g.cpu = !R; g.waiting = false; g.oppName = R ? nameOf(R.a, R.n) : '동네 형'; g.seen = R ? R.tk[2] : 0; g.opp = 0; g.oppF = 0; publish(); stat();
+function setOpp(g, R){ hud.cpu(null); g.R = R; g.cpu = !R; g.waiting = false; g.oppName = R ? nameOf(R.a, R.n) : '동네 형'; g.seen = R ? R.tk[2] : 0; g.opp = 0; g.oppF = 0; publish(); stat();
   flash(R ? g.oppName + '와(과) 대결!' : '동네 형이 왔어요. 한판 해요!'); if (myTurn(g)) myRound(); else waitText(); }
 
 const ttakji = defineActivity({
@@ -93,7 +94,7 @@ const ttakji = defineActivity({
     after(300, () => { g.mine++; if (res === 2) g.myF++; g.last = res; publish(); flash(res === 2 ? '넘어갔다!' : res === 1 ? '아깝다!' : '꿈쩍도 안 함'); });
     after(1300, next);
   },
-  prompt(){ const g = S.game; return g && g.waiting ? {label:'동네 형이랑 하기', run:() => { if (S.game && S.game.waiting) setOpp(S.game, null); }} : null; },   // 내려치기는 E 또는 게이지의 '내려치기' 버튼(모바일)
+  prompt(){ return null; },   // 내려치기는 E 또는 게이지의 '내려치기' 버튼(모바일). (2026-11-25) 동네 형은 위 놀이 카드의 버튼 또는 E
   quit(){ me.tk = [9, 0, 0, 0, 0, 0]; arenas.forEach(A => { A.thrown.visible = false; }); },
   frame(dt, now){
     const g = S.game;

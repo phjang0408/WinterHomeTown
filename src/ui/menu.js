@@ -49,5 +49,5 @@ export function initMenu(o = {}){
     else if (key === 'dev') box.querySelectorAll('.keys').forEach(t => { t.hidden = t.dataset.dev !== v; }); }; });
   mark('sound', audio.on ? 'on' : 'off'); mark('quality', QUALITY.choice); qNote();
   const dev = coarse ? 'touch' : 'pc'; mark('dev', dev); box.querySelectorAll('.keys').forEach(t => { t.hidden = t.dataset.dev !== dev; });   // 조작법: 이 기기 쪽을 먼저
-  $('srv-addr').textContent = NET.kind === 'websocket' ? NET.url : '아티팩트 공유 방';
+  $('srv-addr').textContent = '찾는 중…';   // (2026-11-25) 연결 방식이 정해지면 main.js updateCount가 바꾼다
 }

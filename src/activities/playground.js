@@ -11,10 +11,10 @@ import { ST, UNIT } from '../config.js';
 import { buildProp } from '../props/registry.js';
 import { SEESAW_M } from '../props/aptYard.js';
 import { W } from '../world/world.js';
-import { me } from '../entities/player.js';
+import { me, standUp } from '../entities/player.js';
 import { SIT, POSES, waving } from '../entities/character.js';
 import { S } from '../core/state.js';
-import { sfx } from '../core/fx.js';
+import { sfx, flash, puff } from '../core/fx.js';
 import { defineActivity, seatTaken } from './registry.js';
 import { SEESAWS, DUCKS, MERRY } from '../map/layout.js';
 import { PUMP, pumpStart, pumpStop, pumpFrame, phaser } from './pump.js';
@@ -29,8 +29,8 @@ const saws = SEESAWS.map(c => ({c, base:null, beam:null, th:SEESAW_M.tilt, busy:
 const ssSeat = (q, i) => atLocal(q.beam, (i ? 1 : -1) * SEESAW_M.seat * UNIT, SEESAW_M.seatY * UNIT, 0);
 const ssPhase = phaser(2.4, .5, 1.3);
 const ssAmp = w => w === me ? PUMP.amp : (w.sa === undefined ? 0 : w.sa);
-const POP = {T:.95, H:1.6};   // 뜨는 시간(초) · 높이(m)
-let popT = 0;
+const POP = {T:.95, H:1.6, BOTH:.7};   // 뜨는 시간(초) · 높이(m) · (2026-11-25) 둘 다 세기가 BOTH를 넘으면 번갈아 계속 뛴다
+let popT = 0, popA = 0;
 const popY = (t0, now) => { const t = (now - t0) / (POP.T * 1000); return t > 0 && t < 1 ? POP.H * UNIT * 4 * t * (1 - t) : 0; };
 // 내 쪽이 얼마나 바닥에 가까운가 (1 = 바닥): 바늘 · 누를 때 판정
 function ssLow(){ const q = saws[me.seat >> 1], i = me.seat & 1, M = SEESAW_M.tilt; return (1 + (i ? -1 : 1) * q.th / M) / 2; }
@@ -55,7 +55,7 @@ defineActivity({
     const n = ssNearest(me.x, me.z); if (!n) return; const [q, i, p, d] = n;
     if (d < 3.2 && !seatTaken(p.x, p.z, ST.SEESAW)) offer(d, 3.2, '시소 타기', () => {
       me.st = ST.SEESAW; me.seat = saws.indexOf(q) * 2 + i; me.x = p.x; me.z = p.z; popT = 0;
-      pumpStart(.15, () => ssLow() > .78, '시소', '땅 차기', () => { if (popT) return; popT = performance.now(); sfx(300, 760, .3, 'triangle', .06); });
+      pumpStart(.15, () => ssLow() > .78, '시소', '땅 차기', () => { if (popT) return; popT = performance.now(); popA = 0; sfx(300, 760, .3, 'triangle', .06); }, -.08);
       me.onStand = () => { const s = ssSeat(q, i); me.x = s.x + Math.sin(q.c.rot) * 1.5; me.z = s.z + Math.cos(q.c.rot) * 1.5; me.y = undefined; popT = 0; pumpStop(); };
     });
   },
@@ -69,7 +69,10 @@ defineActivity({
       q.th += (target - q.th) * Math.min(1, dt * (both ? 8 : 6)); q.beam.rotation.z = q.th; });
     if (me.st === ST.SEESAW) {
       pumpFrame(dt, ssLow());
-      if (popT) { if (now - popT > POP.T * 1000) { popT = 0; PUMP.amp = .5; } else { PUMP.amp = 1; me.sa = [100]; } }   // 뜨는 동안 세기 100 (다른 사람 화면에서도 뜬다)
+      // (2026-11-25) 맞은편 사람과 둘 다 세기 BOTH 이상이면 뜀이 끝나도 바로 다음 뜀 (뛸 때마다 세기가 조금 빠지니 계속 땅을 차야 이어진다)
+      const q = saws[me.seat >> 1], i = me.seat & 1, both = q.used[1 - i] && q.amp[1 - i] >= POP.BOTH && (popT ? popA || 1 : PUMP.amp) >= POP.BOTH;
+      if (popT) { if (now - popT > POP.T * 1000) { popT = 0; PUMP.amp = popA ? Math.max(.08, popA - .06) : .5; } else { PUMP.amp = 1; me.sa = [100]; } }   // 뜨는 동안 세기 100 (다른 사람 화면에서도 뜬다)
+      if (!popT && both && PUMP.amp >= POP.BOTH) { popA = PUMP.amp; popT = now; sfx(300, 760, .3, 'triangle', .05); }
     }
   },
 });
@@ -101,15 +104,47 @@ defineActivity({
     ducks.forEach((o, i) => { o.rotation.x = dkBusy[i] !== false ? dkBusy[i] : o.rotation.x * (1 - Math.min(1, dt * 3)); dkBusy[i] = false; });
     if (me.st === ST.DUCK) pumpFrame(dt, Math.max(0, Math.sin(dkPhase(me.seat, now, PUMP.amp))));
   },
-  remoteFrame(R){ if (R.st !== ST.DUCK && R.st !== ST.SPIN && R.char && R.char.rotation.order !== 'XYZ') R.char.rotation.order = 'XYZ'; },
+  remoteFrame(R){ if (!OWN_ORDER.has(R.st) && R.char && R.char.rotation.order !== 'XYZ') R.char.rotation.order = 'XYZ'; },
 });
 
+// 몸 기준 기울기(YXZ)를 스스로 관리하는 상태: 이 밖의 상태가 되면 XYZ로 되돌린다 (2026-11-25 HANG · TWIN 추가)
+const OWN_ORDER = new Set([ST.DUCK, ST.SPIN, ST.HANG, ST.TWIN]);
 // ── 뺑뺑이 ──
 const MG = {obj:null, ang:0, w:0, R:1.25 * UNIT, ride:.8 * UNIT, top:.306 * UNIT, KICK:.28, PUSH:.55, MAX:3.4};
 const sectors = [0, 1, 2, 3, 4, 5].map(i => (i + .5) * PI / 3);           // 손잡이 사이 여섯 자리 (원판 기준 각도)
 const riderPhi = w => w === me ? me.mg[1] : (w.mgPhi || 0);
 function push(power){ MG.w = Math.min(MG.MAX, MG.w + power); me.mg[0] = (me.mg[0] + 1) % 1000; me.pushT = performance.now(); sfx(260 + MG.w * 40, 320 + MG.w * 50, .06, 'triangle'); }
-const remoteRiders = () => [...S.remotes.values()].filter(R => R.st === ST.RIDE);
+// (2026-11-25) 같이 타기 (슈퍼맨 자세): 돌리던 사람이 R(같이 타기) → 바깥 기둥 윗부분을 두 손으로 잡고 매달려 같이 돈다.
+//   빠를수록 원심력처럼 몸이 바깥으로 눕는다(손을 축으로 앞으로 기울임). 느리면 발이 땅에 닿을 만큼만 기운다. E · 이동키로 손 놓기.
+const HANG = {r:1.13 * UNIT, y:.78 * UNIT, L:1.62, MAX:1.45};
+function hangPose(w, ch, now){
+  const ph = riderPhi(w), H = atLocal(MG.obj, Math.cos(ph) * HANG.r, HANG.y, Math.sin(ph) * HANG.r);
+  const ox = H.x - MERRY.x, oz = H.z - MERRY.z, ol = Math.hypot(ox, oz) || 1, ux = ox / ol, uz = oz / ol;   // 바깥 방향
+  const gy = W.groundY(H.x + ux * 1.2, H.z + uz * 1.2), lo = Math.acos(Math.min(1, Math.max(-1, (H.y - gy - .02) / HANG.L)));
+  const want = lo + (HANG.MAX - lo) * Math.min(1, MG.w / 2.4) ** .8;
+  w.hangTh = w.hangTh === undefined ? lo : w.hangTh + (want - w.hangTh) * .08;
+  const th = Math.max(lo, w.hangTh), sw = Math.sin(now / 1000 * 3.1) * .04 * Math.min(1, MG.w / 2);   // 빠를 때 살짝 출렁
+  const rx = H.x + ux * HANG.L * Math.sin(th + sw), rz = H.z + uz * HANG.L * Math.sin(th + sw), ry = H.y - HANG.L * Math.cos(th + sw);
+  ch.position.set(rx, ry, rz); ch.rotation.order = 'YXZ'; ch.rotation.set(th + sw, Math.atan2(-ux, -uz), 0); w.y = ry;
+  if (w === me) { me.x = rx; me.z = rz; }
+}
+// 팔다리는 animChar 뒤에 (frame · remoteFrame에서) 덮어쓴다
+function hangLimbs(ch, now){
+  const u = ch.userData, f = Math.min(1, MG.w / 2), k = Math.sin(now / 1000 * 11) * .14 * f;
+  u.armL.rotation.x = u.armR.rotation.x = -3.0; u.armL.rotation.z = .32; u.armR.rotation.z = -.32;   // 두 팔을 머리 위로 뻗어 기둥을 잡는다
+  u.legL.rotation.x = .12 + k; u.legR.rotation.x = .12 - k; u.inner.position.y = 0;                    // 다리는 뒤로 쭉 (빠르면 파닥)
+}
+function hang(){
+  const rw = MG.R * MERRY.s; MG.obj.updateMatrixWorld(true); const l = MG.obj.worldToLocal(V.set(me.x, 0, me.z)), want = Math.atan2(l.z, l.x);
+  const taken = [...S.remotes.values()].filter(R => R.st === ST.HANG).map(R => R.mgPhi || 0), dist = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+  const free = [0, 1, 2, 3, 4, 5].map(i => i * PI / 3).filter(a => !taken.some(t => dist(a, t) < .4)).sort((a, b) => dist(a, want) - dist(b, want));
+  if (!free.length) return flash('잡을 기둥이 없어요');
+  me.st = ST.HANG; me.mg[1] = free[0]; me.sitT = 0; me.hangTh = undefined; me.seatAlt = null;
+  me.seatAct = {label:'손 놓기', run:standUp};
+  me.onStand = () => { const a = Math.atan2(me.z - MERRY.z, me.x - MERRY.x), out = rw + 1.1 + Math.min(1.2, MG.w * .4); me.x = MERRY.x + Math.cos(a) * out; me.z = MERRY.z + Math.sin(a) * out; me.y = undefined;
+    if (me.char) me.char.rotation.order = 'XYZ'; puff(me.x, W.groundY(me.x, me.z) + .3, me.z, 8); if (MG.w > 1.2) flash('으아~ 날아갔다!'); };
+  sfx(330, 520, .15, 'triangle'); flash('꽉 잡아! 슈퍼맨~');
+}
 defineActivity({
   id:'merry', st:ST.RIDE,
   setup(){
@@ -118,26 +153,31 @@ defineActivity({
       const ph = riderPhi(w), p = atLocal(MG.obj, Math.cos(ph) * MG.ride, MG.top, Math.sin(ph) * MG.ride);
       ch.position.copy(p); ch.rotation.set(0, yawToward(p.x, p.z, MERRY.x, MERRY.z), 0); w.y = p.y;
     });
+    POSES.set(ST.HANG, hangPose);
     POSES.set(ST.SPIN, (w, ch) => {   // 원판 옆 땅에 서서 원판이 도는 방향(시계 반대)을 본다
       const gy = W.groundY(w.x, w.z); ch.position.set(w.x, gy, w.z); w.y = gy;
       const a = Math.atan2(w.z - MERRY.z, w.x - MERRY.x); ch.rotation.set(0, yawToward(0, 0, Math.sin(a), -Math.cos(a)), 0);
     });
   },
+  // (2026-11-25) 기본이 '타기'(E) + '밀기'(R). 누가 타 있든 없든 둘 다 되고, 빈 자리(여섯)가 있으면 여러 명이 같이 탄다.
+  //   미는 중에는 E 연타로 밀기, R로 '같이 타기'(슈퍼맨 자세)
   offer(offer){
     const d = Math.hypot(me.x - MERRY.x, me.z - MERRY.z), rw = MG.R * MERRY.s; if (d >= rw + 2.4) return;
-    if (remoteRiders().length) offer(d - rw, 2.4, '뺑뺑이 돌리기', () => {
-      me.st = ST.SPIN; const a = Math.atan2(me.z - MERRY.z, me.x - MERRY.x); me.x = MERRY.x + Math.cos(a) * (rw + .75); me.z = MERRY.z + Math.sin(a) * (rw + .75);
-      me.seatAct = {label:'돌리기 (연타)', run:() => push(MG.PUSH)}; me.onStand = () => {};
-    });
-    else offer(d - rw, 2.4, '뺑뺑이 타기', () => {
+    offer(d - rw, 2.4, '뺑뺑이 타기', () => {
       MG.obj.updateMatrixWorld(true); const l = MG.obj.worldToLocal(V.set(me.x, 0, me.z)), want = Math.atan2(l.z, l.x);
-      const taken = remoteRiders().map(R => R.mgPhi || 0), dist = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+      const taken = [...S.remotes.values()].filter(R => R.st === ST.RIDE).map(R => R.mgPhi || 0), dist = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
       const free = sectors.filter(s => !taken.some(t => dist(s, t) < .5)).sort((a, b) => dist(a, want) - dist(b, want));
-      if (!free.length) return;
+      if (!free.length) return flash('자리가 꽉 찼어요');
       me.st = ST.RIDE; me.mg[1] = free[0];
       me.seatAct = {label:'발 굴러 밀기', run:() => push(MG.KICK)};
       me.onStand = () => { const a = Math.atan2(me.z - MERRY.z, me.x - MERRY.x); me.x = MERRY.x + Math.cos(a) * (rw + .9); me.z = MERRY.z + Math.sin(a) * (rw + .9); me.y = undefined; };
     });
+  },
+  altOffer(){
+    const d = Math.hypot(me.x - MERRY.x, me.z - MERRY.z), rw = MG.R * MERRY.s; if (d >= rw + 2.4) return null;
+    return {label:'뺑뺑이 밀기', run:() => {
+      me.st = ST.SPIN; const a = Math.atan2(me.z - MERRY.z, me.x - MERRY.x); me.x = MERRY.x + Math.cos(a) * (rw + .75); me.z = MERRY.z + Math.sin(a) * (rw + .75);
+      me.seatAct = {label:'밀기 (연타)', run:() => push(MG.PUSH)}; me.seatAlt = {label:'같이 타기', run:hang}; me.onStand = () => {}; push(MG.PUSH); }};
   },
   frame(dt, now){
     MG.w *= Math.exp(-.35 * dt); if (MG.w < .01) MG.w = 0;
@@ -146,8 +186,9 @@ defineActivity({
     const lean = c => { const e = (performance.now() - (c.pushT || 0)) / 1000; return e < .25 ? .35 * Math.sin(e / .25 * PI) : 0; };
     // (2026-11-22) 미는 사람이 등으로 미는 것처럼 보이던 것: 기울기를 세계 x축이 아니라 몸 기준(YXZ)으로 줘서 얼굴 쪽(앞)으로 숙인다
     if (me.st === ST.SPIN && me.char) { const u = me.char.userData; u.armL.rotation.x = -1.35; me.char.rotation.order = 'YXZ'; me.char.rotation.x = lean(me); }
-    else if (me.char && me.st !== ST.DUCK && me.char.rotation.order !== 'XYZ') me.char.rotation.order = 'XYZ';
+    else if (me.char && !OWN_ORDER.has(me.st) && me.char.rotation.order !== 'XYZ') me.char.rotation.order = 'XYZ';
     else if (me.st === ST.RIDE && me.char) { const u = me.char.userData; u.armL.rotation.x = -1.1; }
+    if (me.st === ST.HANG && me.char) hangLimbs(me.char, now);
   },
   remote(R, p){
     R.mgPhi = p.mg[1];
@@ -158,5 +199,6 @@ defineActivity({
     if (!R.char) return; const u = R.char.userData;
     if (R.st === ST.SPIN) { u.armL.rotation.x = -1.35; const e = (performance.now() - (R.pushT || 0)) / 1000; R.char.rotation.order = 'YXZ'; R.char.rotation.x = e < .25 ? .35 * Math.sin(e / .25 * PI) : 0; }
     else if (R.st === ST.RIDE) u.armL.rotation.x = -1.1;
+    else if (R.st === ST.HANG) hangLimbs(R.char, performance.now());
   },
 });

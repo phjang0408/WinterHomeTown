@@ -7,7 +7,7 @@
 import { S } from '../core/state.js';
 import { COLORS } from '../config.js';
 import { W } from '../world/world.js';
-import { WORLD, NROAD, ROAD, RAILS, PLAT, BRIDGES, LOOP, PIT, SNOW, FOUNTAIN, TKS, GONGGI, STN_AT, GOGUMA, HOTTEOK, SLED, KITE, BIG, SCHOOL } from '../map/layout.js';
+import { WORLD, NROAD, ROAD, RAILS, PLAT, BRIDGES, LOOP, PIT, SNOW, FOUNTAIN, TKS, GONGGI, TWIN, STN_AT, GOGUMA, HOTTEOK, SLED, KITE, BIG, SCHOOL } from '../map/layout.js';
 
 const mini = document.getElementById('mini'), g = mini.getContext('2d');
 const big = document.getElementById('bigmap'), bc = document.getElementById('bigmap-c'), bg = bc.getContext('2d');
@@ -106,6 +106,7 @@ function drawMap(c, k, f){
     else if (kind === 'arcade') { c.fillStyle = '#3d6fb8'; c.fillRect(-4 * u, -6 * u, 8 * u, 12 * u); c.strokeRect(-4 * u, -6 * u, 8 * u, 12 * u); c.fillStyle = '#bfe6ff'; c.fillRect(-2.6 * u, -4.4 * u, 5.2 * u, 3.8 * u); c.strokeRect(-2.6 * u, -4.4 * u, 5.2 * u, 3.8 * u); circ(-1.5, 2.6, .9, '#e8463c'); circ(1.6, 2.6, .9, '#f2d24a'); }
     else if (kind === 'ttakji') { c.save(); c.rotate(.35); c.fillStyle = '#3d6fb8'; c.fillRect(-5 * u, -5 * u, 7 * u, 7 * u); c.strokeRect(-5 * u, -5 * u, 7 * u, 7 * u); c.restore(); c.save(); c.rotate(-.2); c.fillStyle = '#d9463c'; c.fillRect(-1 * u, -1 * u, 7 * u, 7 * u); c.strokeRect(-1 * u, -1 * u, 7 * u, 7 * u); c.restore(); }
     else if (kind === 'gonggi') { [['#e8463c', -3.5, -2], ['#f2d24a', 0, -3.6], ['#4f9e58', 3.5, -2], ['#3d6fb8', -2, 2.6], ['#b06fd0', 2.2, 2.6]].forEach(([col, a, b]) => circ(a, b, 1.9, col)); }
+    else if (kind === 'twin') { [-1, 1].forEach(sd => { c.fillStyle = '#d9b98a'; c.fillRect((sd * 2.6 - .8) * u, 2.5 * u, 1.6 * u, 4 * u); c.fillStyle = '#6b3d22'; c.fillRect((sd > 0 ? .3 : -5.3) * u, -6 * u, 5 * u, 9 * u); c.strokeRect((sd > 0 ? .3 : -5.3) * u, -6 * u, 5 * u, 9 * u); }); }   // (2026-11-25) 나눠바 반쪽 둘
     else if (kind === 'food') { c.beginPath(); c.ellipse(0, 1.5 * u, 6 * u, 3.2 * u, -.35, 0, Math.PI * 2); c.fillStyle = '#9a5b34'; c.fill(); c.stroke(); c.beginPath(); c.moveTo(-2 * u, -3 * u); c.quadraticCurveTo(-3.4 * u, -5 * u, -2 * u, -7 * u); c.moveTo(1.5 * u, -3 * u); c.quadraticCurveTo(.1 * u, -5 * u, 1.5 * u, -7 * u); c.stroke(); }
     else if (kind === 'pavilion') { c.beginPath(); c.moveTo(-7 * u, -1 * u); c.lineTo(0, -6 * u); c.lineTo(7 * u, -1 * u); c.closePath(); c.fillStyle = '#b8664f'; c.fill(); c.stroke(); c.fillStyle = '#e9d3a6'; c.fillRect(-5 * u, -1 * u, 10 * u, 6 * u); c.strokeRect(-5 * u, -1 * u, 10 * u, 6 * u); }
     c.restore(); };
@@ -120,7 +121,8 @@ function drawMap(c, k, f){
 
   act('swing', '놀이터', 87, 176, 6.5);
   act('snowman', '눈사람 만들기', (SNOW.field.x0 + SNOW.field.x1) / 2, 176, 6.5);
-  act('ttakji', '딱지치기', TKS[0].x, TKS[0].z - 4); act('gonggi', '공기놀이', GONGGI.x, GONGGI.z - 4);
+  { const side = (kind, name, z) => { const r = 4.2 * 1.3, x = TWIN.x - 16; icon(kind, x, z, r); text(name, x + r + 1.8, z, f.act, C.ink, 800, 'left'); };   // (2026-11-25) 세 놀이를 위아래로, 이름은 오른쪽
+    side('ttakji', '딱지치기', TKS[0].z - 7.5); side('twin', '나눠바', TWIN.z - 4.5); side('gonggi', '공기놀이', GONGGI.z - 1.5); }
   act('arcade', '문구점', STN_AT.x, STN_AT.z - 1);
   act('food', '노점', (GOGUMA.x + HOTTEOK.x) / 2, GOGUMA.z - 1);
   act('sled', '얼음 썰매장', (SLED.x0 + SLED.x1) / 2, SLED.zc - 5, 4.6, C.inkDark);

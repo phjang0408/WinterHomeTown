@@ -54,7 +54,7 @@ function makeReel(){
   const el = document.createElement('div'); el.id = 'reel'; el.hidden = true;
   // (2026-11-22 2차) 오른쪽으로: R 버튼(오른쪽 아래, 높이 약 44px) 바로 위에 붙인다. 화면이 낮으면(가로 모바일) 미니맵과 겹치지 않게 R 버튼 왼쪽에
   const small = innerHeight < 560;
-  el.style.cssText = 'position:fixed;' + (small ? 'right:160px;bottom:64px' : 'right:14px;bottom:' + (matchMedia('(pointer:coarse)').matches ? 188 : 184) + 'px') + ';z-index:25;width:' + (small ? 140 : 170) + 'px;padding:8px 10px 10px;background:rgba(16,18,20,.8);border:1px solid rgba(255,255,255,.2);border-top:2px solid #e3a53b;' +
+  el.style.cssText = 'position:fixed;' + (small ? 'left:160px;bottom:64px' : 'left:14px;bottom:' + (matchMedia('(pointer:coarse)').matches ? 188 : 184) + 'px') + ';z-index:25;width:' + (small ? 140 : 170) + 'px;padding:8px 10px 10px;background:rgba(16,18,20,.8);border:1px solid rgba(255,255,255,.2);border-top:2px solid #e3a53b;' +
     'color:#eceae4;font:600 12px var(--body, sans-serif);touch-action:none;user-select:none';
   el.innerHTML = '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>얼레</span><span id="reel-h"></span></div>' +
     '<svg id="reel-svg" viewBox="-50 -50 100 100" width="' + (small ? 112 : 148) + '" height="' + (small ? 112 : 148) + '" style="display:block;margin:0 auto;cursor:grab">' +

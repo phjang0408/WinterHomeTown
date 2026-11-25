@@ -43,8 +43,13 @@ export const hud = {
   topBar(label){ const t = topEl(); t.hidden = false; hud.topSet(0, label); },
   topSet(v, label, num){ const t = topEl(); if (label !== undefined) t.querySelector('#tb-label').textContent = label; t.querySelector('#tb-num').textContent = num === undefined ? Math.round(Math.max(0, Math.min(1, v)) * 100) + '%' : num;
     t.querySelector('#tb-fill').style.width = Math.max(0, Math.min(1, v)) * 100 + '%'; },
-  showGame(title, o = {}){ $('game-title').textContent = title; $('game-stat').textContent = ''; $('gauge').hidden = true; $('slam').hidden = true; fillEl().style.width = '0'; meterOff(); quitLabel(); $('game-quit').hidden = o.quit === false; $('game').hidden = false; },   // 앞 놀이의 글이 남지 않게 비운다
+  showGame(title, o = {}){ hud.cpu(null); $('game-title').textContent = title; $('game-stat').textContent = ''; $('gauge').hidden = true; $('slam').hidden = true; fillEl().style.width = '0'; meterOff(); quitLabel(); $('game-quit').hidden = o.quit === false; $('game').hidden = false; },   // 앞 놀이의 글이 남지 않게 비운다
   stat(text){ $('game-stat').textContent = text; },
+  // (2026-11-25) 위 놀이 카드 안 '동네 형이랑 하기' 버튼 (딱지): 떠 있는 E 안내가 게임 화면(게이지)과 겹치던 것. run이 없으면 숨긴다
+  cpu(run){ let b = $('game-cpu'); if (!b) { b = document.createElement('button'); b.id = 'game-cpu'; b.type = 'button';
+      b.style.cssText = 'padding:5px 12px;background:#e3a53b;color:#17191b;border:0;border-radius:0;font:800 12px var(--body, sans-serif)';
+      b.textContent = '동네 형이랑 하기' + (matchMedia('(pointer:coarse)').matches ? '' : ' · E'); b.addEventListener('click', () => { if (hud.cpuRun) hud.cpuRun(); }); $('game-quit').before(b); }
+    hud.cpuRun = run || null; b.hidden = !run; $('game-stat').hidden = !!run; },   // 버튼이 있는 동안 상태 글은 숨긴다 (카드가 넓어져 위 이름표와 겹치지 않게)
   hideGame(){ if ($('topbar')) $('topbar').hidden = true; $('game').hidden = true; $('gauge').hidden = true; $('slam').hidden = true; document.getElementById('scene').classList.remove('aim'); },
   gauge(text, withButton){ $('gauge').hidden = false; $('gauge-text').textContent = text; $('slam').hidden = !withButton; },
   zone(left, width){ $('zone').style.left = left * 100 + '%'; $('zone').style.width = width * 100 + '%'; },
@@ -56,7 +61,10 @@ export const hud = {
   hideGauge(){ $('gauge').hidden = true; fillEl().style.width = '0'; meterOff(); },
   aim(on){ document.getElementById('scene').classList.toggle('aim', on); },
   prompt(label, tone){ const pb = $('prompt'), k = label + '|' + (tone || ''); if (pb.dataset.l === k) return; pb.dataset.l = k; pb.hidden = !label; pb.className = tone || ''; pb.innerHTML = '<kbd>E</kbd>'; pb.append(label); },   // tone: 'food'(먹기)면 색이 바뀐다
-  result(title, score, line, again){ $('res-title').textContent = title; $('res-score').textContent = score; $('res-line').textContent = line; $('result').hidden = false; hud.again = again; },
+  // (2026-11-25) img: 결과 그림(캔버스 등)을 점수 아래에 붙인다. 없으면 비운다
+  result(title, score, line, again, img){ $('res-title').textContent = title; $('res-title').hidden = !title; $('res-score').textContent = score; $('res-line').textContent = line;
+    let box = $('res-img'); if (!box) { box = document.createElement('div'); box.id = 'res-img'; box.style.cssText = 'display:flex;justify-content:center;margin:6px 0 2px'; $('res-score').after(box); }
+    box.replaceChildren(...(img ? [img] : [])); box.hidden = !img; $('result').hidden = false; hud.again = again; },
   modalOpen(){ return !$('result').hidden || !$('menu').hidden; },
   again:null,
 };

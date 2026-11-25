@@ -17,7 +17,8 @@ const litMaterial = () => once('lit', () => new THREE.MeshBasicMaterial({name:'l
 const cyl = (r0, r1, h, seg = 12) => new THREE.CylinderGeometry(r0, r1, h, seg);
 
 // ── 회전놀이기구 (뺑뺑이): 무늬 강판 원판, 가운데 기둥, 스테인리스 손잡이 틀 여섯 개 ──
-defineProp('merryGoRound', {dynamic:true, label:'회전놀이기구', category:'놀이터', isNewStyle:true, colliders:[{c:[0, 0, 1.3 * U]}],
+defineProp('merryGoRound', {dynamic:true, camParts:() => [[-1.2 * U, 0, -1.2 * U, 1.2 * U, 1.4 * U, 1.2 * U]],   // (2026-11-25) 돌아도 같은 상자
+  label:'회전놀이기구', category:'놀이터', isNewStyle:true, colliders:[{c:[0, 0, 1.3 * U]}],
   usage:"W.place('merryGoRound', {x: 92, z: 168});  // 지름 2.5m", build(){
     const P = new Parts(), R = 1.25, Y = .3, HT = 1.0, st = (g, c = STEEL) => P.add('met', g, c);
     P.add('dsk', xf(cyl(R, R, .045, 48), {y:Y - .022}), 0xffffff); st(xf(new THREE.TorusGeometry(R, .034, 8, 48), {rx:PI / 2, y:Y - .022}));
@@ -92,6 +93,12 @@ defineProp('spiralSlide', {label:'U자 미끄럼틀', category:'놀이터', isNe
   colliders:(() => { const S = SPIRAL, D = S.deck, T = S.stair;
     return [[T[0] - .12, T[1], T[0], T[3]], [T[2], T[1], T[2] + .12, T[3]], [D[0] - .12, D[1], D[0], D[3]], [D[2], D[1], D[2] + .12, D[3]], [D[0], D[3] - .06, T[0], D[3] + .06], [T[2], D[3] - .06, D[2], D[3] + .06]]
       .map(r => ({r:r.map(v => v * U)})).concat([{r:[D[0], D[1] - .14, D[2], D[1] + .02].map(v => v * U), y0:(S.H - 1.2) * U}]); })(),   // (2026-11-21) 탑 앞(미끄럼판 쪽)은 탑 위에서만 막는다: 걸어 나가다 떨어지지 않게
+  // (2026-11-25) 카메라 가림 상자: 탑 · 계단(네 토막, 난간 높이까지) · 미끄럼판(길 따라 짧은 상자). 카메라가 난간 · 판 속으로 들어가 화면이 번쩍이던 것
+  camParts:() => { const S = SPIRAL, D = S.deck, T = S.stair, out = [[D[0], 0, D[1], D[2], S.H + 1, D[3]]];
+    for (let i = 0; i < 4; i++) { const z0 = T[1] + (T[3] - T[1]) * i / 4, z1 = T[1] + (T[3] - T[1]) * (i + 1) / 4; out.push([T[0] - .1, 0, z0, T[2] + .1, S.H * (1 - i / 4) + 1, z1]); }
+    const P = spiralPath(84); for (let i = 0; i + 1 < P.length; i += 2) { const a = P[i], b = P[Math.min(P.length - 1, i + 2)], w = S.hw + .2;
+      out.push([Math.min(a.x, b.x) - w, Math.min(a.y, b.y) - .25, Math.min(a.z, b.z) - w, Math.max(a.x, b.x) + w, Math.max(a.y, b.y) + .55, Math.max(a.z, b.z) + w]); }
+    return out.map(q => q.map(v => v * U)); },
   usage:"W.place('spiralSlide', {x: 106, z: 159, rot: 0});  // 약 9m × 15m (탑은 동쪽, 계단 +z, U턴 하나)", build(){
     const P = new Parts(), S = SPIRAL, H = S.H, pl = (g, c) => P.add('pla', g, c), mt = (g, c) => P.add('mat', g, c), pts = spiralPath(420), n = pts.length;
     // 미끄럼판: U자 단면을 길 따라 이어 붙인다. 출발 2m는 넓게 벌어진 입구(flare)

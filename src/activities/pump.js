@@ -19,16 +19,17 @@ export function phaser(W0, gain, off){
 //   밀기는 E(또는 E 버튼). 일어나기는 방향키(이동)로 한다. onFull: 세기가 가득 차면 한 번 부른다 (시소: 몸이 위로 뜬다)
 const ZONE = .78;
 let shown = -1;
-export function pumpStart(a0, good, name, label = '엉덩이로 밀기', onFull = null){
-  PUMP.amp = a0; PUMP.good = good; PUMP.name = name; PUMP.onFull = onFull;
+// miss: 칸 밖에서 눌렀을 때 세기 변화 (기본 +0.025, 시소는 2026-11-25부터 -0.08: 노란 칸이 아니면 힘이 빠진다)
+export function pumpStart(a0, good, name, label = '엉덩이로 밀기', onFull = null, miss = .025){
+  PUMP.amp = a0; PUMP.good = good; PUMP.name = name; PUMP.onFull = onFull; PUMP.miss = miss;
   me.seatAct = {label, run:pump}; me.seatAlt = null; me.sa = [Math.round(a0 * 100)];
   hud.gauge(name + ' · 세기 ' + Math.round(a0 * 100) + '%', false); hud.zone(ZONE, 1 - ZONE); hud.fill(0); hud.needle(0); hud.meter(a0); shown = -1;
 }
 export function pumpStop(){ PUMP.good = null; PUMP.onFull = null; me.seatAct = null; me.seatAlt = null; me.sa = [0]; hud.hideGauge(); }
 function pump(){
   if (!PUMP.good) return;
-  const ok = PUMP.good(); PUMP.amp = Math.min(1, PUMP.amp + (ok ? .1 : .025));
-  sfx(ok ? 330 : 220, ok ? 520 : 260, .08, 'triangle', .04);
+  const ok = PUMP.good(); PUMP.amp = Math.max(.08, Math.min(1, PUMP.amp + (ok ? .1 : PUMP.miss)));
+  sfx(ok ? 330 : 180, ok ? 520 : 140, .08, 'triangle', .04);
   if (PUMP.amp >= 1 && PUMP.onFull) PUMP.onFull();
 }
 // needle: 지금 때(0~1, 1에 가까울수록 누르기 좋은 때)

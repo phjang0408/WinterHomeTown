@@ -7,13 +7,14 @@ import { PI, rnd } from './core/util.js';
 import { audio, sfx, flash, updateFx, after } from './core/fx.js';
 import { updateCamera, camLook } from './core/camera.js';
 import { initInput, turnCamera, freeMove } from './core/input.js';
-import { coarse, reduceMotion, COLORS, ADJ, NOUN, FONTS_TO_LOAD } from './config.js';
+import { coarse, reduceMotion, COLORS, ADJ, NOUN, FONTS_TO_LOAD, NET } from './config.js';
 import './props/basic.js';
 import './props/parkBench.js';
 import './props/snowmanCoop.js';
 import './props/kite.js';
 import './props/parkFountain.js';
 import './props/goguma.js';
+import './props/twinbar.js';
 import './props/aptTower.js';
 import './props/cars.js';
 import './props/aptSite.js';
@@ -60,6 +61,7 @@ function updateCount(){
   $('count').textContent = S.remotes.size + 1;
   $('net').textContent = net.online ? (S.remotes.size ? '동네 서버에 연결됨 · 함께 걷는 중' : '동네 서버에 연결됨') : '연결 안 됨 · 혼자 걷는 중';
   $('net-dot').classList.toggle('on', !!net.online);
+  $('srv-addr').textContent = net.kind === 'room' ? '아티팩트 공유 방' : net.kind === 'websocket' ? NET.url : '찾는 중…';
   if (menuOpen() && menuTab() === 'server') fillRoster();   // (2026-11-24) 접속자 · 점수표는 메뉴의 서버 탭에
 }
 function fillRoster(){

@@ -24,10 +24,13 @@ export function updateCamera(dt, now){
     // (2026-11-24) 카메라 당기기: 캐릭터와 카메라 사이에 소품(차 · 벤치 · 담 · 가게 등)이 있으면 그 앞으로 당긴다 (world.js camRay, 상자 판정)
     const tb = W.camRay(head, dir, d + .3); if (tb !== null) d = Math.min(d, Math.max(.9, tb - .3));
     // 아래에서 올려다볼 때(시점을 위로) 카메라가 땅에 묻히지 않게, 땅에 닿는 자리까지 당긴다
-    if (dir.y < .15) for (let t = .5; t < d; t += .3) { const y = head.y + dir.y * t; if (y < W.groundY(head.x + dir.x * t, head.z + dir.z * t, me.char.position.y) + .25) { d = Math.max(.8, t - .25); break; } }
+    // (2026-11-25) 땅 · 계단 때문에 당길 때는 바로 튀지 않게 빠르게 따라간다 (계단 단마다 카메라가 툭툭 끊기던 것). 건물 · 소품은 그대로 바로 당긴다
+    let dg = d; if (dir.y < .15) for (let t = .5; t < d; t += .3) { const y = head.y + dir.y * t; if (y < W.groundY(head.x + dir.x * t, head.z + dir.z * t, me.char.position.y) + .25) { dg = Math.max(.8, t - .25); break; } }
+    C.gd = C.gd === undefined ? dg : C.gd + (dg - C.gd) * Math.min(1, dt * 9); d = Math.min(d, Math.max(dg, C.gd));
     C.cur = d < C.cur ? d : C.cur + (d - C.cur) * Math.min(1, dt * 4);
     want.copy(head).addScaledVector(dir, C.cur);
-    const gy = W.groundY(want.x, want.z, me.char.position.y) + .25; if (want.y < gy) want.y = gy;
+    const gy = W.groundY(want.x, want.z, me.char.position.y) + .25; C.fy = C.fy === undefined ? gy : C.fy + (gy - C.fy) * Math.min(1, dt * 10);   // 카메라 밑 땅 높이도 부드럽게
+    if (want.y < Math.min(gy, C.fy)) want.y = Math.min(gy, C.fy);
     look.copy(head);
   }
   C.blend = Math.min(1, C.blend + dt * 1.6);
@@ -38,5 +41,13 @@ export function updateCamera(dt, now){
   { const nn = Math.min(8, Math.max(.3, camPos.distanceTo(camLook) * .02)); if (Math.abs(camera.near - nn) > .02) { camera.near = nn; camera.updateProjectionMatrix(); } }
   if (sky) sky.position.copy(camPos);
   const sx = S.mode === 'intro' ? INTRO.x : camLook.x, sz = S.mode === 'intro' ? INTRO.z : camLook.z;
-  sun.target.position.set(sx, 0, sz); sun.position.set(sx + SUN_OFF.x, SUN_OFF.y, sz + SUN_OFF.z);
+  snapSun(sx, sz);
+}
+// (2026-11-25) 그림자 지도를 텍셀 크기만큼 끊어서 옮긴다: 걸을 때 그림자 가장자리가 지글지글 떨리던(깜빡이던) 것.
+//   해 방향 기준 좌표로 바꿔 가로 · 세로를 텍셀 단위로 반올림하고 다시 세계 좌표로 돌린다.
+const LROT = new THREE.Matrix4().lookAt(SUN_OFF, new THREE.Vector3(), new THREE.Vector3(0, 1, 0)), LINV = LROT.clone().invert(), SV = new THREE.Vector3();
+function snapSun(x, z){
+  const c = sun.shadow.camera, tx = (c.right - c.left) / sun.shadow.mapSize.x;
+  SV.set(x, 0, z).applyMatrix4(LINV); SV.x = Math.round(SV.x / tx) * tx; SV.y = Math.round(SV.y / tx) * tx; SV.applyMatrix4(LROT);
+  sun.target.position.copy(SV); sun.position.copy(SV).add(SUN_OFF);
 }

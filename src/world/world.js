@@ -102,6 +102,7 @@ export const W = {
   updateAnimated(dt, now){ for (const a of this.animated) a.update(a.obj, dt, now); },
   // 거리 숨김: 카메라에서 far보다 먼 칸은 그리지 않는다 (그림자도 같이 빠진다)
   // 카메라 가림 상자 (2026-11-24): 키 0.6 넘는 소품 상자만. 나무 · 가는 기둥 · 머리 위 구조물(육교 · 대합 지붕)은 넣지 않는다.
+  camBoxRaw(b){ if (!b.isEmpty()) this.camBoxes.push([b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z]); },   // (2026-11-25) 크기 거르기 없이 (소품 정의의 camParts)
   camBox(name, b){ if (CAM_SKIP.has(name) || b.isEmpty()) return; const h = b.max.y - b.min.y, area = (b.max.x - b.min.x) * (b.max.z - b.min.z);
     if (h < .6 || area > 40) return; this.camBoxes.push([b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z]); },
   buildCamGrid(){ const G = this.camGrid = new Map(), C = 16;
