@@ -6,7 +6,8 @@
 //     구경하는 쪽은 같은 그리기 함수로 다시 그린다. 적이 내려오는 길 · 적 총알은 (적 번호, 시작 시각, 목표 x)로 정해지므로 몇 개 숫자면 된다.
 //   그림 · 이름은 모두 지어낸 것 (실제 게임의 그림을 본뜨지 않는다).
 import * as THREE from '../lib/three.js';
-import { ST, UNIT, FONT_D, FONT_B } from '../config.js';
+import { ST, UNIT, FONT_D, FONT_B, FONT_UI } from '../config.js';
+import { root } from '../core/engine.js';
 import { S } from '../core/state.js';
 import { sfx, flash, puff } from '../core/fx.js';
 import { W } from '../world/world.js';
@@ -494,6 +495,21 @@ function watchState(Rm, w){
   }
   return {menu:true};
 }
+// (2026-11-25) 누가 하고 있는 오락기(가위바위보 · 오락기) 위에 '사용중 / (구경 가능)' 표. 3D 이름표와 같은 모양(어두운 판 + 위쪽 호박색 띠), 두 줄
+let busyTags = null, busyT = 0;
+function busySprite(){
+  const K = 3, c = document.createElement('canvas'), g = c.getContext('2d'); c.width = 200 * K; c.height = 92 * K;
+  g.fillStyle = 'rgba(16,18,20,.82)'; g.fillRect(0, 0, c.width, c.height); g.fillStyle = '#e3a53b'; g.fillRect(0, 0, c.width, 5 * K);
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#f2efe8'; g.font = '700 ' + 36 * K + 'px ' + FONT_UI; g.fillText('사용중', c.width / 2, 36 * K);
+  g.fillStyle = '#e3a53b'; g.font = '600 ' + 24 * K + 'px ' + FONT_UI; g.fillText('(구경 가능)', c.width / 2, 70 * K);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true})); sp.renderOrder = 11; sp.scale.set(.85 * 200 / 92, .85, 1); return sp;
+}
+function updateBusy(now){
+  if (now - busyT < 300) return; busyT = now;
+  if (!busyTags) busyTags = MACH.filter(m => m.kind !== 'gacha' && m.kind !== 'gonggi').map(m => { const sp = busySprite(); sp.position.set(m.x, W.groundY(m.x, m.z) + 4.1, m.z); sp.visible = false; root.add(sp); return {m, sp}; });
+  busyTags.forEach(t => { t.sp.visible = !!watchedBy(t.m); });
+}
 const watchedBy = m => { for (const R of S.remotes.values()) if (R.st === ST.ARCADE && R.ar && R.ar[0] === m.id && Math.hypot(R.x - m.sx, R.z - m.sz) < 3) return R; return null; };
 
 const arcade = defineActivity({
@@ -529,6 +545,7 @@ const arcade = defineActivity({
   frame(dt, now, moved){
     swingKeyring(me.char, now, moved);
     if (me.char && me.kr && me.char.userData.krK !== me.kr) setKeyring(me.char, me.kr);
+    updateBusy(now);
     if (S.mode !== 'arcade' || !S.game || !ui) return;
     const g = S.game; g.t += dt;
     if (g.watch) {

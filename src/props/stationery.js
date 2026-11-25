@@ -357,20 +357,21 @@ export const STATIONERY_LAYOUT = [
   ['stationeryShop', {}, 0, 0, 0],   // (2026-11-24) 차양막은 뺐다 (기계 · 설명판을 가렸다)
   // (2026-11-23 3차) 놀이 기계는 1.3배 크기 그대로 가게 앞벽에 붙인다 (z 3.88m, 등이 벽). 가운데 문(x -2.6 ~ 2.6)은 비운다.
   //   기계마다 위에 게임 설명판(gameBoard)을 단다 (예전 '게임존' · '키링존' 이름표 대신).
-  //   왼쪽(서): 벽돌 깨기(빨강) · 은하 대작전(파랑) + 걸상 · 음료 냉장고. 오른쪽(동): 뽑기 기계 셋 · 가위바위보
-  ['miniArcade', {c:0xd83a2e, s:1.3}, -3.06, 0, 3.88], ['miniArcade', {c:0x2f6fb5, s:1.3}, -4.01, 0, 3.88], ['drinkFridge', {}, -4.97, 0, 3.85],
-  ['kidStool', {}, -3.06, 0, 4.78], ['kidStool', {}, -4.01, 0, 4.78],
+  //   왼쪽(서): 벽돌 깨기(빨강) · 음료 냉장고 · 은하 대작전(파랑) + 걸상. 오른쪽(동): 뽑기 기계 셋 · 가위바위보
+  //   (2026-11-25) 은하 대작전과 냉장고 자리를 바꿨다: 둘 다 사용중일 때 기계 위 '사용중' 표가 겹치지 않게
+  ['miniArcade', {c:0xd83a2e, s:1.3}, -3.06, 0, 3.88], ['drinkFridge', {}, -4.01, 0, 3.85], ['miniArcade', {c:0x2f6fb5, s:1.3}, -4.97, 0, 3.88],
+  ['kidStool', {}, -3.06, 0, 4.78], ['kidStool', {}, -4.97, 0, 4.78],
   // (2026-11-24 21차) 기계 앞 서는 자리 바닥 표시 (오락기 둘 · 뽑기 줄 · 가위바위보)
   //   (2026-11-24) 세로로 길게(1.25m): 기계 쪽 끝은 그대로 두고 앞(남쪽)으로 늘림
-  ['playPad', {w:.85, d:1.25}, -4.01, 0, 5.0], ['playPad', {w:.85, d:1.25}, -3.06, 0, 5.0], ['playPad', {w:1.75, d:1.25}, 3.54, 0, 5.05], ['playPad', {w:.85, d:1.25}, 5.0, 0, 5.03],
+  ['playPad', {w:.85, d:1.25}, -4.97, 0, 5.0], ['playPad', {w:.85, d:1.25}, -3.06, 0, 5.0], ['playPad', {w:1.75, d:1.25}, 3.54, 0, 5.05], ['playPad', {w:.85, d:1.25}, 5.0, 0, 5.03],
   ['gachaRow', {n:3, s:1.3}, 3.54, 0, 3.88], ['rpsMachine', {s:1.3}, 5.0, 0, 3.86],
-  ['hulaHoops', {}, -5.85, 0, 3.65],
+  ['hulaHoops', {}, -6.0, 0, 3.65],   // (2026-11-25) 은하 대작전이 옆으로 와서 조금 더 서쪽
   ['gameBoard', {text:'벽돌 깨기', bg:'#3b1d1a', fg:'#ffb74d', w:.9}, -3.06, 1.93, 3.88],
-  ['gameBoard', {text:'은하 대작전', bg:'#14213d', fg:'#7fd3ff', w:.9}, -4.01, 1.93, 3.88],
+  ['gameBoard', {text:'은하 대작전', bg:'#14213d', fg:'#7fd3ff', w:.9}, -4.97, 1.93, 3.88],
   ['gameBoard', {text:'행운 뽑기', bg:'#a3154a', fg:'#ffe9a0', w:1.7}, 3.54, 1.76, 3.88],
   ['gameBoard', {text:'가위바위보', bg:'#173f9e', fg:'#ffd23f', w:.9}, 5.0, 1.91, 3.86]];
 // 놀이 자리 (activities/arcade.js): 건물 원점 기준 미터, 기계 위치와 방향 r. 사람은 기계 앞(+z를 r만큼 돌린 쪽) d m(기본 0.8)에 선다. 공기놀이는 공원(layout.js GONGGI)
-export const STATIONERY_ARCADES = [{kind:'cab', game:1, x:-4.01, z:3.88, d:.9}, {kind:'cab', game:2, x:-3.06, z:3.88, d:.9}, {kind:'gacha', x:3.54, z:3.88, d:.95}, {kind:'rps', x:5.0, z:3.86, d:.95}];
+export const STATIONERY_ARCADES = [{kind:'cab', game:1, x:-4.97, z:3.88, d:.9}, {kind:'cab', game:2, x:-3.06, z:3.88, d:.9}, {kind:'gacha', x:3.54, z:3.88, d:.95}, {kind:'rps', x:5.0, z:3.86, d:.95}];
 export const STATIONERY_ZONES = [];   // (2026-11-23 3차) '게임존' · '키링존' 이름표는 빼고 기계마다 설명판(gameBoard)을 단다
 export const STATIONERY_PLAY = {ttakji:[-2.2, 6.9]};     // 딱지치기 자리 (건물 원점 기준, 미터)
 defineProp('stationeryCorner', {label:'문구점 (조립 예시)', category:'문구점', isNewStyle:true, blocksCamera:true,

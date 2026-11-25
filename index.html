@@ -163,19 +163,11 @@ button:focus-visible{outline:2px solid var(--accent)}
 @media (max-width:640px){ #menu{left:10px;top:52px;width:calc(100% - 20px)} #menu-btn kbd{display:none} #mini{width:110px;height:110px} }
 /* 모바일: E 버튼은 오른손 엄지 자리(오른쪽 아래), R 버튼은 그 위 */
 @media (pointer:coarse){ #prompt{left:auto;right:14px;transform:none;bottom:72px} }
-/* ── 2026-11-25 UI 좌우 반전 (오른손 하나로 움직이기 편하게): 메뉴 · 이름은 오른쪽 위, 미니맵은 왼쪽 위,
-      손 흔들기 · E · R 버튼 · 얼레는 왼쪽 아래(alt.js · kite.js), 모바일 조이스틱은 화면 오른쪽(input.js) ── */
-#top{left:auto;right:16px;flex-direction:row-reverse}
-#mini{right:auto;left:16px}
-#menu{left:auto;right:16px}
-#dock{right:auto;left:16px}
-#help{left:auto;right:16px}
-#me-chip{border-left:1px solid var(--ui-line);border-right:3px solid var(--accent)}
-@media (max-width:640px){ #top{left:auto;right:10px} #mini{right:auto;left:10px} #menu{left:auto;right:10px} }
-@media (pointer:coarse){ #prompt{right:auto;left:14px} }
-/* (2026-11-25) E 안내도 모바일처럼 왼쪽 아래: 손 흔들기 위에 E, 그 위에 R (alt.js) — 둘이 위아래로 붙는다. 폰은 미니맵을 조금 작게(위 놀이 카드와 안 겹치게) */
-#prompt{left:14px;right:auto;transform:none;bottom:72px}
-@media (max-width:640px){ #mini{width:86px;height:86px} }
+/* (2026-11-25) UI 방향은 원래대로(메뉴 · 이름 왼쪽 위, 미니맵 오른쪽 위, 손 흔들기 · E · R 오른쪽 아래, 모바일 조이스틱 왼쪽 · 시점 오른쪽).
+   E 안내는 데스크톱도 모바일처럼 오른쪽 아래: 손 흔들기 위에 E, 그 위에 R (alt.js) — 둘이 위아래로 붙는다 */
+#prompt{left:auto;right:14px;transform:none;bottom:72px}
+/* 폰: 미니맵을 조금 작게, 메뉴 줄과 같은 높이로 */
+@media (max-width:640px){ #mini{width:86px;height:86px;top:10px} }
 </style>
 </head>
 <body>

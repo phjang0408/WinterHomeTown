@@ -65,7 +65,7 @@ const coarseUI = () => matchMedia('(pointer:coarse)').matches;
 function panel(on){
   if (!P) {
     const d = document.createElement('div'); d.id = 'twin'; d.className = 'card'; d.hidden = true; const cw = coarseUI() ? 96 : 120;
-    d.style.cssText = 'position:fixed;left:50%;bottom:' + (coarseUI() ? 10 : 16) + 'px;transform:translateX(-50%);z-index:25;width:min(92vw,380px);padding:10px 14px 12px;display:flex;flex-direction:column;gap:6px;touch-action:none;user-select:none';
+    d.style.cssText = 'position:fixed;left:50%;bottom:' + (coarseUI() ? 64 : 16) + 'px;transform:translateX(-50%);z-index:25;width:min(92vw,380px);padding:10px 14px 12px;display:flex;flex-direction:column;gap:6px;touch-action:none;user-select:none';
     d.innerHTML = '<div id="tw-top" style="display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;min-height:20px"><span id="tw-st" style="font-size:14px;font-weight:700"></span>' +
       '<button id="tw-cpu" type="button" style="pointer-events:auto;padding:5px 12px;background:' + AMBER + ';color:#1a1b1d;font:800 13px var(--body, sans-serif);border-radius:0">동네 형이랑 하기' + (coarseUI() ? '' : ' · E') + '</button></div>' +
       '<canvas id="tw-bar" width="300" height="330" style="width:' + cw + 'px;height:' + Math.round(cw * 1.1) + 'px;align-self:center"></canvas>' +

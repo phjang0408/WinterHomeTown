@@ -20,22 +20,23 @@ export function phaser(W0, gain, off){
 const ZONE = .78;
 let shown = -1;
 // miss: 칸 밖에서 눌렀을 때 세기 변화 (기본 +0.025, 시소는 2026-11-25부터 -0.08: 노란 칸이 아니면 힘이 빠진다)
-export function pumpStart(a0, good, name, label = '엉덩이로 밀기', onFull = null, miss = .025){
-  PUMP.amp = a0; PUMP.good = good; PUMP.name = name; PUMP.onFull = onFull; PUMP.miss = miss;
+// onPush(ok): 있으면 세기를 그 놀이가 직접 관리한다 (시소: 둘이 모은 힘, 2026-11-25 4차). 그때 pumpFrame은 줄이지 않고 그리기만 한다
+export function pumpStart(a0, good, name, label = '엉덩이로 밀기', onFull = null, miss = .025, onPush = null){
+  PUMP.amp = a0; PUMP.good = good; PUMP.name = name; PUMP.onFull = onFull; PUMP.miss = miss; PUMP.onPush = onPush;
   me.seatAct = {label, run:pump}; me.seatAlt = null; me.sa = [Math.round(a0 * 100)];
   hud.gauge(name + ' · 세기 ' + Math.round(a0 * 100) + '%', false); hud.zone(ZONE, 1 - ZONE); hud.fill(0); hud.needle(0); hud.meter(a0); shown = -1;
 }
-export function pumpStop(){ PUMP.good = null; PUMP.onFull = null; me.seatAct = null; me.seatAlt = null; me.sa = [0]; hud.hideGauge(); }
+export function pumpStop(){ PUMP.good = null; PUMP.onFull = null; PUMP.onPush = null; me.seatAct = null; me.seatAlt = null; me.sa = [0]; hud.hideGauge(); }
 function pump(){
   if (!PUMP.good) return;
-  const ok = PUMP.good(); PUMP.amp = Math.max(.08, Math.min(1, PUMP.amp + (ok ? .1 : PUMP.miss)));
+  const ok = PUMP.good(); if (PUMP.onPush) PUMP.onPush(ok); else PUMP.amp = Math.max(.08, Math.min(1, PUMP.amp + (ok ? .1 : PUMP.miss)));
   sfx(ok ? 330 : 180, ok ? 520 : 140, .08, 'triangle', .04);
-  if (PUMP.amp >= 1 && PUMP.onFull) PUMP.onFull();
+  if (!PUMP.onPush && PUMP.amp >= 1 && PUMP.onFull) PUMP.onFull();
 }
 // needle: 지금 때(0~1, 1에 가까울수록 누르기 좋은 때)
 export function pumpFrame(dt, needle){
   if (!PUMP.good) return;
-  PUMP.amp = Math.max(.08, PUMP.amp * Math.exp(-.07 * dt)); me.sa = [Math.round(PUMP.amp * 100)];
+  if (!PUMP.onPush) { PUMP.amp = Math.max(.08, PUMP.amp * Math.exp(-.07 * dt)); me.sa = [Math.round(PUMP.amp * 100)]; }
   hud.needle(needle); hud.meter(PUMP.amp);
-  const pct = Math.round(PUMP.amp * 100); if (pct !== shown) { shown = pct; hud.gaugeText(PUMP.name + ' · 세기 ' + pct + '% · 바늘이 칸에 오면 E'); }
+  const pct = Math.round(PUMP.amp * 100); if (pct !== shown) { shown = pct; hud.gaugeText(PUMP.name + (PUMP.onPush ? ' · 둘이 모은 힘 ' : ' · 세기 ') + pct + '% · 바늘이 칸에 오면 E'); }
 }

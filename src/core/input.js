@@ -32,7 +32,7 @@ export function initInput({onEnter, onWave, onEscape, onMap}){
   canvas.addEventListener('pointerdown', e => {
     if (S.mode === 'intro') return;
     try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
-    if (e.pointerType === 'touch' && camFree() && !S.joy && e.clientX > window.innerWidth * .55) {   // (2026-11-25) UI 좌우 반전: 조이스틱은 오른쪽 (오른손 엄지)
+    if (e.pointerType === 'touch' && camFree() && !S.joy && e.clientX < window.innerWidth * .45) {   // 조이스틱은 왼쪽 (오른쪽은 시점 돌리기). (2026-11-25) 좌우 반전은 되돌렸다
       S.joy = {id:e.pointerId, sx:e.clientX, sy:e.clientY, vx:0, vy:0, m:0};
       joyEl.style.left = e.clientX + 'px'; joyEl.style.top = e.clientY + 'px'; knob.style.transform = ''; joyEl.hidden = false; return;
     }

@@ -71,7 +71,7 @@ const slide = defineActivity({
 // 계단 앞 눈 더미에서 '눈 모으기'(E) → 한 아름 머리 위로 들고 계단을 올라가면, 탑 위에서는 '미끄럼틀 타기' 대신 '눈 뿌리기'.
 // 눈덩이 수십 개가 미끄럼판을 따라 흘러내려 착지 매트에 쌓였다가 녹는다. 다른 사람에게는 뿌린 횟수(presence sn)만 보내고 같은 장면을 그린다.
 // 든 눈은 눈사람 놀이와 같은 모양(ST.CARRY + ball 크기)이라 다른 사람 화면에도 머리 위 눈덩이로 보인다 (snowman.js remoteFrame).
-const PILE = world(5.2, 0, 6.4), GATHER = .9, HELD = .34, FLOW = {n:26, dur:3.4, burst:.75}, MAXL = 3;
+const PILE = world(5.2, 0, 6.4), GATHER = .9, HELD = .34, FLOW = {n:30, dur:3.4, burst:1.0}, MAXL = 4;
 const onTop = () => W.groundY(me.x, me.z, me.y) >= SPIRAL.H * UNIT - .3 && Math.hypot(me.x - TOP[0], me.z - TOP[2]) < 3.2;
 const BALL = new THREE.IcosahedronGeometry(1, 2), FLOWMAT = new THREE.MeshLambertMaterial({color:0xf8fbfd});
 const flows = [], MX = new THREE.Matrix4(), QI = new THREE.Quaternion(), VP = new THREE.Vector3(), VS = new THREE.Vector3();
@@ -79,9 +79,13 @@ let heldM = null;
 // (2026-11-25 3차) 뿌린 눈: 굵은 눈덩이 26개가 흘러내려 끝에 닿으면 하나의 매끈한 눈 무더기(mound)에 녹아든다(알갱이가 다닥다닥 모이지 않게).
 //   무더기는 뿌릴 때마다 커지고(최대 MAXL번), 누가 타고 내려와 끝에 닿으면 '퐉' 덩어리 몇 개로 흩어지며 치워진다
 const mound = {m:null, level:0, s:0}, ME = .035;   // ME: 무더기 자리 (미끄럼판 끝에서 3.5% 앞)
+// (2026-11-25 4차) 더 풍성하게: 가운데 큰 무더기 + 옆 · 앞으로 넘쳐흐른 덩이 다섯(뿌린 횟수가 늘수록 하나씩 더 보인다). 메쉬는 여섯 개뿐
+const LUMPS = [[0, 0, 0, 1, 1, 1, 0], [.62, -.03, .25, .48, .7, .5, 1], [-.6, -.03, .15, .45, .65, .48, 1], [.15, -.04, .78, .55, .62, .45, 2], [-.3, -.05, -.55, .42, .55, .42, 3], [.45, -.06, -.5, .36, .5, .36, 3]];
 function makeMound(){
-  const e = at(1 - ME), m = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 14), snowMaterial({seed:53}));
-  m.position.set(e[0], e[1] + .03, e[2]); m.rotation.y = e[3]; m.castShadow = m.receiveShadow = true; m.visible = false; root.add(m); mound.m = m;
+  const e = at(1 - ME), g = new THREE.Group(), sm = snowMaterial({seed:53}), geo = new THREE.SphereGeometry(1, 22, 12);
+  g.position.set(e[0], e[1] + .03, e[2]); g.rotation.y = e[3]; g.visible = false; root.add(g);
+  const parts = LUMPS.map(([x, y, z, a, b, c, need]) => { const m = new THREE.Mesh(geo, sm); m.position.set(x, y, z); m.userData = {a, b, c, need}; m.castShadow = m.receiveShadow = true; g.add(m); return m; });
+  mound.m = g; mound.parts = parts;
 }
 function spawnFlow(){
   const im = new THREE.InstancedMesh(BALL, FLOWMAT, FLOW.n); im.castShadow = true; im.frustumCulled = false; root.add(im);
@@ -93,10 +97,13 @@ const hw = SPIRAL.hw * UNIT;
 function clearSnow(){
   const flying = flows.filter(F => F.burst < 0); if (!mound.level && !flying.length) return false;
   flying.forEach(F => { root.remove(F.im); F.im.dispose(); flows.splice(flows.indexOf(F), 1); });
-  const e = at(1 - ME), n = 6 + Math.max(1, mound.level) * 4, im = new THREE.InstancedMesh(BALL, FLOWMAT, n); im.castShadow = true; im.frustumCulled = false; root.add(im);
-  const parts = Array.from({length:n}, () => ({x:e[0] + (Math.random() - .5) * .5, y:e[1] + .25, z:e[2] + (Math.random() - .5) * .5, vx:(Math.random() - .5) * 5, vy:2 + Math.random() * 3.5, vz:(Math.random() - .5) * 5, r:.16 + Math.random() * .12}));
+  // (2026-11-25 4차) 더 크게 '팍': 쌓인 만큼 덩이가 많고(14 + 9 × 쌓인 횟수), 미끄럼판 끝에서 앞 · 위로 세게 흩어진다. 눈가루도 두 번
+  const e = at(1 - ME), L = Math.max(1, mound.level), n = 14 + L * 9, im = new THREE.InstancedMesh(BALL, FLOWMAT, n); im.castShadow = true; im.frustumCulled = false; root.add(im);
+  const fx = Math.sin(e[3]), fz = Math.cos(e[3]);   // 미끄럼판이 나가는 쪽
+  const parts = Array.from({length:n}, () => { const sp = 3 + Math.random() * 5; return {x:e[0] + (Math.random() - .5) * .8, y:e[1] + .3, z:e[2] + (Math.random() - .5) * .8,
+    vx:fx * sp + (Math.random() - .5) * 6, vy:2.5 + Math.random() * 4.5, vz:fz * sp + (Math.random() - .5) * 6, r:.13 + Math.random() * .2}; });
   flows.push({t:0, im, parts, landed:true, burst:0}); mound.level = 0; mound.s = 0; mound.m.visible = false;
-  puff(e[0], e[1] + .4, e[2], 18); sfx(320, 90, .3, 'triangle', .07); return true;
+  puff(e[0], e[1] + .4, e[2], 26); puff(e[0] + fx * 1.2, e[1] + .3, e[2] + fz * 1.2, 20); sfx(320, 70, .35, 'triangle', .08); return true;
 }
 function stepFlows(dt){
   for (let i = flows.length - 1; i >= 0; i--) {
@@ -120,7 +127,10 @@ function stepFlows(dt){
   }
   if (!mound.m) return;
   mound.s += (mound.level - mound.s) * Math.min(1, dt * 2.5); const s = mound.s, k = Math.min(1, s);
-  mound.m.visible = s > .05; if (mound.m.visible) mound.m.scale.set(hw * (.55 + .3 * k), .07 + .09 * s, .3 + .28 * s);
+  mound.m.visible = s > .05; if (!mound.m.visible) return;
+  mound.m.scale.set(hw * (.75 + .25 * k + .06 * s), 1, .5 + .22 * s);                                     // 미끄럼판 폭을 채우고, 쌓일수록 길어진다
+  mound.parts.forEach(m => { const u = m.userData, f = Math.min(1, Math.max(0, s - u.need)); m.visible = f > .02;
+    m.scale.set(u.a * (.6 + .4 * f), (.12 + .1 * s) * u.b * f, u.c * (.6 + .4 * f)); });
 }
 const snowPour = defineActivity({
   id:'snowpour', st:ST.CARRY, free:true,

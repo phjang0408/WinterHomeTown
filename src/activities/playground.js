@@ -15,6 +15,7 @@ import { me, standUp } from '../entities/player.js';
 import { SIT, POSES, waving } from '../entities/character.js';
 import { S } from '../core/state.js';
 import { sfx, flash, puff } from '../core/fx.js';
+import { hud } from '../ui/hud.js';
 import { defineActivity, seatTaken } from './registry.js';
 import { SEESAWS, DUCKS, MERRY } from '../map/layout.js';
 import { PUMP, pumpStart, pumpStop, pumpFrame, phaser } from './pump.js';
@@ -23,19 +24,24 @@ const V = new THREE.Vector3(), atLocal = (obj, x, y, z) => { obj.updateMatrixWor
 const yawToward = (fx, fz, tx, tz) => Math.atan2(tx - fx, tz - fz);
 
 // ── 시소 (2026-11-20 2차: 두 대) ──
-// (2026-11-24) 게이지: 내 쪽이 바닥에 닿을 때(초록 칸) E로 땅을 차면 세기가 오르고 더 높이 오르내린다. 가득 차면 몸이 위로 붕 떴다가 앉는다.
-//   혼자 타도 세기만큼 시소가 오르내린다. 둘이 타면 예전처럼 번갈아 오르내리고, 바늘은 내 쪽 높이를 따른다.
-const saws = SEESAWS.map(c => ({c, base:null, beam:null, th:SEESAW_M.tilt, busy:[false, false], used:[false, false], amp:[0, 0]}));
+// (2026-11-25 4차) 둘이 모으는 힘: 시소마다 힘 P(0~1) 하나. 내 쪽이 바닥에 닿을 때(노란 칸) E로 땅을 차면 +, 칸 밖에서 차면 −, 가만두면 점점 준다.
+//   P가 클수록 빨리 · 크게 오르내리고, 1에 닿으면 탄 사람이 다 같이 붕 뜬다(그 뒤 P는 AFTER로).
+//   (2026-11-25 5차) 혼자는 못 탄다: 앉아서 맞은편을 기다리고, 둘이 앉아야 땅 차기가 먹고 시소가 움직인다.
+//   동기화: 각자 [P, 잘 찬 횟수, 헛찬 횟수]를 presence sa로 보낸다. 받는 쪽은 상대 횟수가 늘어난 만큼 같은 규칙으로 P에 더한다
+//   → 두 화면이 같은 사건으로 같은 P를 계산하므로, 점프도 두 화면에서 함께 일어난다 (예전: 화면마다 자기 세기로 따로 판단해 한쪽만 뜨던 것).
+const SS = {GOOD:.12, MISS:-.06, DECAY:.06, AFTER:.55};
+const saws = SEESAWS.map(c => ({c, base:null, beam:null, th:SEESAW_M.tilt, busy:[false, false], used:[false, false], P:0, pop:0}));
 const ssSeat = (q, i) => atLocal(q.beam, (i ? 1 : -1) * SEESAW_M.seat * UNIT, SEESAW_M.seatY * UNIT, 0);
-const ssPhase = phaser(2.4, .5, 1.3);
-const ssAmp = w => w === me ? PUMP.amp : (w.sa === undefined ? 0 : w.sa);
-const POP = {T:.95, H:1.6, BOTH:.7};   // 뜨는 시간(초) · 높이(m) · (2026-11-25) 둘 다 세기가 BOTH를 넘으면 번갈아 계속 뛴다
-let popT = 0, popA = 0;
+const ssPhase = phaser(1.8, 1.2, 1.3);
+const POP = {T:.95, H:1.6};   // 뜨는 시간(초) · 높이(m)
 const popY = (t0, now) => { const t = (now - t0) / (POP.T * 1000); return t > 0 && t < 1 ? POP.H * UNIT * 4 * t * (1 - t) : 0; };
 // 내 쪽이 얼마나 바닥에 가까운가 (1 = 바닥): 바늘 · 누를 때 판정
 function ssLow(){ const q = saws[me.seat >> 1], i = me.seat & 1, M = SEESAW_M.tilt; return (1 + (i ? -1 : 1) * q.th / M) / 2; }
 // (x, z)에서 가장 가까운 시소 자리 → [시소, 자리]
 function ssNearest(x, z){ let best = null, bd = 1e9; saws.forEach(q => [0, 1].forEach(i => { const p = ssSeat(q, i), d = Math.hypot(x - p.x, z - p.z); if (d < bd) { bd = d; best = [q, i, p, d]; } })); return best; }
+const ssAdd = (q, v) => { q.P = Math.max(0, Math.min(1, q.P + v)); };
+let myG = 0, myM = 0, ssAlone = null;
+const ssPublish = q => { me.sa = [Math.round(q.P * 100), myG % 1000, myM % 1000]; };
 defineActivity({
   id:'seesaw', st:ST.SEESAW,
   setup(){
@@ -43,37 +49,40 @@ defineActivity({
       q.beam = buildProp('seesaw', {part:'beam'}); q.beam.position.y = SEESAW_M.pivot * UNIT; q.base.add(q.beam); q.beam.rotation.z = q.th; });
     SIT.set(ST.SEESAW, {arm:-1.0, y:.06});
     POSES.set(ST.SEESAW, (w, ch, now) => {
-      const [q, i] = w === me ? [saws[me.seat >> 1], me.seat & 1] : ssNearest(w.x, w.z), p = ssSeat(q, i);
-      // 뜨는 중: 나는 popT, 다른 사람은 세기 100이 보이는 동안
-      let up = 0;
-      if (w === me) up = popT ? popY(popT, now) : 0;
-      else { if (w.sa >= .995) { if (!w.ssPop) w.ssPop = now; up = popY(w.ssPop, now); } else w.ssPop = 0; }
-      ch.position.set(p.x, p.y - .5 + up, p.z); ch.rotation.set(0, q.c.rot + (i ? -PI / 2 : PI / 2), 0); q.busy[i] = true; q.amp[i] = ssAmp(w); w.y = p.y - .5 + up;
+      const [q, i] = w === me ? [saws[me.seat >> 1], me.seat & 1] : ssNearest(w.x, w.z), p = ssSeat(q, i), up = q.pop ? popY(q.pop, now) : 0;   // 뜰 때는 그 시소에 탄 사람이 다 같이
+      ch.position.set(p.x, p.y - .5 + up, p.z); ch.rotation.set(0, q.c.rot + (i ? -PI / 2 : PI / 2), 0); q.busy[i] = true; w.y = p.y - .5 + up;
     });
   },
   offer(offer){
     const n = ssNearest(me.x, me.z); if (!n) return; const [q, i, p, d] = n;
     if (d < 3.2 && !seatTaken(p.x, p.z, ST.SEESAW)) offer(d, 3.2, '시소 타기', () => {
-      me.st = ST.SEESAW; me.seat = saws.indexOf(q) * 2 + i; me.x = p.x; me.z = p.z; popT = 0;
-      pumpStart(.15, () => ssLow() > .78, '시소', '땅 차기', () => { if (popT) return; popT = performance.now(); popA = 0; sfx(300, 760, .3, 'triangle', .06); }, -.08);
-      me.onStand = () => { const s = ssSeat(q, i); me.x = s.x + Math.sin(q.c.rot) * 1.5; me.z = s.z + Math.cos(q.c.rot) * 1.5; me.y = undefined; popT = 0; pumpStop(); };
+      me.st = ST.SEESAW; me.seat = saws.indexOf(q) * 2 + i; me.x = p.x; me.z = p.z; ssAlone = null;
+      pumpStart(q.P, () => ssLow() > .78, '시소', '땅 차기', null, 0, ok => { if (!(q.used[0] && q.used[1])) return; ssAdd(q, ok ? SS.GOOD : SS.MISS); if (ok) myG++; else myM++; ssPublish(q); });
+      ssPublish(q);
+      me.onStand = () => { const s = ssSeat(q, i); me.x = s.x + Math.sin(q.c.rot) * 1.5; me.z = s.z + Math.cos(q.c.rot) * 1.5; me.y = undefined; pumpStop(); };
     });
   },
   frame(dt, now){
     saws.forEach((q, k) => { q.used[0] = q.busy[0]; q.used[1] = q.busy[1]; q.busy[0] = q.busy[1] = false;
-      const M = SEESAW_M.tilt, both = q.used[0] && q.used[1];
+      const M = SEESAW_M.tilt, both = q.used[0] && q.used[1], any = q.used[0] || q.used[1];
+      if (both) q.P = Math.max(0, q.P - SS.DECAY * dt); else q.P = 0;                              // 혼자면 힘이 모이지 않는다
+      if (q.pop && now - q.pop > POP.T * 1000) q.pop = 0;
+      if (both && !q.pop && q.P >= 1) { q.pop = now; q.P = SS.AFTER; if (me.st === ST.SEESAW && saws[me.seat >> 1] === q) sfx(300, 760, .3, 'triangle', .06); }
+      const ph = ssPhase(k, now, q.P), amp = Math.min(1, .15 + q.P);                // 힘이 클수록 빨리 · 크게
       let target = M;   // 아무도 없으면 왼쪽(-x)이 내려앉은 채
-      if (both) target = M * Math.sin(now / 1000 * 1.7 + k);
-      else if (q.used[0] || q.used[1]) { const i = q.used[1] ? 1 : 0, a = q.amp[i], b = (1 - Math.cos(ssPhase(k, now, a))) / 2;   // 앉은 쪽이 내려간다 (왼쪽 자리 = -x = 기울기 +)
-        target = (i ? -M : M) * (1 - 2 * Math.min(1, .15 + a) * b); }
+      if (both) target = M * Math.sin(ph) * (.45 + .55 * Math.min(1, q.P * 1.3));
+      else if (any) target = q.used[1] ? -M : M;                                                   // 혼자: 앉은 쪽이 내려앉은 채 (왼쪽 자리 = -x = 기울기 +)
       q.th += (target - q.th) * Math.min(1, dt * (both ? 8 : 6)); q.beam.rotation.z = q.th; });
-    if (me.st === ST.SEESAW) {
-      pumpFrame(dt, ssLow());
-      // (2026-11-25) 맞은편 사람과 둘 다 세기 BOTH 이상이면 뜀이 끝나도 바로 다음 뜀 (뛸 때마다 세기가 조금 빠지니 계속 땅을 차야 이어진다)
-      const q = saws[me.seat >> 1], i = me.seat & 1, both = q.used[1 - i] && q.amp[1 - i] >= POP.BOTH && (popT ? popA || 1 : PUMP.amp) >= POP.BOTH;
-      if (popT) { if (now - popT > POP.T * 1000) { popT = 0; PUMP.amp = popA ? Math.max(.08, popA - .06) : .5; } else { PUMP.amp = 1; me.sa = [100]; } }   // 뜨는 동안 세기 100 (다른 사람 화면에서도 뜬다)
-      if (!popT && both && PUMP.amp >= POP.BOTH) { popA = PUMP.amp; popT = now; sfx(300, 760, .3, 'triangle', .05); }
-    }
+    if (me.st === ST.SEESAW) { const q = saws[me.seat >> 1], alone = !(q.used[0] && q.used[1]); PUMP.amp = q.P; pumpFrame(dt, alone ? 0 : ssLow()); ssPublish(q);
+      if (alone !== ssAlone) { ssAlone = alone; hud.gaugeText(alone ? '시소 · 맞은편에 누가 앉으면 같이 탈 수 있어요' : '시소 · 둘이 모은 힘 ' + Math.round(q.P * 100) + '% · 바늘이 칸에 오면 E'); } }
+  },
+  // 다른 사람이 땅을 찬 만큼 그 사람 시소의 힘에 더한다 (처음 본 값은 기준으로만)
+  remote(R, p){
+    if (p.st !== ST.SEESAW) { R.ssG = R.ssM = undefined; return; }
+    const g = p.sa[1], m = p.sa[2];
+    if (R.ssG !== undefined) { const n = ssNearest(p.x, p.z); if (n) { const q = n[0], dg = (g - R.ssG + 1000) % 1000, dm = (m - R.ssM + 1000) % 1000;
+      if (dg < 30 && dm < 30) ssAdd(q, dg * SS.GOOD + dm * SS.MISS); } }
+    R.ssG = g; R.ssM = m;
   },
 });
 

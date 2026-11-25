@@ -5,7 +5,7 @@ import { findAlt, doAlt } from '../activities/registry.js';
 let el = null, last = '';
 function make(){
   el = document.createElement('button'); el.id = 'altbtn'; el.type = 'button'; el.hidden = true;
-  el.style.cssText = 'position:fixed;left:14px;bottom:' + (matchMedia('(pointer:coarse)').matches ? 132 : 128) + 'px;z-index:30;border:1px solid rgba(255,255,255,.2);border-left:4px solid #e3a53b;border-radius:0;padding:10px 16px 10px 10px;' +
+  el.style.cssText = 'position:fixed;right:14px;bottom:' + (matchMedia('(pointer:coarse)').matches ? 132 : 128) + 'px;z-index:30;border:1px solid rgba(255,255,255,.2);border-left:4px solid #e3a53b;border-radius:0;padding:10px 16px 10px 10px;' +
     'background:rgba(16,18,20,.86);color:#eceae4;font:600 15px var(--body, sans-serif);display:flex;align-items:center;gap:10px;cursor:pointer;touch-action:manipulation';
   el.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); doAlt(); el.animate([{transform:'scale(.92)'}, {transform:'scale(1)'}], {duration:140}); });
   document.body.appendChild(el);
