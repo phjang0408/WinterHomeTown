@@ -36,7 +36,12 @@ export function buildScenery(){
         }
         col = mix(col, vec3(1., .98, .9), smoothstep(.99935, .9997, sd));
         col += vec3(1., .95, .82) * pow(sd, 420.) * .6;
+        // (2026-11-25) 색은 sRGB로 만들었으므로 linear로 되돌린 뒤 three의 출력 변환을 탄다.
+        //   화면에 바로 그릴 때는 결과가 예전과 같고, 필름 효과의 렌더 타깃(linear)에 그릴 때 하늘이 두 번 밝아지지 않는다.
+        col = clamp(col, 0., 1.);
+        col = mix(col / 12.92, pow((col + .055) / 1.055, vec3(2.4)), step(.04045, col));
         gl_FragColor = vec4(col, 1.);
+        #include <colorspace_fragment>
       }`}));
   sky.renderOrder = -1; scene.add(sky);
   onFrame((dt, now) => { sky.material.uniforms.uTime.value = now / 1000; }, 95);

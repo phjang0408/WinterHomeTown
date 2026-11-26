@@ -13,9 +13,11 @@ export function sfx(f0, f1, dur, type, vol){
 }
 // (2026-11-21) 가운데 큰 글: 자동 줄바꿈을 끄고(left:50% 때문에 화면 절반 폭에서 꺾이던 문제),
 // 화면 폭에 안 들어가는 글만 미리 띄어쓰기 자리에서 \n으로 나눈다. 모바일에서 '후~ 다 먹었다. 속까지 따뜻해!' 같은 글.
+// (2026-11-25) 긴 알림은 글 안에 \n을 미리 넣어 자연스러운 자리에서 꺾는다. \n으로 나눈 줄도 화면보다 길면 다시 나눈다.
 const emW = t => [...t].reduce((w, c) => w + (c.charCodeAt(0) > 0x2e80 ? 1 : .56), 0);
 function wrapLines(text, maxEm){
-  if (text.includes('\n') || emW(text) <= maxEm) return text;
+  if (text.includes('\n')) return text.split('\n').map(l => wrapLines(l, maxEm)).join('\n');
+  if (emW(text) <= maxEm) return text;
   const cut = []; for (let i = 1; i < text.length - 1; i++) if (text[i] === ' ') cut.push(i);
   if (!cut.length) return text;
   let best = cut[0], bw = Infinity;

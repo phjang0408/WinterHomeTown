@@ -4,6 +4,7 @@
 import * as THREE from '../lib/three.js';
 import { renderer, sun, scene, resize, canvas } from '../core/engine.js';
 import { QUALITY, PRESETS, setQuality } from '../core/quality.js';
+import '../core/post.js';   // (2026-11-26) 필름 효과는 '약'으로 고정 (설정에서 바꾸지 않는다)
 import { audio } from '../core/fx.js';
 import { NET } from '../config.js';
 import { W } from '../world/world.js';

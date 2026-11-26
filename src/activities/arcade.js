@@ -148,9 +148,9 @@ function rpsStep(R, dt){
     while (R.acc >= 1) { R.acc -= 1; R.cur = R.cur % 3 + 1; R.lit = (R.lit + 1) % 12; sfx(e > 1.2 ? 520 : 760, e > 1.2 ? 500 : 740, .04, 'square', .03); if (e > 1.5 && R.cur === R.cpu) { R.stop = true; break; } } }
   if (R.phase === 1 && R.stop) { R.stop = false;
     R.phase = 2; R.t0 = R.t; R.res = beats(R.pick, R.cpu) ? 1 : R.pick === R.cpu ? 2 : 3;
-    if (R.res === 1) { me.kr = 1 + (Math.random() * 5 | 0); setKeyring(me.char, me.kr); flash('이겼다! 상품은 키링이다!'); sfx(660, 1320, .5, 'triangle', .06); }
-    else if (R.res === 2) { flash('비겼다! 한 번 더!'); sfx(440, 440, .25, 'square', .04); }
-    else { flash('졌다~ 다시 해 볼까?'); sfx(300, 120, .5, 'triangle', .05); }
+    if (R.res === 1) { me.kr = 1 + (Math.random() * 5 | 0); setKeyring(me.char, me.kr); flash('이겼다!\n상품은 키링이다!'); sfx(660, 1320, .5, 'triangle', .06); }
+    else if (R.res === 2) { flash('비겼다!\n한 번 더!'); sfx(440, 440, .25, 'square', .04); }
+    else { flash('졌다~\n다시 해 볼까?'); sfx(300, 120, .5, 'triangle', .05); }
   } else if (R.phase === 2 && R.t - R.t0 > 2.4) { R.phase = 0; R.pick = 0; R.res = 0; }
 }
 function rpsPick(R, k){ if (R.phase !== 0) return; R.phase = 1; R.pick = k; R.cpu = 1 + (Math.random() * 3 | 0); R.cur = 1 + (Math.random() * 3 | 0); R.acc = 0; R.t0 = R.t; sfx(520, 700, .1, 'square', .04); }
@@ -175,7 +175,7 @@ const gachaNew = () => ({kind:4, t:0, phase:0, turn:0, t0:0, prize:0, cap:CAP_C[
 function gachaTurn(G, d){ if (G.phase !== 0 || d <= 0) return; G.turn += d; G.wob = .4; if ((G.turn / (Math.PI / 2) | 0) !== ((G.turn - d) / (Math.PI / 2) | 0)) sfx(260, 240, .05, 'square', .03);
   if (G.turn >= Math.PI * 2) { G.phase = 1; G.t0 = G.t; sfx(180, 90, .25, 'triangle', .06); } }
 function gachaOpen(G){ if (G.phase !== 2) return; G.phase = 3; G.t0 = G.t; G.prize = 1 + (Math.random() * KR_N | 0); me.kr = G.prize; setKeyring(me.char, me.kr);
-  flash('뽑았다! ' + KR_NAME[G.prize] + ' 키링이다!'); sfx(660, 1320, .45, 'triangle', .06); }
+  flash('뽑았다!\n' + KR_NAME[G.prize] + ' 키링이다!'); sfx(660, 1320, .45, 'triangle', .06); }
 function gachaStep(G, dt, K){
   G.t += dt; G.wob = Math.max(0, G.wob - dt);
   if (G.phase === 0 && (K.f || K.r || K.l)) gachaTurn(G, dt * 4.5);
@@ -278,7 +278,7 @@ function ggTap(G){
   if (G.ph === 'air5a' || G.ph === 'air5b') {
     if (!ggIn(G)) { ggMiss(G); return; }
     if (G.ph === 'air5a') { G.ph = 'palm'; sfx(650, 820, .1, 'triangle', .05); return; }
-    G.ph = 'done'; ggSay(G, '끝!'); flash('공기놀이 5단 성공!'); sfx(660, 1320, .5, 'triangle', .06); return;
+    G.ph = 'done'; ggSay(G, '끝!'); flash('공기놀이\n5단 성공!'); sfx(660, 1320, .5, 'triangle', .06); return;
   }
   if (G.ph === 'done') Object.assign(G, gonggiNew(false), {t:G.t});
 }
@@ -550,7 +550,7 @@ const arcade = defineActivity({
     const g = S.game; g.t += dt;
     if (g.watch) {
       const R = g.watch;
-      if (!S.remotes.has(R.id) || R.st !== ST.ARCADE || !R.ar || R.ar[0] !== g.m.id) { stopActivity(); flash('구경 끝! 오락이 끝났어요'); return; }
+      if (!S.remotes.has(R.id) || R.st !== ST.ARCADE || !R.ar || R.ar[0] !== g.m.id) { stopActivity(); flash('구경 끝!\n오락이 끝났어요'); return; }
       const v = watchState(R, g); g.G = v.G || null; g.Rv = v.R || null; g.menu = !!v.menu;
     } else {
       if (g.R) rpsStep(g.R, dt); else if (g.G) ({1:galaxyStep, 2:brickStep, 4:gachaStep, 5:ggStep})[g.G.kind](g.G, Math.min(dt, .05), K);

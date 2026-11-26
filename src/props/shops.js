@@ -25,18 +25,19 @@ const boardAtlas = () => once('boards', () => decalMaterial(canvasTex(1024, 1024
 const face = (g, mat) => { const m = new THREE.Mesh(g, mat || atlas()); return m; };
 // 글자를 직접 주는 간판 그림 (2026-11-15: 상가 건물 4동이 기존 간판 소품을 다시 쓰도록). 가로면 한 줄(+작은 줄), 세로면 한 글자씩.
 //   o.text, o.sub, o.bg, o.fg, o.accent(글자 일부 색: [시작, 끝, 색]), o.border
+//   (2026-11-26) o.thin: 같은 색 테두리를 두르지 않아 덜 굵게. o.track: 글자 사이 간격(글자 크기 배). o.size: 글자 크기 배율(기본 1)
 const textSigns = new Map();
 export function textSignMat(o, vertical, aspect){
-  const key = [o.text, o.sub, o.bg, o.fg, o.accent, o.border, vertical, aspect.toFixed(2)].join('|'); if (textSigns.has(key)) return textSigns.get(key);
+  const key = [o.text, o.sub, o.bg, o.fg, o.accent, o.border, o.thin, o.track, o.size, vertical, aspect.toFixed(2)].join('|'); if (textSigns.has(key)) return textSigns.get(key);
   const W = vertical ? 128 : 1024, H = vertical ? Math.round(128 * aspect) : Math.round(1024 / aspect);
-  const t = canvasTex(W, H, g => { g.lineJoin = 'round'; const T = (str, x, y, lw) => { g.strokeStyle = g.fillStyle; g.lineWidth = lw; g.strokeText(str, x, y); g.fillText(str, x, y); };   // 글자를 같은 색 테두리로 굵게
+  const t = canvasTex(W, H, g => { g.lineJoin = 'round'; const T = (str, x, y, lw) => { if (!o.thin) { g.strokeStyle = g.fillStyle; g.lineWidth = lw; g.strokeText(str, x, y); } g.fillText(str, x, y); };   // 글자를 같은 색 테두리로 굵게 (thin이면 그대로)
     g.fillStyle = o.bg || '#f2b632'; g.fillRect(0, 0, W, H); g.fillStyle = o.fg || '#20252b'; g.textAlign = 'center'; g.textBaseline = 'middle';
     if (o.border) { g.strokeStyle = o.border; g.lineWidth = vertical ? 8 : 10; g.strokeRect(6, 6, W - 12, H - 12); }
     const chars = [...o.text];
     if (vertical) { const st = (H - 30) / chars.length; const fs = Math.min(96, st * .86); g.font = fs + 'px ' + FONT_D; chars.forEach((c, k) => T(c, W / 2, 15 + st * (k + .5), fs * .07)); }
-    else { const fs = Math.min(H * (o.sub ? .58 : .72), (W - 60) / (chars.length * .95)); g.font = fs + 'px ' + FONT_D; const ty = o.sub ? H * .42 : H * .53;
-      if (o.accent) { const [a, b, c] = o.accent, tw = g.measureText(o.text).width; let x = W / 2 - tw / 2; g.textAlign = 'left';
-        chars.forEach((ch, k) => { g.fillStyle = k >= a && k < b ? c : (o.fg || '#20252b'); T(ch, x, ty, fs * .06); x += g.measureText(ch).width; }); }
+    else { const tr = o.track || 0, fs = Math.min(H * (o.sub ? .58 : .72) * (o.size || 1), (W - 60) / (chars.length * (.95 + tr))); g.font = fs + 'px ' + FONT_D; const ty = o.sub ? H * .42 : H * .53;
+      if (o.accent || tr) { const [a, b, c] = o.accent || [0, 0], tw = g.measureText(o.text).width + tr * fs * (chars.length - 1); let x = W / 2 - tw / 2; g.textAlign = 'left';
+        chars.forEach((ch, k) => { g.fillStyle = k >= a && k < b ? c : (o.fg || '#20252b'); T(ch, x, ty, fs * .06); x += g.measureText(ch).width + tr * fs; }); }
       else T(o.text, W / 2, ty, fs * .06);
       if (o.sub) { g.textAlign = 'center'; g.fillStyle = o.fg || '#20252b'; g.font = Math.round(H * .2) + 'px ' + FONT_B; T(o.sub, W / 2, H * .82, H * .012); } } });
   const m = decalMaterial(t, {rough:.6}); textSigns.set(key, m); return m;

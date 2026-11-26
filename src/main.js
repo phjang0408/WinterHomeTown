@@ -80,7 +80,7 @@ function enter(){
   // (2026-11-20 2차) 학교 정문 앞에서 시작: 방학식이 막 끝나 교문을 나선 순간. 종이 울리고, 서쪽(동네)을 본다
   setMode('walk'); me.x = SPAWN.x + (Math.random() - .5) * 1.2; me.z = SPAWN.z + (Math.random() - .5) * SPAWN.w; me.r = SPAWN.r; S.cam.yaw = SPAWN.r + PI; S.cam.pitch = .32; me.char.visible = true;
   [[659, 0], [523, .45], [587, .9], [392, 1.35], [392, 2.1], [587, 2.55], [659, 3.0], [523, 3.45]].forEach(([f, t]) => after(t * 1000, () => sfx(f, f * .998, .5, 'sine', .06)));   // 딩동댕동 · 댕동딩동
-  after(600, () => flash('겨울방학 시작! 동네로 놀러 가자'));
+  after(600, () => flash('겨울방학 시작!\n동네로 놀러 가자'));
   shadowRange(75);
   $('intro').hidden = true; ['top','mini','dock'].forEach(id => $(id).hidden = false); canvas.focus();
   if (coarse) after(3400, () => flash('왼쪽을 끌어 이동'));

@@ -181,7 +181,7 @@ function hyungFor(ci){
 function setPartner(g, R){
   if (!R) hyungFor(me.ci);
   g.R = R; g.cpu = !R; g.waiting = false; g.host = g.cpu || g.seat === 0; g.oppName = R ? nameOf(R.a, R.n) : '동네 형'; g.oppShort = R ? '상대' : '형'; g.b = 0; g.live = false; reset(g);
-  hud.stat('함께: ' + g.oppName); flash(R ? g.oppName + '와(과) 나눠바 나누기!' : '동네 형이 왔어요. 반반 나눠 먹자!');
+  hud.stat('함께: ' + g.oppName); flash(R ? g.oppName + '와(과)\n나눠바 나누기!' : '동네 형이 왔어요.\n반반 나눠 먹자!');
 }
 // 동네 형: 합을 1.28쯤으로 맞추고, 금이 자기 쪽으로 오면 힘을 뺀다. 가끔(2.5~5초마다 40%) 0.7초 욕심
 function cpuStep(g, dt){

@@ -22,11 +22,11 @@ const STALLS = [
   {pos:HOTTEOK, prop:'hotteokStall', item:3, name:'호떡', vendor:'ajumma', chim:[-.1, -.1, 1.1], color:'#d04a3a',
     lines:['꿀 뜨거우니 조심해~', '하나 더 얹었어!', '맛있게 먹어요~']},
 ];
-const ITEMS = {1:{prop:'goguma', s:2.2, eat:'군고구마 먹기', done:'후~ 다 먹었다. 속까지 따뜻해!'}, 2:{prop:'bananaMilk', opts:{n:1, straw:true}, s:1.6}, 3:{prop:'hotteok', s:2.0, eat:'호떡 먹기', done:'꿀이 쭉~ 다 먹었다!'},
+const ITEMS = {1:{prop:'goguma', s:2.2, eat:'군고구마 먹기', done:'후~ 다 먹었다.\n속까지 따뜻해!'}, 2:{prop:'bananaMilk', opts:{n:1, straw:true}, s:1.6}, 3:{prop:'hotteok', s:2.0, eat:'호떡 먹기', done:'꿀이 쭉~\n다 먹었다!'},
   // (2026-11-25) 나눠바 나누기에서 받은 조각: 4 '1자' · 5 'ㄱ자 도끼' · 6 '날 큰 도끼' · 7 세 칸 · 8 두 칸 (activities/twinbar.js)
-  4:{prop:'twinbarHalf', opts:{cells:4}, s:2.4, eat:'나눠바 먹기', done:'시원~ 반쪽도 꿀맛!'}, 5:{prop:'twinbarHalf', opts:{cells:4, blade:1}, s:2.4, eat:'나눠바 먹기', done:'한 칸 더 먹었다! 꿀맛!'},
-  6:{prop:'twinbarHalf', opts:{cells:4, blade:2}, s:2.4, eat:'나눠바 먹기', done:'두 칸이나 더! 배부르다~'}, 7:{prop:'twinbarHalf', opts:{cells:3}, s:2.4, eat:'나눠바 먹기', done:'세 칸... 조금 아쉽다'},
-  8:{prop:'twinbarHalf', opts:{cells:2}, s:2.4, eat:'나눠바 먹기', done:'두 칸... 다음엔 살살 당기자'}};
+  4:{prop:'twinbarHalf', opts:{cells:4}, s:2.4, eat:'나눠바 먹기', done:'시원~\n반쪽도 꿀맛!'}, 5:{prop:'twinbarHalf', opts:{cells:4, blade:1}, s:2.4, eat:'나눠바 먹기', done:'한 칸 더 먹었다!\n꿀맛!'},
+  6:{prop:'twinbarHalf', opts:{cells:4, blade:2}, s:2.4, eat:'나눠바 먹기', done:'두 칸이나 더!\n배부르다~'}, 7:{prop:'twinbarHalf', opts:{cells:3}, s:2.4, eat:'나눠바 먹기', done:'세 칸...\n조금 아쉽다'},
+  8:{prop:'twinbarHalf', opts:{cells:2}, s:2.4, eat:'나눠바 먹기', done:'두 칸...\n다음엔 살살 당기자'}};
 STALLS.forEach(t => { t.front = at(t.pos, 0, 1.55); t.back = at(t.pos, 0, -1.05); });
 
 // 손에 든 물건: 오른팔(armL = 캐릭터 오른팔, 2026-11-23에 바로잡음) 끝에 붙인다. 남은 입(it[1])만큼 줄고, 먹는 중이면 팔을 입으로 올린다
@@ -48,7 +48,7 @@ function holdIn(w, ch, it, now){
 function eat(){
   if (!me.it || !ITEMS[me.it[0]] || !ITEMS[me.it[0]].eat || me.it[2]) return;
   me.it = [me.it[0], me.it[1], 1]; me.eatT = performance.now(); me.eatK = me.it[1];
-  flash('호호 불어 가며 냠냠');
+  flash(me.it[0] >= 4 ? '앗 차거~!\n근데 맛있어~' : '호호 불어 가며\n냠냠');   // (2026-11-25) 나눠바(4~8)는 차가운 말
 }
 let steamT = 0;
 defineActivity({
@@ -66,7 +66,7 @@ defineActivity({
     if (S.mode !== 'walk' || me.st !== 0) return;
     const has = me.it && ITEMS[me.it[0]] && me.it[1] > 0;
     STALLS.forEach(t => { const d = Math.hypot(me.x - t.front.x, me.z - t.front.z);
-      if (!has && d < 2.6) offer(d, 2.6, t.name + ' 사기', () => { me.it = [t.item, 3, 0]; sfx(880, 1320, .08, 'square', .03); flash('따끈따끈한 ' + t.name + ' 하나!');
+      if (!has && d < 2.6) offer(d, 2.6, t.name + ' 사기', () => { me.it = [t.item, 3, 0]; sfx(880, 1320, .08, 'square', .03); flash('따끈따끈한\n' + t.name + ' 하나!');
         say(t.npc, t.lines[Math.floor(Math.random() * t.lines.length)]); puff(t.front.x, W.groundY(t.front.x, t.front.z) + 1.4, t.front.z, 6); }); });
     if (has && ITEMS[me.it[0]].eat && !me.it[2]) offer(60, 99, ITEMS[me.it[0]].eat, eat, 'food');   // 가장 나중 순위
   },

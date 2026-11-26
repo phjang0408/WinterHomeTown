@@ -62,7 +62,7 @@ const slide = defineActivity({
     const v = .25 + 1.5 * u; cam3.fov = FOV0 + 12 * Math.min(1, v); cam3.updateProjectionMatrix();          // 빨라질수록 화면이 넓어진다
     if ((g.puffT -= dt) < 0 && u > .2) { g.puffT = .12; puff(p[0], p[1] + .2, p[2], 2); }                    // 엉덩이 뒤로 눈가루
     if (ease(u) > .93 && !g.cleared) { g.cleared = true; g.snowHit = clearSnow(); }                                      // (2026-11-25) 끝에 쌓인 눈을 퐉
-    if (u >= 1) { endRide(); setMode('walk'); S.game = null; me.st = 0; me.x = OUT[0]; me.z = OUT[2]; me.y = W.groundY(OUT[0], OUT[2]); puff(me.x, me.y + .3, me.z, 10); sfx(200, 90, .25, 'triangle', .06); flash(g.snowHit ? '퐉! 쌓인 눈을 싹 치웠다' : '슝~ 한 번 더?'); }
+    if (u >= 1) { endRide(); setMode('walk'); S.game = null; me.st = 0; me.x = OUT[0]; me.z = OUT[2]; me.y = W.groundY(OUT[0], OUT[2]); puff(me.x, me.y + .3, me.z, 10); sfx(200, 90, .25, 'triangle', .06); flash(g.snowHit ? '퐉!\n쌓인 눈을 싹 치웠다' : '슝~ 한 번 더?'); }
     return Math.hypot(me.x - ox, me.z - oz);
   },
 });
@@ -151,7 +151,7 @@ const snowPour = defineActivity({
     heldM.visible = true; sfx(180, 260, .4, 'triangle', .03);
   },
   prompt(){ const g = S.game; return g && g.phase === 'carry' && onTop() ? {label:'눈 뿌리기', run:snowPour.pour} : null; },
-  pour(){ me.sn = (me.sn + 1) % 1000; spawnFlow(); stopActivity(); flash('눈이 미끄럼틀을 타고 내려간다~'); },
+  pour(){ me.sn = (me.sn + 1) % 1000; spawnFlow(); stopActivity(); flash('눈이 미끄럼틀을 타고\n내려간다~'); },
   quit(){ me.ballR = 0; if (heldM) heldM.visible = false; },
   frame(dt, now){
     stepFlows(dt);
@@ -161,7 +161,7 @@ const snowPour = defineActivity({
       const k = Math.min(1, g.t / GATHER), sw = Math.sin(g.t * 13) * .25;
       u.armL.rotation.x = -.8 + sw; u.armR.rotation.x = -.8 - sw; u.inner.position.y = -.12 * Math.sin(k * Math.PI);
       heldM.scale.setScalar(.08 + (HELD - .08) * k); heldM.position.set(me.x + Math.sin(me.r) * .75, ch.position.y + .35 + HELD * k, me.z + Math.cos(me.r) * .75);
-      if (k >= 1) { g.phase = 'carry'; me.ballR = HELD; hud.showGame('눈 한 아름'); hud.stat('미끄럼틀 탑에 올라가서 뿌려요'); flash('영차! 미끄럼틀 위로 가져가요'); sfx(440, 660, .15); }
+      if (k >= 1) { g.phase = 'carry'; me.ballR = HELD; hud.showGame('눈 한 아름'); hud.stat('미끄럼틀 탑에 올라가서 뿌려요'); flash('영차!\n미끄럼틀 위로 가져가요'); sfx(440, 660, .15); }
       return;
     }
     const dx = Math.sin(me.r), dz = Math.cos(me.r), bob = Math.abs(Math.sin(u.phase || 0)) * .06;   // 머리 위로 번쩍 (눈사람 holdBall과 같은 자리)

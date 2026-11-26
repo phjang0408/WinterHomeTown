@@ -31,7 +31,8 @@ const bus = defineActivity({
   },
   start(){
     begin(bus, {}); me.char.visible = false; S.cam.busDist = S.cam.dist; S.cam.dist = Math.max(S.cam.dist, 16); S.cam.pitch = Math.max(S.cam.pitch, .42);   // (2026-11-22) 타면 멀리서 버스가 보이게 줌 아웃 sfx(700, 900, .12, 'square', .04);
-    hud.showGame('마을버스 타는 중', {quit:false});   // (2026-11-22) 제목만: 내리기는 아래 버튼 flash('삑! 마을버스에 탔어요');
+    hud.showGame('마을버스 타는 중', {quit:false});   // (2026-11-22) 제목만: 내리기는 아래 버튼
+    flash('탔어요');   // (2026-11-26) 내릴 때 '내렸어요'와 짝
   },
   update(){ const V = townBus(), o = V.obj.position; me.x = o.x; me.z = o.z; me.r = V.r; me.y = W.groundY(o.x, o.z); return 0; },
   prompt(){ return {label:'버스에서 내리기', run:() => stopActivity()}; },

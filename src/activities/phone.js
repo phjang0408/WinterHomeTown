@@ -29,12 +29,13 @@ function tone(fs, dur, {trill = 0, vol = .05} = {}){
 const DTMF = [[697, 1209], [697, 1336], [770, 1209], [770, 1477], [852, 1336], [941, 1336], [697, 1477], [852, 1209]];
 const click = () => sfx(1400, 500, .05, 'square', .05);
 
-// ── 대사 (엄마 한마디 → 내 대답) ──
+// ── 대사 (엄마 한마디 → 내 대답 → 셋째 값이 있으면 엄마 끝인사 대신) ──
 const TALKS = [
   ['어디니? 밥은 먹었고?', '응, 친구들이랑 놀다가 금방 갈게!'],
   ['눈 오는데 장갑은 꼈니?', '응, 끼고 있어. 하나도 안 추워!'],
-  ['저녁 다 됐다, 얼른 들어와라.', '알았어, 지금 바로 갈게!'],
-  ['또 동전 없어서 수신자 부담으로 걸었지?', '헤헤… 미안, 엄마!'],
+  ['점심 해놨으니 배고프면 먹고 가~', '알았어, 지금 바로 갈게!'],   // (2026-11-26) 오전이라 저녁 → 점심
+  ['콜렉트콜로 걸었네? 맛난 거 사 먹으려고?', '응, 가는 길에 호떡 먹으려고 히히~', '그래, 너무 많이 먹지 말고 적당히 먹어야 해~'],
+  ['방학식은 끝났어?', '응! 끝나서 이제 놀다 갈려구', '그래, 감기 안 걸리게 겉옷 꼭 입고 놀아~'],
   ['오는 길에 두부 한 모만 사 올래?', '응! 슈퍼 들렀다 갈게.'],
   ['썰매 타다 옷 다 젖은 거 아니지?', '아니야~ 조금만 젖었어!'],
 ];
@@ -70,7 +71,7 @@ const phone = defineActivity({
   },
   start(i){
     const b = PHONES[i], p = inside(b), t = TALKS[Math.floor(Math.random() * TALKS.length)], seed = Math.floor(Math.random() * 8);
-    begin(phone, {i, t0:performance.now(), k:0, seed, steps:script(t, BYES[seed % BYES.length])});
+    begin(phone, {i, t0:performance.now(), k:0, seed, steps:script(t, t[2] || BYES[seed % BYES.length])});
     me.x = p.x; me.z = p.z; me.r = b.rot + Math.PI; me.y = undefined;
     hud.showGame('공중전화 · 엄마에게 콜렉트콜'); hud.zone(0, 0); hud.progress(0);
   },

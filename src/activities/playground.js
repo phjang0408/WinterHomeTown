@@ -88,7 +88,7 @@ defineActivity({
 
 // ── 흔들 오리 (2026-11-20 2차: 넷). 타면 E(발 구르기)를 앞으로 기울 때 누를수록 크게 흔들리고 머리가 끄덕인다 (게이지) ──
 const ducks = [], dkBusy = [];
-const dkPhase = phaser(3.4, .7, 1);   // (2026-11-22) 세게 밀수록 빨리 흔들린다
+const dkPhase = phaser(4.4, .7, 1);   // (2026-11-22) 세게 밀수록 빨리 흔들린다. (2026-11-26) 3.4 → 4.4: 더 빠르게 (각자 화면에서 계산, 서버 부담 없음)
 const dkAmp = w => w === me ? PUMP.amp : (w.sa === undefined ? .3 : w.sa);
 const dkSeat = i => atLocal(ducks[i], 0, .63 * UNIT, -.1 * UNIT);
 const dkNearest = (x, z) => DUCKS.reduce((b, d, i) => Math.hypot(x - d.x, z - d.z) < Math.hypot(x - DUCKS[b].x, z - DUCKS[b].z) ? i : b, 0);

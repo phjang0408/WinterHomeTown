@@ -108,7 +108,7 @@ function updateSnowman(now){
   const melt = SM.tc ? Math.min(1, Math.max(0, (wall - (SM.tc + RULE.MELT - RULE.FADE)) / RULE.FADE)) : 0;
   if (n !== shown) {
     if (n > shown && shown >= 0) { bumpAt = now; puff(SITE.x, W.groundY(SITE.x, SITE.z) + 1.8, SITE.z, 12);
-      if (n === need() && Math.hypot(me.x - SITE.x, me.z - SITE.z) < 60) { flash('눈사람 완성! ' + Math.round(RULE.MELT / 60000) + '분 뒤에 녹아요'); sfx(520, 1040, .5, 'triangle'); } }
+      if (n === need() && Math.hypot(me.x - SITE.x, me.z - SITE.z) < 60) { flash('눈사람 완성!\n' + Math.round(RULE.MELT / 60000) + '분 뒤에 녹아요'); sfx(520, 1040, .5, 'triangle'); } }
     shown = n;
   }
   rig.set(Math.min(n, RULE.BODY) / RULE.BODY, Math.max(0, n - RULE.BODY) / RULE.HEAD, n >= need(), melt);
@@ -126,13 +126,13 @@ const complete = () => total() >= need();
 // (2026-11-22) 위 카드에는 제목과 그만하기만 둔다: 진행은 눈사람 자리 위 이름표가 보여 주고, 모바일에서 게이지가 이동 조이스틱을 가리던 것
 function hudRoll(){}
 function deposit(){
-  if (complete()) { flash('눈사람이 벌써 다 만들어졌어요'); stopActivity(); return; }
+  if (complete()) { flash('눈사람이 벌써\n다 만들어졌어요'); stopActivity(); return; }
   if (!SM.t0) SM.t0 = Date.now();
   SM.c.set(me.uid, Math.min(99, (SM.c.get(me.uid) || 0) + 1));
   if (total() >= need() && !SM.tc) SM.tc = Date.now();
   publish(); me.sc[2] = Math.min(100, me.sc[2] + 1);
   sfx(300, 460, .2); stopActivity();
-  const n = Math.min(total(), need()); if (n < need()) flash('눈덩이를 보탰어요 · ' + phase(n));
+  const n = Math.min(total(), need()); if (n < need()) flash('눈덩이를 보탰어요\n' + phase(n));
 }
 
 const snowman = defineActivity({
@@ -164,7 +164,7 @@ const snowman = defineActivity({
     if (!g.carry) {
       if (inField(me.x, me.z)) g.rolled = Math.min(RULE.ROLL, g.rolled + moved);
       me.ballR = R0 + (R1 - R0) * g.rolled / RULE.ROLL; rollBall(myBall, me, me.ballR, moved); hud.topSet(g.rolled / RULE.ROLL, inField(me.x, me.z) ? '눈덩이 굴리기' : '눈밭 안에서 굴려요');
-      if (g.rolled >= RULE.ROLL) { g.carry = true; me.st = ST.CARRY; me.ballR = R1; hud.topSet(1, '눈사람 자리로 가져가요', '다 됐다'); sfx(440, 660, .15); flash('번쩍! 눈사람 자리로 가져가요'); }
+      if (g.rolled >= RULE.ROLL) { g.carry = true; me.st = ST.CARRY; me.ballR = R1; hud.topSet(1, '눈사람 자리로 가져가요', '다 됐다'); sfx(440, 660, .15); flash('번쩍!\n눈사람 자리로 가져가요'); }
     } else holdBall(myBall, me, me.char, R1);
     const key = g.carry + '|' + inField(me.x, me.z) + '|' + total(); if (g.key !== key) { g.key = key; hudRoll(); }
   },

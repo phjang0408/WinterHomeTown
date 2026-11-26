@@ -86,7 +86,7 @@ const kite = defineActivity({
     begin(kite, {h:3, v:0, best:3, view:false}); me.kt = [3]; REEL.spin = 0;
     dropFlyer(mine); mine = makeFlyer(TOPS[me.ci % TOPS.length]);
     hud.showGame('연날리기'); REEL.el.hidden = false;
-    flash('얼레를 반시계 방향으로 돌리면 감기, 시계 방향은 풀기'); sfx(500, 700, .12);
+    flash('얼레를 반시계 방향으로 돌리면 감기,\n시계 방향은 풀기'); sfx(500, 700, .12);
   },
   // R: 연 보기 ↔ 연 날리기 (보기: 서서 연을 올려다보는 시점, 날리기: 걸어 다니는 보통 시점). 반납은 '그만하기'
   alt(){ const g = S.game; return {label:g && g.view ? '걸으며 날리기' : '연 보기', run:() => { g.view = !g.view; }}; },

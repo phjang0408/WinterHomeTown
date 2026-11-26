@@ -152,8 +152,9 @@ defineProp('parkingSign', {label:'주차장 표지', category:'큰 가게', isNe
 
 // ───────── 간판 · 앞 물건 (몸체 원점 기준 미터, 여섯째 값은 회전) ─────────
 export const BIG_SIGNS = {
-  meat:[['signFascia', {text:'솔밭 숯불갈비', sub:'생갈비 · 양념갈비 · 삼겹살', bg:'#2b2420', fg:'#f4e3c3', accent:[3, 7, '#ffb74d'], w:9.5, h:1.0}, -3.6, 3.45, 5.12],
-    ['signFascia', {text:'점심 특선', bg:'#b71c1c', fg:'#ffffff', w:1.8, h:.5}, -6.8, 2.2, 4.92], ['foodWasteBin', {}, 7.6, 0, 6.2]],   // 주차장 표지는 뒤 주차장 입구(강변도로 쪽)에 둔다
+  // (2026-11-26) 고깃집 간판: 아래 작은 줄(메뉴)을 빼고, 덜 굵게(thin) · 글자 사이를 띄워(track) 크게. 판도 1.0 → 1.15m (루버 띠 3.3~4.6m 안)
+  meat:[['signFascia', {text:'솔밭 숯불갈비', bg:'#2b2420', fg:'#f4e3c3', accent:[3, 7, '#ffb74d'], thin:true, track:.22, size:1.1, w:9.5, h:1.15}, -3.6, 3.4, 5.12],
+    ['signFascia', {text:'점심 특선', bg:'#b71c1c', fg:'#ffffff', thin:true, track:.1, w:1.8, h:.5}, -6.8, 2.2, 4.92], ['foodWasteBin', {}, 7.6, 0, 6.2]],   // 주차장 표지는 뒤 주차장 입구(강변도로 쪽)에 둔다
   mart:[['signFascia', {text:'동화 마트', sub:'신선식품 · 생활용품 · 배달', bg:'#1d5fb8', fg:'#ffffff', accent:[0, 2, '#ffeb3b'], w:13, h:1.7}, 0, 4.85, 5.56],
     ['signFascia', {text:'24시', bg:'#ffeb3b', fg:'#1d5fb8', w:1.6, h:1.0}, 8.4, 5.2, 5.56],
     ['fruitStand', {}, -5.2, 0, 6.6], ['fruitStand', {}, -7.4, 0, 6.6], ['cartCorral', {}, 3.8, 0, 7.0, Math.PI / 2], ['shoppingCart', {}, 6.4, 0, 6.6, -.4], ['drinkFridge', {}, 8.6, 0, 6.2], ['drinkFridge', {}, 9.5, 0, 6.2],

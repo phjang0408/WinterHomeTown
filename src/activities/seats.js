@@ -29,7 +29,7 @@ defineActivity({
 
 // ── 그네 (2026-11-20 2차): 세 틀 여섯 자리. 타면 E(발 구르기)를 그네가 끝에 다다를 때 누를수록 높이 올라간다 (게이지) ──
 const pivots = [], busy = [];
-const swPhase = phaser(2.3, .6, 1.7);   // (2026-11-22) 세게 밀수록 빨리 왔다 갔다
+const swPhase = phaser(3.0, .6, 1.7);   // (2026-11-22) 세게 밀수록 빨리 왔다 갔다. (2026-11-26) 2.3 → 3.0: 더 빠르게 (각자 화면에서 계산, 서버 부담 없음)
 const swAmp = w => w === me ? PUMP.amp : (w.sa === undefined ? .3 : w.sa);
 const swingAngle = (i, now, a) => Math.sin(swPhase(i, now, a)) * (.2 + .78 * a);
 const nearestSeat = (x, z) => SW.seats.reduce((b, s, i) => Math.hypot(x - s.x, z - s.z) < Math.hypot(x - SW.seats[b].x, z - SW.seats[b].z) ? i : b, 0);

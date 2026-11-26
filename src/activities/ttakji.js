@@ -55,7 +55,7 @@ function end(){
   finish(ttakji, '딱지 대결 · ' + r, g.myF, () => ttakji.start(g.k, g.seat));
 }
 function setOpp(g, R){ hud.cpu(null); g.R = R; g.cpu = !R; g.waiting = false; g.oppName = R ? nameOf(R.a, R.n) : '동네 형'; g.seen = R ? R.tk[2] : 0; g.opp = 0; g.oppF = 0; publish(); stat();
-  flash(R ? g.oppName + '와(과) 대결!' : '동네 형이 왔어요. 한판 해요!'); if (myTurn(g)) myRound(); else waitText(); }
+  flash(R ? g.oppName + '와(과) 대결!' : '동네 형이 왔어요.\n한판 해요!'); if (myTurn(g)) myRound(); else waitText(); }
 
 const ttakji = defineActivity({
   id:'ttakji', st:ST.TTAKJI, score:{index:1, label:'딱지', unit:'장'}, hideLabels:true,
