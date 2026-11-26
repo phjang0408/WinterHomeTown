@@ -10,11 +10,34 @@ import { sky } from '../map/scenery.js';
 
 export const camPos = new THREE.Vector3(INTRO.x, INTRO.h, INTRO.z + INTRO.r), camLook = new THREE.Vector3(INTRO.x, 0, INTRO.z);
 const head = new THREE.Vector3(), want = new THREE.Vector3(), look = new THREE.Vector3(), dir = new THREE.Vector3(), ray = new THREE.Raycaster();
+const o0 = new THREE.Vector3(), o1 = new THREE.Vector3();
+
+// (2026-11-26) 시작 화면: 학교 정문 앞에 선 내 캐릭터를 앞에서 본다. 넓은 화면은 캐릭터가 오른쪽(왼쪽은 시작 판),
+//   세로 화면은 위쪽(아래는 시작 판). 아주 천천히 좌우로 흔들린다.
+function introView(now){
+  const me = S.me, port = innerHeight > innerWidth, sway = reduceMotion ? 0 : Math.sin(now * .00022) * .14;
+  const a = me.r + .32 + sway, fx = Math.sin(a), fz = Math.cos(a), D = port ? 6.2 : 4.7, y = (me.y || 0);
+  want.set(me.x + fx * D, y + (port ? 1.9 : 1.3), me.z + fz * D);
+  const side = port ? 0 : D * .3;                                 // 화면 오른쪽 방향은 (fz, 0, -fx): 그 반대쪽을 보면 캐릭터가 오른쪽에 선다
+  look.set(me.x - fz * side, y + (port ? .3 : 1.2), me.z + fx * side);
+}
+// 시작 화면 첫 그림: 조금 뒤 · 위에서 시작해 2초쯤에 자리 잡는다
+export function introPlace(){ introView(performance.now()); camPos.copy(want).add(o0.set(0, 2.5, 0)).addScaledVector(o1.copy(want).sub(look).setY(0).normalize(), 5); camLook.copy(look); }
+// 시작 화면 → 걷기: 머리를 중심으로 둥글게 돌아 등 뒤로 간다 (앞에서 뒤로 곧장 오면 캐릭터를 뚫고 지나간다)
+function arcTo(dt){
+  const C = S.cam, k = Math.min(1, dt * 3.2);
+  o0.copy(camPos).sub(head); o1.copy(want).sub(head);
+  const r0 = o0.length(), r1 = o1.length(), y0 = Math.atan2(o0.x, o0.z), y1 = Math.atan2(o1.x, o1.z), p0 = Math.asin(o0.y / r0), p1 = Math.asin(o1.y / r1);
+  const dy = ((y1 - y0 + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+  const yy = y0 + dy * k, pp = p0 + (p1 - p0) * k, rr = r0 + (r1 - r0) * k, cp = Math.cos(pp);
+  camPos.set(head.x + Math.sin(yy) * cp * rr, head.y + Math.sin(pp) * rr, head.z + Math.cos(yy) * cp * rr); camLook.lerp(look, k);
+  if ((Math.abs(dy) < .01 && Math.abs(r1 - r0) < .03) || performance.now() - C.arc > 3000) { C.arc = 0; C.blend = 1; }
+}
 
 export function updateCamera(dt, now){
   const C = S.cam, a = current(); let follow = false;
   if (S.dbgCam) { want.set(...S.dbgCam.p); look.set(...S.dbgCam.l); camPos.copy(want); camLook.copy(look); }   // 개발용: 고정 시점 (?debug)
-  else if (S.mode === 'intro') { const t = (reduceMotion ? 0 : now * .00004) + .4; want.set(INTRO.x + Math.sin(t) * INTRO.r, INTRO.h, INTRO.z + Math.cos(t) * INTRO.r); look.set(INTRO.x, 0, INTRO.z); }
+  else if (S.mode === 'intro') introView(now);
   else if (!(a && a.camera && a.camera(want, look))) {
     follow = true; const me = S.me;
     head.set(me.x, me.char.position.y + 1.6, me.z);
@@ -34,14 +57,14 @@ export function updateCamera(dt, now){
     look.copy(head);
   }
   C.blend = Math.min(1, C.blend + dt * 1.6);
-  if (follow && C.blend >= 1) { camPos.copy(want); camLook.copy(look); }
+  if (follow && C.arc) arcTo(dt);
+  else if (follow && C.blend >= 1) { camPos.copy(want); camLook.copy(look); }
   else { const k = Math.min(1, dt * (S.mode === 'intro' ? 1.5 : 2 + 14 * C.blend * C.blend)); camPos.lerp(want, k); camLook.lerp(look, k); }
   camera.position.copy(camPos); camera.lookAt(camLook);
   // (2026-11-17) 멀리서 볼수록 가까운 면(near)을 밀어 깊이 정밀도를 높인다: 첫 화면(높은 하늘 시점)에서 바닥 층이 깜빡이던 것
   { const nn = Math.min(8, Math.max(.3, camPos.distanceTo(camLook) * .02)); if (Math.abs(camera.near - nn) > .02) { camera.near = nn; camera.updateProjectionMatrix(); } }
   if (sky) sky.position.copy(camPos);
-  const sx = S.mode === 'intro' ? INTRO.x : camLook.x, sz = S.mode === 'intro' ? INTRO.z : camLook.z;
-  snapSun(sx, sz);
+  snapSun(camLook.x, camLook.z);   // (2026-11-26) 시작 화면도 캐릭터 가까이 보므로 늘 보는 곳 기준
 }
 // (2026-11-25) 그림자 지도를 텍셀 크기만큼 끊어서 옮긴다: 걸을 때 그림자 가장자리가 지글지글 떨리던(깜빡이던) 것.
 //   해 방향 기준 좌표로 바꿔 가로 · 세로를 텍셀 단위로 반올림하고 다시 세계 좌표로 돌린다.

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><title>outfits</title>
+<style>html,body{margin:0;height:100%;background:#cfe0ee;font-family:"Noto Sans CJK KR",sans-serif}canvas{display:block;width:100%;height:100%}
+#tags div{position:fixed;bottom:14px;transform:translateX(-50%);text-align:center;font-size:14px;color:#1d2733;line-height:1.35}#tags b{display:block;font-size:20px}
+#tags i{display:inline-block;width:16px;height:16px;border:1px solid #0003;vertical-align:middle;margin:0 2px}</style></head>
+<body><canvas id="scene" width="2" height="2" style="display:none"></canvas><canvas id="c"></canvas><div id="tags"></div>
+<script type="module">
+// 개발용 (게시하지 않음): 옷 색 묶음(config.js COLORS)마다 캐릭터를 나란히 그린다. ?yaw=0 (정면) · 150 (뒤)
+import * as THREE from '../src/lib/three.js';
+import { setupRenderer, makeLights, makeEnvironment } from '../src/core/look.js';
+import { makeChar } from '../src/entities/character.js';
+import { COLORS } from '../src/config.js';
+const q = new URLSearchParams(location.search), yaw = (+q.get('yaw') || 0) * Math.PI / 180;
+const c = document.getElementById('c'), r = new THREE.WebGLRenderer({canvas:c, antialias:true}); r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap; setupRenderer(r);
+const Wd = innerWidth, H = innerHeight; r.setSize(Wd, H, false); r.setPixelRatio(1);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xcfe0ee);
+const sunOff = new THREE.Vector3(-30, 60, 75); scene.environment = makeEnvironment(r, sunOff);
+const L = makeLights(); Object.values(L).forEach(l => l && l.isObject3D && scene.add(l));
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({color:0xf1f4f7, roughness:1})); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+const N = COLORS.length, GAP = 1.45, x0 = -(N - 1) * GAP / 2, hex = n => '#' + n.toString(16).padStart(6, '0');
+const tags = document.getElementById('tags');
+COLORS.forEach((col, i) => {
+  const ch = makeChar(i); ch.position.set(x0 + i * GAP, 0, 0); ch.rotation.y = yaw; ch.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); scene.add(ch);
+  const d = document.createElement('div'); d.innerHTML = '<b>' + (i + 1) + '</b><i style="background:' + hex(col.j) + '"></i><i style="background:' + hex(col.h) + '"></i><br>' + hex(col.j) + '<br>' + hex(col.h); tags.append(d);
+});
+const cam = new THREE.PerspectiveCamera(30, Wd / H, .05, 500);
+cam.position.set(0, 2.2, 9.6); cam.lookAt(0, .95, 0); cam.updateMatrixWorld();
+[...tags.children].forEach((d, i) => { const v = new THREE.Vector3(x0 + i * GAP, 0, 0).project(cam); d.style.left = ((v.x + 1) / 2 * innerWidth) + 'px'; });
+const sun = L.sun; sun.position.copy(sunOff); sun.target.position.set(0, 0, 0); scene.add(sun.target);
+const sc = sun.shadow.camera; sc.left = -9; sc.right = 9; sc.top = 9; sc.bottom = -9; sc.near = 1; sc.far = 200; sc.updateProjectionMatrix();
+r.render(scene, cam); window.__galleryReady = true;
+</script></body></html>

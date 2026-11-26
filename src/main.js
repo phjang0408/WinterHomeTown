@@ -1,6 +1,7 @@
 // 진입점: 맵 → 놀이 → 반복 소품 → 캐릭터 → 네트워크 순서로 준비하고 메인 루프를 돌린다.
 import { updateAlt } from './ui/alt.js';
 import { onFrame, start, shadowRange, canvas, renderer, scene, camera } from './core/engine.js';
+import { introPlace } from './core/camera.js';
 import { getProp, usedProps, propNames } from './props/registry.js';
 import { S, setMode } from './core/state.js';
 import { PI, rnd } from './core/util.js';
@@ -44,7 +45,8 @@ import { QUALITY } from './core/quality.js';
 import { buildMap } from './map/index.js';
 import { SPAWN } from './map/layout.js';
 import { ACTS, current, findAction, stopActivity } from './activities/index.js';
-import { me, dressMe, movePlayer, wave, nameOf } from './entities/player.js';
+import { me, dressMe, nameMe, movePlayer, wave, nameOf } from './entities/player.js';
+import { rerollAnim, finishRoll } from './ui/intro.js';
 import { placeChar, emote, SIT } from './entities/character.js';
 import { initFootprints, trackPrints, agePrints } from './entities/footprints.js';
 import { applyPeers, updateRemotes } from './entities/remotes.js';
@@ -63,6 +65,9 @@ function updateCount(){
   $('net-dot').classList.toggle('on', !!net.online);
   $('srv-addr').textContent = net.kind === 'room' ? '아티팩트 공유 방' : net.kind === 'websocket' ? NET.url : '찾는 중…';
   if (menuOpen() && menuTab() === 'server') fillRoster();   // (2026-11-24) 접속자 · 점수표는 메뉴의 서버 탭에
+  // (2026-11-26) 시작 화면: 지금 동네에 몇 명 있는지 (연결됐을 때만)
+  const on = $('intro-online'); on.hidden = !net.online || S.mode !== 'intro';
+  if (!on.hidden) on.innerHTML = '<i></i>' + (S.remotes.size ? '지금 ' + S.remotes.size + '명이 동네에서 놀고 있어요' : '지금 동네는 조용해요');
 }
 function fillRoster(){
   const scored = ACTS.filter(a => a.score).sort((a, b) => a.score.index - b.score.index);
@@ -76,19 +81,20 @@ function fillRoster(){
     tb.append(tr); });
 }
 function enter(){
-  if (S.mode !== 'intro') return;
+  if (S.mode !== 'intro' || !ready) return;   // (2026-11-26) 첫 화면이 그려지기 전 Enter는 받지 않는다
+  finishRoll();   // 이름이 도는 중이면 바로 멈춘다
   // (2026-11-20 2차) 학교 정문 앞에서 시작: 방학식이 막 끝나 교문을 나선 순간. 종이 울리고, 서쪽(동네)을 본다
-  setMode('walk'); me.x = SPAWN.x + (Math.random() - .5) * 1.2; me.z = SPAWN.z + (Math.random() - .5) * SPAWN.w; me.r = SPAWN.r; S.cam.yaw = SPAWN.r + PI; S.cam.pitch = .32; me.char.visible = true;
+  // (2026-11-26) 자리는 시작 화면에서 이미 잡았다(boot). 카메라는 캐릭터 앞에서 둥글게 돌아 등 뒤로 간다 (camera.js arc)
+  setMode('walk'); me.r = SPAWN.r; S.cam.yaw = SPAWN.r + PI; S.cam.pitch = .32; S.cam.arc = performance.now();
   [[659, 0], [523, .45], [587, .9], [392, 1.35], [392, 2.1], [587, 2.55], [659, 3.0], [523, 3.45]].forEach(([f, t]) => after(t * 1000, () => sfx(f, f * .998, .5, 'sine', .06)));   // 딩동댕동 · 댕동딩동
-  after(600, () => flash('겨울방학 시작!\n동네로 놀러 가자'));
+  after(600, () => flash('이야~ 방학이야~~'));   // (2026-11-26) 시작 메시지 (예전 '겨울방학 시작! / 동네로 놀러 가자' → '얘들아~ 놀자~!'). 종소리는 그대로
   shadowRange(75);
-  $('intro').hidden = true; ['top','mini','dock'].forEach(id => $(id).hidden = false); canvas.focus();
+  $('intro').hidden = true; $('veil').hidden = true; ['top','mini','dock'].forEach(id => $(id).hidden = false); canvas.focus();
   if (coarse) after(3400, () => flash('왼쪽을 끌어 이동'));
 }
 function doWave(){ if (wave()) { emote(me.char, 1); sfx(620, 760, .1); } }
 function bindUi(){
   $('enter').onclick = enter;
-  $('reroll').onclick = () => { me.a = rnd(ADJ.length); me.n = rnd(NOUN.length); me.ci = (me.ci + 1 + rnd(COLORS.length - 1)) % COLORS.length; dressMe(); };
   initMenu({onOpen:t => { if (t === 'server') { updateCount(); fillRoster(); } }});   // (2026-11-24) 메뉴: 서버 · 설정 · 조작법 (ui/menu.js)
   $('res-close').onclick = () => { $('result').hidden = true; };
   $('res-again').onclick = () => { $('result').hidden = true; if (S.mode === 'walk' && hud.again) hud.again(); };
@@ -112,7 +118,7 @@ function frame(dt, now){
   let moved = 0;
   if (a && a.update) moved = a.update(dt, now);
   else if (S.mode !== 'intro' && freeMove()) moved = movePlayer(dt, (a && a.speedMul) || 1);
-  if (S.mode !== 'intro') { placeChar(me, me.char, dt, moved, now); if (moved > 0 && !SIT.has(me.st)) trackPrints(me, moved, now); }
+  placeChar(me, me.char, dt, moved, now); if (S.mode !== 'intro' && moved > 0 && !SIT.has(me.st)) trackPrints(me, moved, now);   // (2026-11-26) 시작 화면에서도 서 있다
   updateRemotes(dt, now);
   for (const x of ACTS) if (x.frame) x.frame(dt, now, moved);
   updateVehicles(dt); W.updateAnimated(dt, now); agePrints(now);
@@ -124,24 +130,48 @@ function frame(dt, now){
   if (S.mode !== 'intro' && ++miniTick % miniEvery() === 0) drawMini();
 }
 
+// (2026-11-26) 불러오기: 단계마다 index.html의 막대(__wtLoad)를 올리고 한 번 쉬어 그 사이에 화면이 그려지게 한다.
+//   rAF만 기다리면 뒤에 숨은 탭에서 멈추므로 60ms 타이머와 먼저 오는 쪽을 쓴다.
+const LOAD = window.__wtLoad || {set(){}, ready(){}, fail(){}};
+const breathe = () => new Promise(r => { let d = false; const go = () => { if (!d) { d = true; setTimeout(r, 0); } }; requestAnimationFrame(go); setTimeout(go, 60); });
+const step = async (p, text) => { LOAD.set(p, text); await breathe(); };
+let ready = false;
+
 async function boot(){
+  // 이름은 바로 보이고, '다시 뽑기'도 불러오는 동안 된다 (옷은 캐릭터를 만든 뒤 바뀐다)
+  nameMe();
+  $('reroll').onclick = () => rerollAnim(() => ready);   // 슬롯처럼 돌다 멈추는 연출 (ui/intro.js)
+  await step(.36, '글꼴 준비 중');
   try { if (document.fonts && document.fonts.load) await Promise.race([Promise.all(FONTS_TO_LOAD.map(f => document.fonts.load(f, '겨울동화'))), new Promise(r => setTimeout(r, 1800))]); } catch (e) {}
-  tagPrims(true); buildMap(); tagPrims(false);
+  tagPrims(true); await buildMap((p, t) => step(.38 + p * .38, t)); tagPrims(false);
+  await step(.77, '놀이 준비 중');
   ACTS.forEach(a => a.setup && a.setup());
+  await step(.81, '차 · 버스 준비 중');
   setupVehicles();
   finalizeBatches();
   W.lodScale = QUALITY.lod; W.farScale = QUALITY.far;
+  await step(.84, '소품 정리 중');
   { const t = performance.now(), r = batchStatic(); W.batchInfo = {...r, ms:Math.round(performance.now() - t)}; }   // (2026-11-24) 같은 소품 묶기 · 같은 재질 합치기 (world/batch.js)
+  await step(.92, '눈 · 지도 준비 중');
   initFootprints(); initSnow();
+  // (2026-11-26) 시작 화면: 학교 정문 앞(방학식 끝나고 나온 자리)에 내 캐릭터를 세우고 카메라가 앞에서 본다
+  me.x = SPAWN.x + (Math.random() - .5) * 1.2; me.z = SPAWN.z + (Math.random() - .5) * SPAWN.w; me.r = SPAWN.r;
   dressMe(); drawMiniBase(); bindUi();
+  shadowRange(75); introPlace();
   onFrame(frame);
   onFrame(() => W.cull(camera.position), 95);   // 거리 숨김 (카메라가 자리 잡은 뒤)
   onFrame(initPerf(), 99);   // 성능 창 (P 키)
+  await step(.95, '그림 준비 중');
   // (2026-11-24) 셰이더 미리 짓기: 거리 숨김 · LOD로 가려진 칸까지 잠깐 보이게 하고 한 번에 컴파일한다 → 처음 가는 곳에서 끊기지 않게
-  try { W.cullers.forEach(c => { c.o.visible = true; if (c.lo) c.lo.visible = true; }); renderer.compile(scene, camera); } catch (e) {}
+  //   (2026-11-26) compileAsync: 브라우저가 셰이더를 나눠 지을 수 있으면(KHR_parallel_shader_compile) 그동안 화면이 굳지 않는다. 8초면 그냥 넘어간다
+  try { W.cullers.forEach(c => { c.o.visible = true; if (c.lo) c.lo.visible = true; });
+    if (renderer.compileAsync) await Promise.race([renderer.compileAsync(scene, camera), new Promise(r => setTimeout(r, 8000))]); else renderer.compile(scene, camera); } catch (e) {}
   start();
-  if (location.search.includes('debug')) window.__town = {S, me, W, findAction, renderer, scene, usedProps, propNames};   // 개발용: 콘솔에서 상태를 들여다본다
-  window.__townReady = true;
+  if (location.search.includes('debug')) window.__town = {S, me, W, findAction, renderer, scene, camera, usedProps, propNames};   // 개발용: 콘솔에서 상태를 들여다본다
+  // 첫 화면이 두 번 그려진 뒤 하늘 바탕(veil)을 걷고 단추를 연다
+  await breathe(); await breathe();
+  ready = true; window.__townReady = true; LOAD.set(1, ''); LOAD.ready(); $('veil').classList.add('gone'); after(1100, () => { $('veil').hidden = true; });
+  after(500, () => emote(me.char, 1));   // 반갑게 손 흔들기
   connect({onPeers:list => { applyPeers(list); updateCount(); }, onStatus:updateCount});
 }
-boot();
+boot().catch(e => { console.error(e); LOAD.fail('동네를 짓다가 문제가 생겼어요. 새로고침해 주세요.'); });

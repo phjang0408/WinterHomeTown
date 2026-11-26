@@ -22,12 +22,19 @@ export const me = S.me = {
 
 export function dressMe(){
   if (me.char) scene.remove(me.char);
-  me.char = makeChar(me.ci); me.char.visible = S.mode !== 'intro'; scene.add(me.char);
-  document.getElementById('me-name').textContent = document.getElementById('intro-name').textContent = nameOf(me.a, me.n);
-  document.getElementById('me-dot').style.background = COLORS[me.ci].css;
-  try { sessionStorage.setItem('winter-town', JSON.stringify({a:me.a, n:me.n, c:me.ci})); } catch (e) {}
+  me.char = makeChar(me.ci); scene.add(me.char);   // (2026-11-26) 시작 화면에서도 보인다 (옷 색 미리 보기)
+  nameMe();
   extrasHooks.forEach(f => f(me.char));
 }
+// 이름 · 색 점만 바꾼다. 불러오는 동안(캐릭터를 만들기 전)에도 '다시 뽑기'가 되게 따로 둔다.
+export function nameMe(){
+  const name = nameOf(me.a, me.n), css = COLORS[me.ci].css;
+  document.getElementById('me-name').textContent = document.getElementById('intro-name').textContent = name;
+  document.getElementById('me-dot').style.background = document.getElementById('intro-dot').style.background = css;
+  try { sessionStorage.setItem('winter-town', JSON.stringify({a:me.a, n:me.n, c:me.ci})); } catch (e) {}
+}
+// 이름과 옷 색을 같이 다시 뽑는다 (옷 색은 지금과 다른 것으로)
+export function rerollMe(){ me.a = rnd(ADJ.length); me.n = rnd(NOUN.length); me.ci = (me.ci + 1 + rnd(COLORS.length - 1)) % COLORS.length; }
 export const extrasHooks = [];   // 캐릭터에 붙는 소품(썰매 등)을 만드는 함수들
 
 export function standUp(){ if (me.onStand) { me.onStand(); me.onStand = null; } me.st = 0; me.seatAct = null; me.seatAlt = null; unstick(); }

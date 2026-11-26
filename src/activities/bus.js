@@ -30,7 +30,8 @@ const bus = defineActivity({
     if (Math.abs(n.along) < 5.2 && n.lat < 3.6) offer(n.lat, 3.6, '마을버스 타기', bus.start);
   },
   start(){
-    begin(bus, {}); me.char.visible = false; S.cam.busDist = S.cam.dist; S.cam.dist = Math.max(S.cam.dist, 16); S.cam.pitch = Math.max(S.cam.pitch, .42);   // (2026-11-22) 타면 멀리서 버스가 보이게 줌 아웃 sfx(700, 900, .12, 'square', .04);
+    begin(bus, {}); me.char.visible = false; S.cam.busDist = S.cam.dist; S.cam.dist = Math.max(S.cam.dist, 16); S.cam.pitch = Math.max(S.cam.pitch, .42);   // (2026-11-22) 타면 멀리서 버스가 보이게 줌 아웃
+    sfx(700, 900, .12, 'square', .04);   // (2026-11-26) 위 줄 주석 끝에 묻혀 안 나던 탈 때 소리
     hud.showGame('마을버스 타는 중', {quit:false});   // (2026-11-22) 제목만: 내리기는 아래 버튼
     flash('탔어요');   // (2026-11-26) 내릴 때 '내렸어요'와 짝
   },

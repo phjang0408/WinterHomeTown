@@ -8,12 +8,16 @@ import school from './zones/school.js';
 
 export const ZONES = [apartments, park, school];
 
-export function buildMap(){
-  buildTerrain();
-  buildScenery();
-  buildRailway();
-  buildStreets();
-  buildRiverside();
-  ZONES.forEach(z => z.build());
-  finishBase();                       // 바닥판 · 가로수 · 가로등을 재질별로 한 번에 그린다
+// (2026-11-26) 단계마다 step(진행 0~1, 글)을 기다린다: 시작 화면의 불러오기 막대가 그 사이에 그려진다.
+const ZONE_NAMES = ['아파트 단지', '공원 · 상가', '학교'];
+export async function buildMap(step = () => {}){
+  const steps = [
+    ['땅 · 하늘', () => { buildTerrain(); buildScenery(); }],
+    ['간이역', buildRailway],
+    ['도로', buildStreets],
+    ['강변', buildRiverside],
+    ...ZONES.map((z, i) => [ZONE_NAMES[i] || '구역', () => z.build()]),
+    ['가로수 · 가로등', finishBase],   // 바닥판 · 가로수 · 가로등을 재질별로 한 번에 그린다
+  ];
+  for (let i = 0; i < steps.length; i++) { await step(i / steps.length, steps[i][0] + ' 짓는 중'); steps[i][1](); }
 }
