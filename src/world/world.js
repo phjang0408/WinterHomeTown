@@ -118,8 +118,20 @@ export const W = {
           let ta = (lo - oa) / da, tb = (hi - oa) / da; if (ta > tb) { const q = ta; ta = tb; tb = q; } if (ta > t0) t0 = ta; if (tb < t1) t1 = tb; if (t0 > t1) break; }
         if (!inside && t0 <= t1 && (best === null || t0 < best)) best = t0; } }
     return best; },
-  // LOD가 있는 칸(lo): near 안쪽은 원래 모델, 바깥은 단순 모델. far가 0이면 숨기지 않는다.
+  // LOD가 있는 칸(lo): near 안쪽은 원래 모델, 바깥은 단순 모델. far가 0이면 숨기지 않는다. 그림자 전용 단순 모델(sh)은 거리와 상관없이 켠다
   cull(cam){ const L = this.lodScale, F = this.farScale;
     for (const c of this.cullers) { const d = Math.hypot(cam.x - c.x, cam.z - c.z) - c.r, keep = !c.far || d < c.far * F;
-      if (c.lo) { const near = d < c.near * L; c.o.visible = keep && near; c.lo.visible = keep && !near; } else c.o.visible = keep; } },
+      if (c.lo) { const near = d < c.near * L; c.o.visible = keep && near; c.lo.visible = keep && !near; if (c.sh) c.sh.visible = keep; } else c.o.visible = keep; } },
+  // (2026-11-27 최적화) 그림자는 단순 모델로: LOD가 있는 칸마다 단순 모델(lo)을 그림자 전용 층(layer 1)에 한 벌 더 두고(형상 · 재질 · 인스턴스 행렬은 같이 씀),
+  //   원래 모델과 lo는 그림자를 드리우지 않는다. 화면엔 그대로, 그림자 패스 삼각형만 준다 (벤치 9,470 → 2,870 · 차 8,712 → 4,720 · 겨울나무 가지 넷 → 셋 단).
+  //   main.js가 batchStatic 뒤 한 번 부른다. 해의 그림자 카메라는 engine.js에서 layer 1을 같이 본다
+  lodShadows(){ const host = new THREE.Group(); host.name = '그림자 전용(LOD)'; root.add(host); let n = 0;
+    for (const c of this.cullers) { if (!c.lo) continue; const casts = []; c.lo.traverse(m => { if (m.isMesh && m.castShadow) casts.push(m); }); if (!casts.length) continue;
+      c.o.traverse(m => { if (m.isMesh) m.castShadow = false; }); const sh = new THREE.Group(); sh.matrixAutoUpdate = false;
+      casts.forEach(m => { m.castShadow = false; m.updateWorldMatrix(true, false);
+        const s = m.isInstancedMesh ? new THREE.InstancedMesh(m.geometry, m.material, m.count) : new THREE.Mesh(m.geometry, m.material);
+        if (m.isInstancedMesh) { s.instanceMatrix = m.instanceMatrix; s.boundingSphere = m.boundingSphere; }
+        s.matrixAutoUpdate = false; s.matrix.copy(m.matrixWorld); s.castShadow = true; s.receiveShadow = false; s.frustumCulled = m.frustumCulled; s.layers.set(1); sh.add(s); n++; });
+      host.add(sh); c.sh = sh; }
+    host.updateMatrixWorld(true); return n; },
 };

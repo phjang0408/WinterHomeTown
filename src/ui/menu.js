@@ -49,7 +49,7 @@ export function initMenu(o = {}){
   let vol = +load('wt.vol', load('wt.sound', 'on') === 'off' ? '0' : '80'); if (!(vol >= 0 && vol <= 100)) vol = 80;
   slider('set-vol', vol, (v, out) => { audio.vol = v / 100; audio.on = v > 0; out.textContent = v ? v + '%' : '끔'; }, v => { save('wt.vol', v); sfx(620, 760, .1); });
   // (2026-11-26) 배경음(core/music.js) 0~100, 기본 50
-  let bgm = +load('wt.bgm', '50'); if (!(bgm >= 0 && bgm <= 100)) bgm = 50;
+  let bgm = +load('wt.bgm', '20'); if (!(bgm >= 0 && bgm <= 100)) bgm = 20;   // (2026-11-27) 처음 기본 20% (사용자: 배경음이 놀이를 방해하지 않게)
   slider('set-bgm', bgm, (v, out) => { setBgmVolume(v / 100); out.textContent = v ? v + '%' : '끔'; }, v => save('wt.bgm', v));
   let sens = +load(SENS_KEY, '100'); if (!(sens >= 50 && sens <= 200)) sens = 100;
   slider('set-sens', sens, (v, out) => { S.sens = v / 100; out.textContent = v + '%'; }, v => save(SENS_KEY, v));

@@ -241,8 +241,7 @@ defineProp('gonggiSet', {label:'공기놀이 마당 (돗자리)', category:'문�
     return assemble(P, [['cus', matteMaterial()], ['pla', plasticMaterial({rough:.3}), false]], [3, .17, 3], [top]); }});
 
 // ───────── 놀이 자리 바닥 표시 (2026-11-24 21차): 기계 앞 서는 자리에 회색 네모 + E 키 그림. 여기 서면 놀 수 있다는 표시 ─────────
-const padMat = (w, d) => once('pad' + w + 'x' + d, () => decalMaterial(canvasTex(Math.round(256 * w / d), 256, g => {
-  const W = g.canvas.width, H = g.canvas.height;
+const padMat = (w, d) => once('pad' + w + 'x' + d, () => decalMaterial(canvasTex(Math.round(256 * w / d), 256, (g, W, H) => {   // (2026-11-27) 크기는 인자로 (낮음 화질에서 캔버스가 반 크기여도 같게)
   g.fillStyle = 'rgba(72,76,82,.86)'; g.fillRect(0, 0, W, H);
   g.strokeStyle = 'rgba(236,234,228,.92)'; g.lineWidth = 9; g.strokeRect(16, 16, W - 32, H - 32);
   g.fillStyle = '#e3a53b'; g.fillRect(16, 16, W - 32, 12);                                     // 기계 쪽(위) 끝에 호박색 띠

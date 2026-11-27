@@ -245,7 +245,13 @@ export default {
     function groundRaster(){ const S = .25, X0 = 13, Z0 = 93, nx = Math.round((186 - X0) / S), nz = Math.round((246 - Z0) / S); let prev = new Map();
       const flush = (runs, zEnd) => runs.forEach(r => P.add('pav', flatXZ(X0 + r.a * S, Z0 + r.z0 * S, X0 + r.b * S, Z0 + zEnd * S, PV), 0xffffff));
       for (let j = 0; j <= nz; j++) { const cur = new Map();
-        if (j < nz) { let a = -1; for (let i = 0; i <= nx; i++) { const on = i < nx && !low(X0 + (i + .5) * S, Z0 + (j + .5) * S); if (on && a < 0) a = i; if (!on && a >= 0) { const k = a + ':' + i, p = prev.get(k); cur.set(k, {a, b:i, z0:p ? p.z0 : j}); if (p) prev.delete(k); a = -1; } } }
+        // (2026-11-27 최적화) 칸마다 low()를 부르면 42만 칸 × 길 다각형 변 전부라 1.5초 걸렸다 → 줄마다 길 경계 x를 한 번 구해 정렬해 두고 읽는다 (판정은 inRoad와 같음)
+        let xs = [], bays = [], play = false, k = 0;
+        if (j < nz) { const z = Z0 + (j + .5) * S, road = LOW.road || [];
+          for (let e = 0, f = road.length - 1; e < road.length; f = e++) { const [xi, zi] = road[e], [xj, zj] = road[f]; if ((zi > z) !== (zj > z)) xs.push((xj - xi) * (z - zi) / (zj - zi) + xi); }
+          xs.sort((p, q) => p - q); bays = LOW.bays.filter(r => z > r[1] && z < r[3]); play = z > PLAY[1] && z < PLAY[3] && !(z > CROSS_Z[0] && z < CROSS_Z[1]); }
+        const lowRow = x => { while (k < xs.length && xs[k] <= x) k++; return (xs.length - k) % 2 === 1 || bays.some(r => x > r[0] && x < r[2]) || (play && x > PLAY[0] && x < PLAY[2]); };
+        if (j < nz) { let a = -1; for (let i = 0; i <= nx; i++) { const on = i < nx && !lowRow(X0 + (i + .5) * S); if (on && a < 0) a = i; if (!on && a >= 0) { const k = a + ':' + i, p = prev.get(k); cur.set(k, {a, b:i, z0:p ? p.z0 : j}); if (p) prev.delete(k); a = -1; } } }
         flush([...prev.values()], j); prev = cur; } }
     const bare = [[], [], [], []], pine = [[], [], []], T = (v, x, z, s = .9) => bare[v].push({x, z, rot:R() * 6, s}), Pn = (v, x, z) => pine[v % 3].push({x, z, rot:R() * 6});
     // (2026-11-18 4차) 동과 동 사이 화단은 소나무만, 수도 줄였다 (겨울 나무는 모두 뺌): 103-104 · 104-105 사이는 하나씩

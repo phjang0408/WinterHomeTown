@@ -31,9 +31,11 @@ export const coarse = !!(window.matchMedia && matchMedia('(pointer: coarse)').ma
 
 // (2026-11-26) 피드백 · 후원 링크 (메뉴 '정보' 탭, 시작 화면 맨 아래 한 줄 → ui/links.js). 여기만 채우면 된다.
 //   비워 두면 그 자리는 흐리게 '준비 중'으로 보인다.
+export const DEV = {perfOpen:false};   // (2026-11-27) 아이폰 측정용: 성능 창(P)을 처음부터 연다. 측정이 끝나면 false로 (zip · 배포 전에 꼭 끄기)
 export const LINKS = {
-  insta: '',        // 인스타 아이디 (@ 없이, 예: 'kkoma_town')
+  insta: 'clip_snow.town',   // 인스타 아이디 (@ 없이). (2026-11-27) 사용자가 만든 계정 https://www.instagram.com/clip_snow.town/
   instaDm: true,    // true: 누르면 바로 DM 창(ig.me/m/아이디), false: 프로필(instagram.com/아이디)
-  donate: '',       // 후원 송금 링크 (토스 · 카카오페이 등의 https 주소). 폰은 이 주소를 버튼으로 열고, 데스크톱은 QR로 그려 보여 준다
-  donateQr: '',     // QR 이미지를 직접 쓰려면 파일 경로 (예: 'assets/donate-qr.png'). 비우면 donate 주소로 QR을 그린다
+  donate: 'supertoss://send?amount=0&bank=%ED%86%A0%EC%8A%A4%EB%B1%85%ED%81%AC&accountNo=100126271767&origin=qr',   // (2026-11-27) 사용자가 준 토스 송금 QR을 읽은 내용 그대로 (토스 앱 주소). 폰은 버튼으로 토스 앱을 열고, 데스크톱은 같은 내용으로 QR을 그린다
+  donateQr: '',     // (비워 둠: 위 donate 내용으로 QR을 그린다)
+  //     // QR 이미지를 직접 쓰려면 파일 경로 (예: 'assets/donate-qr.png'). 비우면 donate 주소로 QR을 그린다
 };

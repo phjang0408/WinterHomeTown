@@ -2,6 +2,7 @@
 // 같은 시드면 항상 같은 무늬가 나온다.
 import * as THREE from '../lib/three.js';
 import { LOOK } from './look.js';
+import { TEX_SCALE, QUALITY } from './quality.js';
 
 function rng(seed){ let t = seed >>> 0; return () => { t = (t + 0x6D2B79F5) >>> 0; let r = Math.imul(t ^ (t >>> 15), t | 1); r ^= r + Math.imul(r ^ (r >>> 7), r | 61); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; }; }
 const sm = t => t * t * (3 - 2 * t), cl = v => v < 0 ? 0 : v > 1 ? 1 : v, lerp = (a, b, t) => a + (b - a) * t;
@@ -13,9 +14,31 @@ export function noise2(seed, octaves){
     const I = ((i % n) + n) % n, J = ((j % n) + n) % n, I1 = (I + 1) % n, J1 = (J + 1) % n;
     return lerp(lerp(a[J * n + I], a[J * n + I1], fx), lerp(a[J1 * n + I], a[J1 * n + I1], fx), fy); };
   let tot = 0; octaves.forEach((_, k) => { tot += 1 / (1 << k); });
-  return (u, v) => { let s = 0; grids.forEach((g, k) => { s += one(g, u, v) / (1 << k); }); return s / tot; };
+  // (2026-11-27 최적화) 픽셀마다 forEach · one · lerp를 부르던 것을 한 고리 안에 풀어 썼다 (계산 순서는 그대로라 무늬가 똑같다 — tools/texhash.js로 확인). 불러오기 약 1초 단축
+  const G = grids.length, NS = grids.map(g => g.n), AS = grids.map(g => g.a);
+  return (u, v) => { let s = 0;
+    for (let k = 0; k < G; k++) { const n = NS[k], a = AS[k], x = u * n, y = v * n, i = Math.floor(x), j = Math.floor(y), tx = x - i, ty = y - j, fx = tx * tx * (3 - 2 * tx), fy = ty * ty * (3 - 2 * ty);
+      const I = ((i % n) + n) % n, J = ((j % n) + n) % n, I1 = (I + 1) % n, J1 = (J + 1) % n, a00 = a[J * n + I], a01 = a[J * n + I1], a10 = a[J1 * n + I], a11 = a[J1 * n + I1];
+      const top = a00 + (a01 - a00) * fx, bot = a10 + (a11 - a10) * fx; s += (top + (bot - top) * fy) / (1 << k); }
+    return s / tot; };
 }
 
+// (2026-11-27 최적화) 화질 '낮음'이면 256 이상 텍스처를 반 크기로 (무늬는 uv로 뽑아서 같고 해상도만 준다, 만드는 시간도 ¼)
+const sz = n => TEX_SCALE < 1 && n >= 256 ? Math.max(128, Math.round(n * TEX_SCALE)) : n;
+// (2026-11-27 최적화) 배포판(tools/build.js로 만든 dist, window.__BUILD__가 있을 때)만: 불러오는 동안 만든 노이즈 텍스처를 브라우저(IndexedDB)에 보관했다가
+//   다음 방문엔 계산하지 않고 꺼내 쓴다 (dist/index.html이 game.js보다 먼저 꺼내 window.__texCache에 둔다).
+//   열쇠 = 빌드 번호 + 화질 선택. 다시 빌드하면 번호가 바뀌어 예전 보관본은 안 쓴다. 칸마다 길이도 맞춰 보고 다르면 새로 만든다.
+//   불러오기가 끝난 뒤 만드는 텍스처는 만드는 순서가 놀이에 따라 달라서 보관하지 않는다 (main.js가 texCacheDone을 부른다)
+const BUILD = typeof window !== 'undefined' && window.__BUILD__;
+const TC = {open:!!BUILD, list:(BUILD && window.__texCache) || null, made:[], i:0, miss:false, id:BUILD + ':' + QUALITY.choice};
+function cached(len){ if (!TC.open) return null; const k = TC.i++, hit = TC.list && TC.list[k]; if (hit && hit.length === len) { TC.made[k] = hit; return hit; } TC.miss = true; return null; }
+const keep = (k, d) => { if (TC.open) TC.made[k] = d; return d; };   // k: cached를 부르기 전 TC.i (안에서 다른 텍스처를 만들어도 칸이 어긋나지 않게)
+export function texCacheDone(){
+  if (!TC.open) return; TC.open = false; TC.list = null; try { delete window.__texCache; } catch (e) {}
+  const list = TC.made; TC.made = []; if (!TC.miss || !list.length) return;
+  try { const req = indexedDB.open('kkoma-tex', 1); req.onupgradeneeded = () => req.result.createObjectStore('t');
+    req.onsuccess = () => { try { req.result.transaction('t', 'readwrite').objectStore('t').put({id:TC.id, list}, 'tex'); } catch (e) {} }; } catch (e) {}
+}
 function tex(data, w, h, srgb, repeat){
   const t = new THREE.DataTexture(data, w, h, THREE.RGBAFormat, THREE.UnsignedByteType);
   t.wrapS = t.wrapT = THREE.RepeatWrapping; t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter;
@@ -24,23 +47,26 @@ function tex(data, w, h, srgb, repeat){
 }
 // 높이 함수 → 노멀맵 (이웃 픽셀 차이로 기울기를 구한다)
 export function normalTex(w, h, height, strength, repeat){
+  w = sz(w); h = sz(h); const k = TC.i, hit = cached(w * h * 4); if (hit) return tex(hit, w, h, false, repeat);
   const H = new Float32Array(w * h); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) H[y * w + x] = height((x + .5) / w, (y + .5) / h);
   const at = (x, y) => H[((y % h) + h) % h * w + ((x % w) + w) % w], d = new Uint8Array(w * h * 4);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const sx = (at(x - 1, y) - at(x + 1, y)) * strength * w, sy = (at(x, y - 1) - at(x, y + 1)) * strength * h, l = Math.hypot(sx, sy, 1), i = (y * w + x) * 4;
     d[i] = (sx / l * .5 + .5) * 255; d[i + 1] = (sy / l * .5 + .5) * 255; d[i + 2] = (1 / l * .5 + .5) * 255; d[i + 3] = 255;
   }
-  return tex(d, w, h, false, repeat);
+  return tex(keep(k, d), w, h, false, repeat);
 }
 export function grayTex(w, h, fn, repeat){
+  w = sz(w); h = sz(h); const k = TC.i, hit = cached(w * h * 4); if (hit) return tex(hit, w, h, false, repeat);
   const d = new Uint8Array(w * h * 4);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const v = cl(fn((x + .5) / w, (y + .5) / h)) * 255, i = (y * w + x) * 4; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; }
-  return tex(d, w, h, false, repeat);
+  return tex(keep(k, d), w, h, false, repeat);
 }
 export function colorTex(w, h, fn, repeat){
+  w = sz(w); h = sz(h); const k = TC.i, hit = cached(w * h * 4); if (hit) return tex(hit, w, h, true, repeat);
   const d = new Uint8Array(w * h * 4);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const c = fn((x + .5) / w, (y + .5) / h), i = (y * w + x) * 4; d[i] = cl(c[0]) * 255; d[i + 1] = cl(c[1]) * 255; d[i + 2] = cl(c[2]) * 255; d[i + 3] = 255; }
-  return tex(d, w, h, true, repeat);
+  return tex(keep(k, d), w, h, true, repeat);
 }
 
 const cache = new Map();

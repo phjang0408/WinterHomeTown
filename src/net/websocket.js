@@ -10,5 +10,6 @@ export async function connectWebSocket(url, {onPeers, onStatus}){
       if (m.t === 's' && Array.isArray(m.peers)) onPeers(m.peers.filter(p => p.peer !== myId).map(p => ({id:String(p.peer), presence:p.presence}))); };
   };
   open();
-  return {send:p => { pending = p; if (ws && ws.readyState === 1) ws.send(JSON.stringify({t:'p', p})); }};
+  return {send:p => { pending = p; if (ws && ws.readyState === 1) ws.send(JSON.stringify({t:'p', p})); },
+    raw:o => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }};   // (2026-11-27) 익명 통계 (net/stats.js)
 }

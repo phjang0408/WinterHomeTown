@@ -1,3 +1,4 @@
+// (2026-11-27) 일반 화면에서는 불러오지 않는다: main.js가 주소에 ?debug가 있을 때만 불러온다 (사용자: 측정이 끝나 P 창은 뺌)
 // 성능 창 (2026-11-18): P 키로 켜고 끈다 (폰은 주소 끝 #perf). 실제 기기(GPU)에서 프레임 속도 · 프레임 시간 · GPU 시간 · 그리기 횟수 · 삼각형을 본다.
 //   - FPS · 프레임 간격: requestAnimationFrame 간격. 모니터 주사율(60 · 144Hz)에서 멈추므로, 여유는 CPU · GPU ms로 본다 (60Hz 예산 16.7ms)
 //   - CPU ms: 한 프레임 동안 게임 코드 + 그리기 명령에 쓴 시간 (engine.frameStats)
@@ -9,6 +10,7 @@ import { renderer, frameStats, sun, resize, scene } from '../core/engine.js';
 import { S } from '../core/state.js';
 import { W } from '../world/world.js';
 import { QUALITY } from '../core/quality.js';
+import { DEV } from '../config.js';
 
 const VIEWS = {시작:{p:[214, 4, 112], l:[260, 2, 140]}, 공원:{p:[300, 4, 128], l:[330, 0, 170]}, 아파트:{p:[120, 4, 200], l:[120, 2, 150]}, 강변:{p:[300, 2, 276], l:[380, 0, 300]}, 간이역:{p:[300, 3, 60], l:[400, 1, 50]}};
 const gl = renderer.getContext(), ext = gl.getExtension('EXT_disjoint_timer_query_webgl2');
@@ -17,13 +19,14 @@ const pending = [], frames = [], gpus = [], cpus = []; let on = false, box = nul
 // (2026-11-26) 필름 효과(core/post.js)가 장면을 렌더 타깃에 그린 뒤 화면 사각형을 한 번 더 그려서, renderer.info에는 마지막 사각형(그리기 1 · 삼각형 2)만 남았다
 //   (아이폰 결과가 '1+0 · 0만'). 장면(scene)을 그린 직후 값을 mainPass에 잡아 두고, 그림자는 장면을 그릴 때 0에서 더해 간다.
 const shadowPass = {calls:0, tris:0}, mainPass = {calls:0, tris:0}; { const sm = renderer.shadowMap, orig = sm.render.bind(sm);
-  sm.render = (...a) => { const i = renderer.info.render, c0 = i.calls, t0 = i.triangles; orig(...a); shadowPass.calls += i.calls - c0; shadowPass.tris += i.triangles - t0; }; }
+  sm.render = (...a) => { const i = renderer.info.render, c0 = i.calls, t0 = i.triangles; orig(...a); if (i.calls > c0) { shadowPass.calls = i.calls - c0; shadowPass.tris = i.triangles - t0; } }; }   // (2026-11-27) 그림자 지도를 건너뛴 프레임(engine.js SHADOW)은 지난 값을 둔다
+if (location.search.includes('debug')) window.__pass = {main:mainPass, shadow:shadowPass};   // 개발용: 헤드리스 측정 스크립트가 읽는다 (tools/perf2.js)
 
 // 그리기를 감싸 GPU 시간을 잰다 (켜져 있을 때만)
 const render = renderer.render.bind(renderer);
 //   (2026-11-26) 한 프레임에 그리기가 둘(장면 + 필름 사각형)이라 프레임 번호별로 더해서 한 프레임 GPU 시간으로 센다
 renderer.render = (sc, cam) => {
-  const main = sc === scene; if (main) shadowPass.calls = shadowPass.tris = 0;
+  const main = sc === scene;
   if (!on || !ext || pending.length > 12) render(sc, cam);
   else { const q = gl.createQuery(); gl.beginQuery(ext.TIME_ELAPSED_EXT, q); render(sc, cam); gl.endQuery(ext.TIME_ELAPSED_EXT); pending.push({q, f:frameNo}); }
   if (main) { const i = renderer.info.render; mainPass.calls = i.calls; mainPass.tris = i.triangles; } };
@@ -81,6 +84,7 @@ export function initPerf(){
   window.addEventListener('keydown', e => { if (e.code !== 'KeyP' || e.repeat) return; show(!on); });
   // (2026-11-24) 키보드 없는 폰 · 태블릿: 주소 끝에 #perf를 붙이면 성능 창이 열린다
   const byHash = () => { if (location.hash === '#perf') show(true); }; byHash(); window.addEventListener('hashchange', byHash);
+  if (DEV.perfOpen) show(true);   // (2026-11-27) 아이폰 측정용 아티팩트: 처음부터 연다 (config.js DEV)
   let prev = 0;
   return (dt, now) => {
     frameNo++;

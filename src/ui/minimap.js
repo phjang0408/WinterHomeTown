@@ -122,7 +122,8 @@ function drawMap(c, k, f){
   act('swing', '놀이터', 87, 176, 6.5);
   act('snowman', '눈사람 만들기', (SNOW.field.x0 + SNOW.field.x1) / 2, 176, 6.5);
   { const side = (kind, name, z) => { const r = 4.2 * 1.3, x = TWIN.x - 16; icon(kind, x, z, r); text(name, x + r + 1.8, z, f.act, C.ink, 800, 'left'); };   // (2026-11-25) 세 놀이를 위아래로, 이름은 오른쪽
-    side('ttakji', '딱지치기', TKS[0].z - 7.5); side('twin', '나눠바', TWIN.z - 4.5); side('gonggi', '공기놀이', GONGGI.z - 1.5); }
+    side('twin', '나눠바', TWIN.z - 4.5); side('gonggi', '공기놀이', GONGGI.z - 1.5); }
+  act('ttakji', '딱지치기', TKS[0].x, TKS[0].z);   // (2026-11-27) 아파트 가운데 광장으로 옮김
   act('arcade', '문구점', STN_AT.x, STN_AT.z - 1);
   act('food', '노점', (GOGUMA.x + HOTTEOK.x) / 2, GOGUMA.z - 1);
   act('sled', '얼음 썰매장', (SLED.x0 + SLED.x1) / 2, SLED.zc - 5, 4.6, C.inkDark);

@@ -25,6 +25,12 @@ scene.environment = makeEnvironment(renderer, SUN_OFF);   // PBR 소품의 하�
 scene.add(sun, sun.target); sun.castShadow = true;
 sun.shadow.mapSize.set(QUALITY.shadow, QUALITY.shadow);
 sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.14;
+// (2026-11-27 최적화) 그림자 전용 층(layer 1): LOD가 있는 소품(벤치 · 차 · 겨울나무)은 가까이서도 그림자만 단순 모델로 그린다 (world.js lodShadows)
+sun.shadow.camera.layers.enable(1);
+// (2026-11-27 최적화) 그림자 지도는 해(그림자 카메라)가 움직인 프레임엔 꼭, 아니면 두 프레임에 한 번만 다시 그린다 → 서 있을 때 그림자 패스 절반.
+//   움직이는 차 · 사람 그림자는 초당 30번 갱신. camera.js snapSun이 해를 옮기면 SHADOW.moved를 켠다
+export const SHADOW = {moved:true, n:0};
+renderer.shadowMap.autoUpdate = false; renderer.shadowMap.needsUpdate = true;
 export function shadowRange(r){ const c = sun.shadow.camera; c.left = -r; c.right = r; c.top = r; c.bottom = -r; c.near = 10; c.far = 340; c.updateProjectionMatrix(); }
 shadowRange(280);
 
@@ -51,6 +57,7 @@ export function start(){
     if (FRAME.cap && now - last < 1000 / FRAME.cap - 3) return;   // 건너뛴 프레임은 계산도 그리기도 하지 않는다
     const dt = Math.min(.05, (now - last) / 1000); last = now; const t0 = performance.now();
     for (const t of tasks) t.fn(dt, now);
+    renderer.shadowMap.needsUpdate = SHADOW.moved || FRAME.cap > 0 || (++SHADOW.n & 1) === 0; SHADOW.moved = false;
     if (renderHook) renderHook(scene, camera); else renderer.render(scene, camera);
     frameStats.cpu = performance.now() - t0;
   }

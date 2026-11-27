@@ -1,6 +1,6 @@
 // 3인칭 카메라: 캐릭터 뒤를 따라가고, 벽 · 소품 · 땅에 막히면 앞으로 당겨진다(2026-11-24 소품 · 땅 추가). 놀이가 camera()를 주면 그 고정 시점을 쓴다.
 import * as THREE from '../lib/three.js';
-import { camera, sun, SUN_OFF } from './engine.js';
+import { camera, sun, SUN_OFF, SHADOW } from './engine.js';
 import { S } from './state.js';
 import { reduceMotion } from '../config.js';
 import { W } from '../world/world.js';
@@ -72,5 +72,6 @@ const LROT = new THREE.Matrix4().lookAt(SUN_OFF, new THREE.Vector3(), new THREE.
 function snapSun(x, z){
   const c = sun.shadow.camera, tx = (c.right - c.left) / sun.shadow.mapSize.x;
   SV.set(x, 0, z).applyMatrix4(LINV); SV.x = Math.round(SV.x / tx) * tx; SV.y = Math.round(SV.y / tx) * tx; SV.applyMatrix4(LROT);
+  if (!sun.target.position.equals(SV)) SHADOW.moved = true;   // (2026-11-27) 해가 옮겨지면 이 프레임 그림자 지도를 다시 그린다 (engine.js)
   sun.target.position.copy(SV); sun.position.copy(SV).add(SUN_OFF);
 }

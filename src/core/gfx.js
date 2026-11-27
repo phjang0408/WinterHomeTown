@@ -2,6 +2,7 @@
 import * as THREE from '../lib/three.js';
 import { PI, rr, srand } from './util.js';
 import { FONT_D, FONT_B, FONT_UI } from '../config.js';
+import { TEX_SCALE } from './quality.js';
 
 let root = null;
 export const setRoot = g => { root = g; };
@@ -59,11 +60,12 @@ function afterGlyphs(used, redraw){
   const miss = [...used].filter(([f, t]) => { try { return !document.fonts.check(f, t); } catch (e) { return false; } });
   if (miss.length) Promise.all(miss.map(([f, t]) => document.fonts.load(f, t).catch(() => {}))).then(redraw);
 }
+// (2026-11-27 최적화) 화질 '낮음'이면 큰 그림(512×256 이상)은 캔버스를 반 크기로 만들고 g.scale로 그린다 — 그리는 코드는 원래 크기(w, h)로 그대로
 export function canvasTex(w, h, draw){
-  const c = document.createElement('canvas'); c.width = w; c.height = h;
-  const g = c.getContext('2d'), used = recordText(g); draw(g, w, h);
+  const k = TEX_SCALE < 1 && w * h >= 512 * 256 ? TEX_SCALE : 1, c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+  const g = c.getContext('2d'), used = recordText(g); if (k !== 1) g.scale(k, k); draw(g, w, h);
   const t = new THREE.CanvasTexture(c); t.anisotropy = 4; t.colorSpace = THREE.SRGBColorSpace;
-  afterGlyphs(used, () => { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h); draw(g, w, h); t.needsUpdate = true; });
+  afterGlyphs(used, () => { g.setTransform(k, 0, 0, k, 0, 0); g.clearRect(0, 0, w, h); draw(g, w, h); t.needsUpdate = true; });
   return t;
 }
 export function pillSprite(text, bg, fg, hgt){

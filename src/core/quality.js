@@ -4,10 +4,11 @@
 //   - shadow: 그림자 지도 한 변 픽셀, soft: 부드러운 그림자(PCFSoft) · 아니면 PCF
 //   - aa: 계단 현상 줄이기 (WebGL 문맥을 만들 때 정해서, 바꾸면 다시 불러와야 적용된다)
 //   - lod: 단순 모델로 바꾸는 거리 배율, far: 작은 소품을 숨기는 거리 배율
+//   - tex: 코드로 그리는 텍스처(노이즈 · 간판 그림) 크기 배율 (2026-11-27 최적화: 낮음은 반 → 메모리 ¼). 시작할 때 한 번 정해져서 바꾸면 다시 열 때 적용
 export const PRESETS = {
-  high:   {label:'높음', dpr:2,    shadow:4096, soft:true,  aa:true, lod:1,   far:1},
-  medium: {label:'보통', dpr:1.5,  shadow:2048, soft:true,  aa:true, lod:.8,  far:.9},
-  low:    {label:'낮음', dpr:1.25, shadow:1024, soft:false, aa:true, lod:.55, far:.7},
+  high:   {label:'높음', dpr:2,    shadow:4096, soft:true,  aa:true, lod:1,   far:1,  tex:1},
+  medium: {label:'보통', dpr:1.5,  shadow:2048, soft:true,  aa:true, lod:.8,  far:.9, tex:1},
+  low:    {label:'낮음', dpr:1.25, shadow:1024, soft:false, aa:true, lod:.55, far:.7, tex:.5},
 };
 const KEY = 'wt.quality';
 const read = () => { try { return localStorage.getItem(KEY) || 'auto'; } catch (e) { return 'auto'; } };
@@ -20,6 +21,8 @@ function autoLevel(){
 export const QUALITY = {choice:read(), level:'high', ...PRESETS.high};
 QUALITY.level = PRESETS[QUALITY.choice] ? QUALITY.choice : autoLevel();
 Object.assign(QUALITY, PRESETS[QUALITY.level]);
+// 텍스처 크기 배율은 시작할 때 화질로 정해 둔다 (텍스처는 불러올 때 한 번 만들어서, 도중에 화질을 바꿔도 다시 열 때까지는 그대로)
+export const TEX_SCALE = QUALITY.tex;
 export function saveQuality(choice){ try { localStorage.setItem(KEY, choice); } catch (e) {} }
 export const autoQuality = () => autoLevel();
 // (2026-11-24) 메뉴 설정에서 바꾼다: 고른 값(auto · high · medium · low)을 저장하고 QUALITY를 그 단계 값으로 바꾼다. 렌더러 반영은 ui/menu.js applyQuality

@@ -204,13 +204,14 @@ defineProp('brickWall', {label:'붉은 벽돌벽 (2.4m)', category:'경계', isN
 
 // ───────── 도로변 울타리 (2m 한 칸): 들어갈 수 없는 도로 양옆 ─────────
 defineProp('roadFence', {label:'도로변 울타리 (2m)', category:'경계', isNewStyle:true, colliders:[{r:[-1 * U, -.05 * U, 1 * U, .05 * U]}],
+  lod:{near:40, opts:{lite:true}},   // (2026-11-27 최적화) 40보다 먼 칸은 세로살을 세 칸에 하나만 (13 → 5개)
   variants:[{label:'강변 난간 (세로살 없음)', opts:{light:true}}],
   usage:"W.placeMany('roadFence', [{x, z, rot}, ...], {light});  // 한 칸 2m, 높이 1.1m. 기둥에 노란 반사판. light면 위 · 가운데 관만 있는 강변 난간", build(o = {}){
     const P = new Parts(), G = 0x9aa4ab, h = 1.1;
     P.add('st', box(.96, 0, -.04, 1.04, h + .04, .04), G);
     P.add('st', tube([V(-1, h, 0), V(1, h, 0)], .03, {radial:6, caps:false}), G);
     if (o.light) P.add('st', tube([V(-1, h * .55, 0), V(1, h * .55, 0)], .022, {radial:5, caps:false}), G);
-    else { P.add('st', box(.95, h - .25, .04, 1.05, h - .13, .05), 0xe9b824); P.add('st', box(-1, .16, -.02, 1, .2, .02), G); for (let x = -.9; x <= .9; x += .15) P.add('st', box(x - .011, .18, -.011, x + .011, h - .02, .011), G); }
+    else { P.add('st', box(.95, h - .25, .04, 1.05, h - .13, .05), 0xe9b824); P.add('st', box(-1, .16, -.02, 1, .2, .02), G); for (let x = -.9; x <= .9 + 1e-6; x += o.lite ? .45 : .15) P.add('st', box(x - .011, .18, -.011, x + .011, h - .02, .011), G); }
     P.add('con', box(.86, -.03, -.1, 1.14, .05, .1), 0xcac6bd);
     P.add('snw', ridge([-.95, 0, .95].map(x => V(x, h + .02, 0)), .08, .035, 3));
     P.bake('st', groundAO(.3, .72));

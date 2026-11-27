@@ -153,6 +153,12 @@ button:focus-visible{outline:2px solid var(--accent)}
 #menu .seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);font-weight:700}
 #menu .note{margin:-2px 0 12px;color:var(--ui-dim);font-size:12px;line-height:1.5}
 #menu .keys th{text-align:left;font-weight:400;color:var(--ui-dim);padding:6px 0;width:42%;border-bottom:1px solid rgba(255,255,255,.08)}
+#menu .keys-fig svg{display:block;width:100%;max-width:440px;margin:4px auto 0;height:auto;color:var(--ui-ink);font-family:inherit}   /* (2026-11-27) 모바일 조작법 그림 */
+#menu .info-note{margin:10px 2px 0;font-size:11.5px;color:var(--ui-dim);line-height:1.5;word-break:keep-all}   /* (2026-11-27) 익명 통계 안내 */
+#menu .keys-fig .fig-p{max-width:250px} #menu .keys-fig .fig-l{display:none}
+@media (orientation:landscape){ #menu .keys-fig .fig-p{display:none} #menu .keys-fig .fig-l{display:block} }
+#menu .keys-fig p{margin:8px 2px 0;font-size:12px;color:var(--ui-dim);line-height:1.5;word-break:keep-all}
+@media (orientation:landscape) and (max-height:500px){ #menu{max-height:calc(100% - 74px)} #menu .keys-fig svg{height:min(44vh,200px);width:auto;max-width:100%} #menu .keys-fig p{margin-top:4px} }   /* 가로 폰: 메뉴 높이 안에 그림이 다 들어오게 */
 #menu .keys td{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08);font-family:var(--display);font-size:15px;letter-spacing:.02em}
 #mini{width:180px;height:180px;border-radius:0;border:1px solid var(--ui-line);border-top:2px solid var(--accent);box-shadow:none;background:none;cursor:pointer;transition:none}
 #bigmap{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(1000px,calc(100% - 32px),calc((100vh - 70px) * 1.75));z-index:8;padding:0;background:var(--ui-bg2);border-top:2px solid var(--accent)}
@@ -292,15 +298,20 @@ a.off[data-soon]::after{content:" · " attr(data-soon)}
   </div>
   <!-- (2026-11-26) 정보: 의견 보내기(인스타) · 후원(폰은 버튼, 데스크톱은 QR). 주소는 config.js LINKS (ui/links.js) -->
   <div class="pane" data-pane="info" hidden>
+    <!-- (2026-11-27) 레퍼런스 · 샤라웃 (사용자): 맨 위에 글로만 -->
+    <div class="info story">
+      <div class="txt"><b>만든 이야기</b><small>'온라인산사'를 레퍼런스로 삼아 만들었어요.</small><small>Shout out to 온라인산사! 덕분에 시작할 수 있었어요.</small></div>
+    </div>
     <div class="info">
       <div class="txt"><b>의견 보내기</b><small>버그나 바라는 점을 인스타 DM으로 보내 주세요</small></div>
       <a class="btn" data-link="insta">인스타그램</a>
     </div>
     <div class="info">
-      <div class="txt"><b>후원하기</b><small>재밌게 놀았다면 군고구마 하나 사 주세요</small><small class="qr-tip">폰 카메라로 찍어 주세요</small></div>
-      <a class="btn qr-alt" data-link="donate">후원하기</a>
+      <div class="txt"><b>후원하기</b><small>재밌게 놀았다면 군고구마 하나 사 주세요</small><small class="qr-tip">폰 카메라로 찍어 주세요 (토스)</small></div>
+      <a class="btn qr-alt" data-link="donate">토스로 후원</a>
       <div class="qr" data-qr></div>
     </div>
+    <p class="info-note">게임을 다듬으려고 익명 통계(접속 수 · 놀이 횟수 · 화면 속도)를 모아요. 이름 · 주소는 모으지 않아요.</p>
   </div>
   <div class="pane" data-pane="keys" hidden>
     <div class="seg dev" data-key="dev"><button data-v="pc">데스크톱</button><button data-v="touch">모바일</button></div>
@@ -315,20 +326,66 @@ a.off[data-soon]::after{content:" · " attr(data-soon)}
       <tr><th>손 흔들기</th><td>1</td></tr>
       <tr><th>동네 지도</th><td>M · 미니맵 누르기</td></tr>
       <tr><th>메뉴 · 그만하기</th><td>Esc</td></tr>
-      <tr><th>성능 창</th><td>P</td></tr>
     </table>
-    <table class="keys" data-dev="touch" hidden>
-      <tr><th>이동</th><td>화면 왼쪽 끌기</td></tr>
-      <tr><th>시점 돌리기</th><td>화면 오른쪽 좌우로 끌기</td></tr>
-      <tr><th>위 · 아래 보기</th><td>화면 오른쪽 위아래로 끌기</td></tr>
-      <tr><th>카메라 거리</th><td>두 손가락 벌리기 · 모으기</td></tr>
-      <tr><th>상호작용</th><td>오른쪽 아래 E 단추</td></tr>
-      <tr><th>놀이 보조</th><td>E 위의 R 단추</td></tr>
-      <tr><th>손 흔들기</th><td>'손 흔들기' 단추</td></tr>
-      <tr><th>동네 지도</th><td>미니맵 누르기</td></tr>
-      <tr><th>메뉴 · 그만하기</th><td>왼쪽 위 메뉴 단추</td></tr>
-      <tr><th>성능 창</th><td>주소 끝에 #perf</td></tr>
-    </table>
+    <!-- (2026-11-27) 모바일 조작법은 표 대신 그림 한 장 (사용자). 폰 화면에 실제 자리대로: 왼쪽 45% 이동 · 오른쪽 시점 · 오른쪽 아래 단추 · 위 메뉴와 미니맵. 세로 그림(fig-p)이 기본, 폰을 눕히면 가로 그림(fig-l) -->
+    <div class="keys keys-fig" data-dev="touch" hidden>
+      <svg class="fig-p" viewBox="0 0 230 400" role="img" aria-label="모바일 조작법(세로): 화면 왼쪽을 끌면 이동, 오른쪽을 끌면 시점, 두 손가락으로 카메라 거리, 왼쪽 위 메뉴, 오른쪽 위 미니맵을 누르면 동네 지도, 오른쪽 아래 R 놀이 보조 · E 하기 · 손 흔들기 단추">
+        <rect x="4" y="4" width="222" height="392" rx="24" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="2"/>
+        <rect x="14" y="20" width="202" height="360" rx="6" fill="currentColor" fill-opacity=".05"/>
+        <rect x="14" y="20" width="91" height="360" rx="6" style="fill:var(--accent)" fill-opacity=".12"/>
+        <line x1="105" y1="24" x2="105" y2="376" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="4 4"/>
+        <rect x="20" y="28" width="34" height="15" fill="none" stroke="currentColor" stroke-opacity=".7"/><text x="37" y="39" font-size="9" text-anchor="middle" fill="currentColor" fill-opacity="1">메뉴</text>
+        <text x="58" y="39" font-size="8.5" text-anchor="start" fill="currentColor" fill-opacity=".7">메뉴 · 그만하기</text>
+        <rect x="172" y="28" width="38" height="38" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-opacity=".6"/><path d="M191 40 l-4 9 4 -2 4 2z" style="fill:var(--accent)"/>
+        <text x="191" y="80" font-size="9" text-anchor="middle" fill="currentColor" fill-opacity=".8">누르면</text><text x="191" y="92" font-size="9" text-anchor="middle" fill="currentColor" fill-opacity=".8">동네 지도</text>
+        <text x="60" y="124" font-size="15" font-weight="700" text-anchor="middle" style="fill:var(--accent)">이동</text>
+        <text x="60" y="140" font-size="9" text-anchor="middle" fill="currentColor" fill-opacity=".8">끌어서 걷기</text><text x="60" y="153" font-size="9" text-anchor="middle" fill="currentColor" fill-opacity=".8">끝까지 밀면</text><text x="60" y="166" font-size="9" text-anchor="middle" fill="currentColor" fill-opacity=".8">달리기</text>
+        <circle cx="60" cy="250" r="28" fill="none" style="stroke:var(--accent)" stroke-width="2"/><circle cx="72" cy="241" r="11" style="fill:var(--accent)"/>
+        <path d="M60 215 l-5 6 h10z M60 285 l-5 -6 h10z M25 250 l6 -5 v10z M95 250 l-6 -5 v10z" fill="currentColor" fill-opacity=".45"/>
+        <text x="160" y="124" font-size="15" font-weight="700" text-anchor="middle" style="fill:var(--accent)">시점</text>
+        <text x="160" y="140" font-size="9" text-anchor="middle" fill="currentColor" fill-opacity=".8">좌우 · 위아래로</text><text x="160" y="153" font-size="9" text-anchor="middle" fill="currentColor" fill-opacity=".8">끌기</text>
+        <circle cx="160" cy="192" r="8" fill="currentColor" fill-opacity=".85"/>
+        <path d="M146 192 h-12 M174 192 h12 M160 178 v-6 M160 206 v6" stroke="currentColor" stroke-opacity=".7" stroke-width="2" fill="none"/>
+        <path d="M128 192 l7 -5 v10z M192 192 l-7 -5 v10z M160 168 l-5 6 h10z M160 216 l-5 -6 h10z" fill="currentColor" fill-opacity=".7"/>
+        <circle cx="150" cy="244" r="4.5" fill="currentColor" fill-opacity=".6"/><circle cx="170" cy="244" r="4.5" fill="currentColor" fill-opacity=".6"/>
+        <path d="M143 244 h-7 M177 244 h7" stroke="currentColor" stroke-opacity=".6" stroke-width="1.6"/><path d="M133 244 l5 -3.5 v7z M187 244 l-5 -3.5 v7z" fill="currentColor" fill-opacity=".6"/>
+        <text x="160" y="262" font-size="9" text-anchor="middle" fill="currentColor" fill-opacity=".8">두 손가락:</text><text x="160" y="274" font-size="9" text-anchor="middle" fill="currentColor" fill-opacity=".8">카메라 거리</text>
+        <rect x="184" y="296" width="26" height="17" fill="none" stroke="currentColor" stroke-opacity=".7"/><text x="197" y="308.5" font-size="10" font-weight="700" text-anchor="middle" fill="currentColor">R</text>
+        <text x="179" y="308" font-size="9" text-anchor="end" fill="currentColor" fill-opacity=".8">놀이 보조</text>
+        <rect x="176" y="320" width="34" height="19" fill="currentColor" fill-opacity=".1" style="stroke:var(--accent)" stroke-width="1.6"/><text x="193" y="333.5" font-size="11" font-weight="700" text-anchor="middle" style="fill:var(--accent)">E</text>
+        <text x="171" y="333" font-size="9" text-anchor="end" fill="currentColor" fill-opacity=".8">하기</text>
+        <rect x="160" y="346" width="50" height="19" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-opacity=".5"/><text x="185" y="359" font-size="9" text-anchor="middle" fill="currentColor" fill-opacity="1">손 흔들기</text>
+      </svg>
+      <svg class="fig-l" viewBox="0 0 360 210" role="img" aria-label="모바일 조작법(가로): 화면 왼쪽을 끌면 이동, 오른쪽을 끌면 시점, 오른쪽 아래 E 단추로 하기, R 단추로 놀이 보조, 손 흔들기 단추, 왼쪽 위 메뉴, 오른쪽 위 미니맵을 누르면 동네 지도, 두 손가락으로 카메라 거리">
+        <rect x="4" y="4" width="352" height="202" rx="22" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="2"/>
+        <rect x="16" y="14" width="328" height="182" rx="6" fill="currentColor" fill-opacity=".05"/>
+        <rect x="16" y="14" width="148" height="182" rx="6" style="fill:var(--accent)" fill-opacity=".12"/>
+        <line x1="164" y1="18" x2="164" y2="192" stroke="currentColor" stroke-opacity=".35" stroke-dasharray="4 4"/>
+        <rect x="24" y="22" width="38" height="15" fill="none" stroke="currentColor" stroke-opacity=".7"/><text x="43" y="33" font-size="9" text-anchor="middle" fill="currentColor">메뉴</text>
+        <text x="68" y="33" font-size="9" fill="currentColor" fill-opacity=".7">메뉴 · 그만하기</text>
+        <text x="90" y="62" font-size="15" font-weight="700" text-anchor="middle" style="fill:var(--accent)">이동</text>
+        <text x="90" y="77" font-size="9.5" text-anchor="middle" fill="currentColor" fill-opacity=".8">끌어서 걷기</text>
+        <text x="90" y="90" font-size="9.5" text-anchor="middle" fill="currentColor" fill-opacity=".8">끝까지 밀면 달리기</text>
+        <circle cx="90" cy="145" r="30" fill="none" style="stroke:var(--accent)" stroke-width="2"/><circle cx="104" cy="136" r="12" style="fill:var(--accent)"/>
+        <path d="M90 108 l-5 6 h10z M90 182 l-5 -6 h10z M53 145 l6 -5 v10z M127 145 l-6 -5 v10z" fill="currentColor" fill-opacity=".45"/>
+        <text x="222" y="62" font-size="15" font-weight="700" text-anchor="middle" style="fill:var(--accent)">시점</text>
+        <text x="222" y="77" font-size="9.5" text-anchor="middle" fill="currentColor" fill-opacity=".8">좌우 · 위아래로 끌기</text>
+        <circle cx="222" cy="112" r="9" fill="currentColor" fill-opacity=".85"/>
+        <path d="M206 112 h-16 M238 112 h16 M222 98 v-6 M222 126 v6" stroke="currentColor" stroke-opacity=".7" stroke-width="2" fill="none"/>
+        <path d="M186 112 l7 -5 v10z M258 112 l-7 -5 v10z M222 88 l-5 6 h10z M222 136 l-5 -6 h10z" fill="currentColor" fill-opacity=".7"/>
+        <circle cx="211" cy="160" r="5" fill="currentColor" fill-opacity=".6"/><circle cx="233" cy="160" r="5" fill="currentColor" fill-opacity=".6"/>
+        <path d="M204 160 h-8 M240 160 h8" stroke="currentColor" stroke-opacity=".6" stroke-width="1.6"/><path d="M193 160 l5 -3.5 v7z M251 160 l-5 -3.5 v7z" fill="currentColor" fill-opacity=".6"/>
+        <text x="222" y="183" font-size="9.5" text-anchor="middle" fill="currentColor" fill-opacity=".8">두 손가락: 카메라 거리</text>
+        <rect x="302" y="22" width="34" height="34" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-opacity=".6"/><path d="M319 33 l-4 9 4 -2 4 2z" style="fill:var(--accent)"/>
+        <text x="296" y="35" font-size="9" text-anchor="end" fill="currentColor" fill-opacity=".8">누르면</text><text x="296" y="47" font-size="9" text-anchor="end" fill="currentColor" fill-opacity=".8">동네 지도</text>
+        <rect x="308" y="114" width="28" height="17" fill="none" stroke="currentColor" stroke-opacity=".7"/><text x="322" y="126.5" font-size="10" font-weight="700" text-anchor="middle" fill="currentColor">R</text>
+        <text x="302" y="126" font-size="9" text-anchor="end" fill="currentColor" fill-opacity=".8">놀이 보조</text>
+        <rect x="298" y="138" width="38" height="19" fill="currentColor" fill-opacity=".1" style="stroke:var(--accent)" stroke-width="1.6"/><text x="317" y="151.5" font-size="11" font-weight="700" text-anchor="middle" style="fill:var(--accent)">E</text>
+        <text x="292" y="151" font-size="9" text-anchor="end" fill="currentColor" fill-opacity=".8">하기</text>
+        <rect x="284" y="166" width="52" height="19" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-opacity=".5"/><text x="310" y="179" font-size="9" text-anchor="middle" fill="currentColor">손 흔들기</text>
+      </svg>
+      <p>E, R버튼은 할 수 있는 게 있을 때만 떠요.</p>
+    </div>
   </div>
 </section>
 
@@ -363,7 +420,7 @@ a.off[data-soon]::after{content:" · " attr(data-soon)}
   //   20초 넘게 진행이 없거나 파일을 못 받으면 단추가 '새로고침'으로 바뀐다.
   (function(){
     var intro = document.getElementById('intro'), b = document.getElementById('enter'), lab = document.getElementById('enter-label'), hint = document.getElementById('intro-hint');
-    var last = Date.now(), shown = 0, cap = .34, done = false, failed = false, hard = false, EXPECT = 93;   // EXPECT: 받는 .js 파일 수 (src 92 + three 1)
+    var last = Date.now(), shown = 0, cap = .34, done = false, failed = false, hard = false, EXPECT = 93;   // EXPECT: 받는 .js 파일 수 (src 93 중 ?debug 전용 ui/perf.js를 뺀 92 + three 1). (2026-11-27)
     var touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
     var L = window.__wtLoad = {
       set: function(p, text){ if (done || hard) return; last = Date.now(); if (failed) {   // 멈춤(20초)은 다시 진행되면 풀리고, 파일 · 짓기 실패(hard)는 그대로 둔다

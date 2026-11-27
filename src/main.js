@@ -33,13 +33,13 @@ import './props/aptBike.js';
 import './props/utilityPole.js';
 import './props/aptStreet.js';
 import { W } from './world/world.js';
-import { initPerf } from './ui/perf.js';
 const FAR = {snowDrift:110, grassTuft:90, reedClump:150, tactileStrip:90, wheelStop:90, laneDelineator:120, noParkingSign:100, foodWasteBin:100, shrubBall:150, shrubCluster:150,
   planterIsland:150, hedgeRow:180, parkLamp:220, roadFence:200, railFence:160, bench:150, bikeShelter:170, barricade:160, carSedan:220, carSUV:220, carMini:220, truck1t:220, deliveryVan:220,
   bareTree:330, pineTree:330, signFascia:160, signVertical:160};
 Object.entries(FAR).forEach(([n, f]) => { const d = getProp(n); if (d) d.far = f; });
 import { finalizeBatches, spotLabels } from './world/builders.js';
 import { batchStatic } from './world/batch.js';
+import { texCacheDone } from './core/texkit.js';
 import { tagPrims } from './core/gfx.js';
 import { QUALITY } from './core/quality.js';
 import { buildMap } from './map/index.js';
@@ -52,6 +52,7 @@ import { initFootprints, trackPrints, agePrints } from './entities/footprints.js
 import { applyPeers, updateRemotes } from './entities/remotes.js';
 import { setupVehicles, updateVehicles } from './entities/vehicles.js';
 import { connect, netTick, net } from './net/index.js';
+import { statsFrame, statHello, statReady, statEnter } from './net/stats.js';   // (2026-11-27) 익명 운영 통계
 import { hud } from './ui/hud.js';
 import { drawMiniBase, drawMini, miniEvery, toggleBigMap, bigOpen } from './ui/minimap.js';
 import { initMenu, openMenu, closeMenu, menuOpen, menuTab } from './ui/menu.js';
@@ -86,6 +87,7 @@ function fillRoster(){
 function enter(){
   if (S.mode !== 'intro' || !ready) return;   // (2026-11-26) 첫 화면이 그려지기 전 Enter는 받지 않는다
   finishRoll();   // 이름이 도는 중이면 바로 멈춘다
+  statEnter();
   // (2026-11-20 2차) 학교 정문 앞에서 시작: 방학식이 막 끝나 교문을 나선 순간. 종이 울리고, 서쪽(동네)을 본다
   // (2026-11-26) 자리는 시작 화면에서 이미 잡았다(boot). 카메라는 캐릭터 앞에서 둥글게 돌아 등 뒤로 간다 (camera.js arc)
   setMode('walk'); me.r = SPAWN.r; S.cam.yaw = SPAWN.r + PI; S.cam.pitch = .32; S.cam.arc = performance.now();
@@ -159,7 +161,8 @@ async function boot(){
   finalizeBatches();
   W.lodScale = QUALITY.lod; W.farScale = QUALITY.far;
   await step(.84, '소품 정리 중');
-  { const t = performance.now(), r = batchStatic(); W.batchInfo = {...r, ms:Math.round(performance.now() - t)}; }   // (2026-11-24) 같은 소품 묶기 · 같은 재질 합치기 (world/batch.js)
+  { const t = performance.now(), r = batchStatic(); W.batchInfo = {...r, ms:Math.round(performance.now() - t)}; }
+  W.shadowLods = W.lodShadows();   // (2026-11-27 최적화) LOD 소품 그림자는 단순 모델로 (world.js)   // (2026-11-24) 같은 소품 묶기 · 같은 재질 합치기 (world/batch.js)
   await step(.92, '눈 · 지도 준비 중');
   initFootprints(); initSnow();
   // (2026-11-26) 시작 화면: 학교 정문 앞(방학식 끝나고 나온 자리)에 내 캐릭터를 세우고 카메라가 앞에서 본다
@@ -168,17 +171,22 @@ async function boot(){
   shadowRange(75); introPlace();
   onFrame(frame);
   onFrame(() => W.cull(camera.position), 95);   // 거리 숨김 (카메라가 자리 잡은 뒤)
-  onFrame(initPerf(), 99);   // 성능 창 (P 키)
+  // (2026-11-27) 성능 창(P)은 다 재서 빼기로 함 (사용자): 일반 화면에서는 아예 불러오지 않고, 주소에 ?debug가 있을 때만 (개발 · tools 측정용)
+  if (location.search.includes('debug')) { const { initPerf } = await import('./ui/perf.js'); onFrame(initPerf(), 99); }
+  onFrame(statsFrame, 97);   // (2026-11-27) 익명 통계: 놀이 시간 · 1분마다 FPS · 구역 (서버가 있을 때만 보냄)
   await step(.95, '그림 준비 중');
   // (2026-11-24) 셰이더 미리 짓기: 거리 숨김 · LOD로 가려진 칸까지 잠깐 보이게 하고 한 번에 컴파일한다 → 처음 가는 곳에서 끊기지 않게
   //   (2026-11-26) compileAsync: 브라우저가 셰이더를 나눠 지을 수 있으면(KHR_parallel_shader_compile) 그동안 화면이 굳지 않는다. 8초면 그냥 넘어간다
   try { W.cullers.forEach(c => { c.o.visible = true; if (c.lo) c.lo.visible = true; });
     if (renderer.compileAsync) await Promise.race([renderer.compileAsync(scene, camera), new Promise(r => setTimeout(r, 8000))]); else renderer.compile(scene, camera); } catch (e) {}
+  // (2026-11-27 최적화) 텍스처 미리 올리기: 텍스처는 처음 보이는 순간 그래픽 메모리로 올라가서, 들어가며 카메라가 돌 때 멈칫했다 → 불러오는 중에 24장씩 나눠 올린다
+  try { if (renderer.initTexture) { const set = new Set(); scene.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; ms.forEach(m => { for (const k in m) { const v = m[k]; if (v && v.isTexture) set.add(v); } }); });
+    let i = 0; for (const t of set) { renderer.initTexture(t); if (++i % 24 === 0) await breathe(); } } } catch (e) {}
   start();
   if (location.search.includes('debug')) window.__town = {S, me, W, findAction, renderer, scene, camera, usedProps, propNames};   // 개발용: 콘솔에서 상태를 들여다본다
   // 첫 화면이 두 번 그려진 뒤 하늘 바탕(veil)을 걷고 단추를 연다
   await breathe(); await breathe();
-  ready = true; window.__townReady = true; LOAD.set(1, ''); LOAD.ready(); $('veil').classList.add('gone'); after(1100, () => { $('veil').hidden = true; });
+  ready = true; window.__townReady = true; LOAD.set(1, ''); LOAD.ready(); after(2500, texCacheDone); statReady(); statHello(performance.now() / 1000);   // (2026-11-27) 배포판: 만든 텍스처를 브라우저에 보관 (core/texkit.js) $('veil').classList.add('gone'); after(1100, () => { $('veil').hidden = true; });
   after(500, () => emote(me.char, 1));   // 반갑게 손 흔들기
   connect({onPeers:list => { applyPeers(list); updateCount(); }, onStatus:updateCount});
 }

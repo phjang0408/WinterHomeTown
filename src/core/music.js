@@ -149,7 +149,7 @@ function player(ctx, out, name){
 }
 
 // ── 게임에서 트는 것 ──
-export const BGM = {vol:.5};   // 메뉴 설정 '배경음' (0~1)
+export const BGM = {vol:.2};   // 메뉴 설정 '배경음' (0~1). (2026-11-27) 처음 기본 20%
 const zoneOf = z => z < NROAD.z0 || z > ROAD.z1 ? 'station' : 'main';   // 역(북쪽 도로 위) · 강(강변도로 아래)은 같은 곡(사용자 2026-11-27: 둘 다 쉬는 곳), 그 사이 동네
 let ctx = null, master = null, players = {}, cur = null, want = null, wantAt = 0, timer = 0, mode = 'off';   // mode: off → intro(시작 화면 곡) → enter(종소리) → game(동네 곡)
 // 곡들의 평균 크기는 같다(-28dB, 오프라인 녹음으로 재서 song.vol로 맞춤). 1.4배로 올리고, 순간 튀는 소리는 압축기로 눌러 효과음보다 크게 튀지 않게 한다

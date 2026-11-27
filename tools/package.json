@@ -1,15 +1,18 @@
 {
   "name": "tools",
   "version": "1.0.0",
-  "description": "",
+  "description": "개발 · 배포 도구 (build.js: dist 만들기)",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "node build.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "three": "^0.160.0"
+    "three": "0.160.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }

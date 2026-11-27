@@ -7,10 +7,11 @@ import { LINKS, coarse } from '../config.js';
 
 const QR_LIB = 'https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.mjs';
 export const instaUrl = () => LINKS.insta ? (LINKS.instaDm ? 'https://ig.me/m/' : 'https://www.instagram.com/') + encodeURIComponent(LINKS.insta.replace(/^@/, '')) : '';
-const donateUrl = () => /^https?:\/\//.test(LINKS.donate) ? LINKS.donate : '';
+// (2026-11-27) 후원은 https 주소 또는 토스 앱 주소(supertoss://)를 받는다. 앱 주소는 새 창 없이 연다 (폰에 토스가 있으면 앱이 열림)
+const donateUrl = () => /^(https?|supertoss):\/\//.test(LINKS.donate) ? LINKS.donate : '';
 
 function setLink(a, url){
-  if (url) { a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.classList.remove('off'); a.removeAttribute('aria-disabled'); }
+  if (url) { a.href = url; if (/^https?:/.test(url)) { a.target = '_blank'; a.rel = 'noopener'; } a.classList.remove('off'); a.removeAttribute('aria-disabled'); }
   else { a.removeAttribute('href'); a.classList.add('off'); a.setAttribute('aria-disabled', 'true'); if (!a.dataset.keep) a.dataset.soon = '준비 중'; }
 }
 export function initLinks(){
