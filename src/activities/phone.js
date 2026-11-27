@@ -20,7 +20,7 @@ let ctx = null;
 const ac = () => { if (!audio.on) return null; try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); return ctx; } catch (e) { return null; } };
 // 두 음을 섞어 dur초 울린다. trill이면 그 빠르기(Hz)로 소리를 끊었다 이었다 한다
 function tone(fs, dur, {trill = 0, vol = .05} = {}){
-  const a = ac(); if (!a) return;
+  const a = ac(); if (!a) return; vol *= audio.vol;   // (2026-11-26) 메뉴 음량
   const t = a.currentTime, g = a.createGain(); g.gain.setValueAtTime(0, t); g.connect(a.destination);
   if (trill) { const n = Math.floor(dur * trill); for (let i = 0; i < n; i++) { const t0 = t + i / trill; g.gain.setValueAtTime(vol, t0); g.gain.setValueAtTime(0, t0 + .55 / trill); } }
   else { g.gain.linearRampToValueAtTime(vol, t + .02); g.gain.setValueAtTime(vol, t + dur - .03); g.gain.linearRampToValueAtTime(0, t + dur); }

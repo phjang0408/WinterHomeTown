@@ -4,12 +4,14 @@ import { root } from './engine.js';
 import { M, mesh } from './gfx.js';
 import { S } from './state.js';
 
-let actx = null; export const audio = {on:true};
+let actx = null; export const audio = {on:true, vol:.8};   // (2026-11-26) vol: 음량 0~1 (메뉴 설정 막대). 0이면 on = false
+// (2026-11-26) 효과음과 배경음악(core/music.js)이 같은 AudioContext를 쓴다
+export function audioCtx(){ try { return actx = actx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
 export function sfx(f0, f1, dur, type, vol){
   if (!audio.on) return;
-  try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+  try { audioCtx(); const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
     o.type = type || 'sine'; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
-    g.gain.setValueAtTime(vol || .07, t); g.gain.exponentialRampToValueAtTime(.001, t + dur); o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + dur); } catch (e) {}
+    g.gain.setValueAtTime((vol || .07) * audio.vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur); o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + dur); } catch (e) {}
 }
 // (2026-11-21) 가운데 큰 글: 자동 줄바꿈을 끄고(left:50% 때문에 화면 절반 폭에서 꺾이던 문제),
 // 화면 폭에 안 들어가는 글만 미리 띄어쓰기 자리에서 \n으로 나눈다. 모바일에서 '후~ 다 먹었다. 속까지 따뜻해!' 같은 글.

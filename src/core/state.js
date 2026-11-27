@@ -7,5 +7,6 @@ export const S = {
   keys: {},
   joy: null,
   cam: {yaw:0, pitch:.38, dist:8.5, cur:8.5, blend:0},
+  sens: 1,               // (2026-11-26) 시점 감도 배율 (메뉴 설정, 마우스 · 터치 따로 저장)
 };
 export function setMode(m){ if (m !== S.mode) S.cam.blend = 0; S.mode = m; }

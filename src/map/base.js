@@ -90,7 +90,8 @@ export function buildRailway(){
   const fen = []; for (let x = PLAT.x0 + 3.6 + 1.18; x < PLAT.x1 - 3.6; x += 2 * U) if (Math.abs(x - B2) > 2.4) fen.push({x, z:53.58, y:.5 * U}); W.placeMany('railFence', fen, {collide:false});
   W.place('stationSign', {x:250, z:50.7});
   // (2026-11-18 2차) 공중전화 부스: 승강장 위, 서쪽 대합 지붕 맨 서쪽 기둥(x 262.35, z 53.3)에 등을 붙이고 열린 쪽이 승강장 가운데(북쪽)를 본다
-  W.place('phoneBooth', PHONES[5]); W.place('stationSign', {x:224.6, z:53, rot:PI / 2});
+  // (2026-11-27) 서쪽 부스는 기둥 가새와 겹쳐 기둥 서쪽(x 261.4)으로, 동쪽 대합 지붕 밑(맨 동쪽 기둥 안쪽 x 438.7)에 하나 더
+  W.placeMany('phoneBooth', PHONES.slice(5, 7)); W.place('stationSign', {x:224.6, z:53, rot:PI / 2});
   W.place('platformModule', {x:(DOCK.x0 + DOCK.x1) / 2, z:(DOCK.z0 + DOCK.z1) / 2, y:0, len:(DOCK.x1 - DOCK.x0) / U, wid:(DOCK.z1 - DOCK.z0) / U, h:1, ramp:2});
   [[244, 53], [254, 53], [300, 53], [314, 53], [336, 53], [358, 53], [380, 53], [402, 53],   /* (2026-11-17) 승강장 가로등은 의자 줄(남쪽 난간 앞)로, 의자 사이에 */  /* 대합 지붕(x 262~292 · 416~440) 아래는 가로등을 두지 않는다 */ ].forEach(([x, z]) => lamps.push({x, z, y:W.groundY(x, z)}));   // (2026-11-18) 육교 발치 가로등 넷은 없앰
   // 육교 (북쪽 계단 → 도로 위 → 남쪽 육교 마당)

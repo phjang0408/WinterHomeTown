@@ -10,7 +10,7 @@ import { W } from '../world/world.js';
 import { noise2, normalTex, colorTex } from '../core/texkit.js';
 import { mulberry } from '../props/kit.js';
 import { LOOK } from '../core/look.js';
-import { ROAD, NROAD, LOOP } from './layout.js';
+import { ROAD, NROAD, LOOP, PLAY } from './layout.js';
 
 const R = mulberry(4242), rr = (a, b) => a + R() * (b - a);
 const pos = [], col = [], uv = [], idx = [];
@@ -58,8 +58,11 @@ export function decorateGround(regions, curbs, trees){
     const A = Math.max(0, (cx1 - cx0) * (z1 - z0));
     for (const [kind, per, r0, r1, a] of rule.blots) { const n = Math.round(A / 100 * per * (.8 + R() * .4));
       for (let i = 0; i < n; i++) { const r = rr(r0, r1), ar = rr(.5, 1), rx = Math.min(r, (cx1 - cx0) / 2), rz = Math.min(r * ar, (z1 - z0) / 2), x = rr(cx0 + rx * .6, cx1 - rx * .6), z = rr(z0 + rz * .6, z1 - rz * .6);
+        const keep = [pos.length, col.length, uv.length, idx.length], inPlay = x + rx * 1.3 > PLAY[0] && x - rx * 1.3 < PLAY[2] && z + rx > PLAY[1] && z - rx < PLAY[3];
         if (kind === 'patch') blot(x, z, Y, rx * 1.3, rz * .8, R() < .5 ? 0 : Math.PI / 2, C.patch, a, {n:8, rough:.06, hard:.95});     // 덧씌운 아스팔트: 모서리가 또렷한 네모에 가깝게
-        else blot(x, z, Y + (kind === 'snow' ? .002 : 0), rx, rz, R() * 6, C[kind], a * rr(.75, 1.1), {rough:kind === 'snow' ? .35 : .25}); } }
+        else blot(x, z, Y + (kind === 'snow' ? .002 : 0), rx, rz, R() * 6, C[kind], a * rr(.75, 1.1), {rough:kind === 'snow' ? .35 : .25});
+        // (2026-11-27) 놀이터 바닥(높이 0.02)과 단지 얼룩(0.02)이 같은 높이라 번쩍였다 → 놀이터에 걸친 얼룩은 지운다 (난수 순서는 그대로 두려고 만든 뒤 되돌림)
+        if (inPlay) { pos.length = keep[0]; col.length = keep[1]; uv.length = keep[2]; idx.length = keep[3]; } } }
     if (rule.cracks) for (let i = 0, n = Math.round(A / 100 * rule.cracks); i < n; i++) { const x = rr(cx0, cx1), z = rr(z0, z1), ang = R() * 6, L = rr(1.5, 5), m = 6;
       const pts = Array.from({length:m + 1}, (_, k) => [x + Math.cos(ang) * L * k / m + rr(-.15, .15), z + Math.sin(ang) * L * k / m + rr(-.15, .15)]).filter(p => p[1] > z0 + .2 && p[1] < z1 - .2);
       if (pts.length > 2) strip(pts, Y + .001, .035, C.crack, .8, false); }

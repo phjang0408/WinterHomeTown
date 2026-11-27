@@ -56,6 +56,9 @@ import { hud } from './ui/hud.js';
 import { drawMiniBase, drawMini, miniEvery, toggleBigMap, bigOpen } from './ui/minimap.js';
 import { initMenu, openMenu, closeMenu, menuOpen, menuTab } from './ui/menu.js';
 import { initSnow, updateSnow } from './world/snowfall.js';
+import { saverFrame } from './core/saver.js';
+import { startMusic, playIntroMusic } from './core/music.js';
+import { initLinks } from './ui/links.js';
 
 const $ = id => document.getElementById(id);
 
@@ -86,6 +89,7 @@ function enter(){
   // (2026-11-20 2차) 학교 정문 앞에서 시작: 방학식이 막 끝나 교문을 나선 순간. 종이 울리고, 서쪽(동네)을 본다
   // (2026-11-26) 자리는 시작 화면에서 이미 잡았다(boot). 카메라는 캐릭터 앞에서 둥글게 돌아 등 뒤로 간다 (camera.js arc)
   setMode('walk'); me.r = SPAWN.r; S.cam.yaw = SPAWN.r + PI; S.cam.pitch = .32; S.cam.arc = performance.now();
+  startMusic(4300);   // (2026-11-26) 배경음악 (core/music.js): 종소리(약 4초)가 끝나면 시작
   [[659, 0], [523, .45], [587, .9], [392, 1.35], [392, 2.1], [587, 2.55], [659, 3.0], [523, 3.45]].forEach(([f, t]) => after(t * 1000, () => sfx(f, f * .998, .5, 'sine', .06)));   // 딩동댕동 · 댕동딩동
   after(600, () => flash('이야~ 방학이야~~'));   // (2026-11-26) 시작 메시지 (예전 '겨울방학 시작! / 동네로 놀러 가자' → '얘들아~ 놀자~!'). 종소리는 그대로
   shadowRange(75);
@@ -93,8 +97,12 @@ function enter(){
   if (coarse) after(3400, () => flash('왼쪽을 끌어 이동'));
 }
 function doWave(){ if (wave()) { emote(me.char, 1); sfx(620, 760, .1); } }
+// (2026-11-27) 시작 화면 음악: 처음 누르는 순간 튼다. 휴대폰은 손을 뗄 때(pointerup · touchend)여야 소리가 열린다
+const GESTURE = ['pointerdown', 'pointerup', 'touchend', 'keydown'];
+function introMusic(){ if (S.mode === 'intro') playIntroMusic(); else GESTURE.forEach(ev => removeEventListener(ev, introMusic, true)); }
 function bindUi(){
   $('enter').onclick = enter;
+  GESTURE.forEach(ev => addEventListener(ev, introMusic, true));
   initMenu({onOpen:t => { if (t === 'server') { updateCount(); fillRoster(); } }});   // (2026-11-24) 메뉴: 서버 · 설정 · 조작법 (ui/menu.js)
   $('res-close').onclick = () => { $('result').hidden = true; };
   $('res-again').onclick = () => { $('result').hidden = true; if (S.mode === 'walk' && hud.again) hud.again(); };
@@ -126,7 +134,7 @@ function frame(dt, now){
   const hide = !!(current() && current().hideLabels);
   spotLabels.forEach(s => { s.visible = !hide; });   // (2026-11-21) 장소 이름표는 위아래로 흔들지 않고 가만히 떠 있다
   const act = findAction(); hud.prompt(act ? act.label : '', act && act.tone); updateAlt();
-  updateCamera(dt, now); netTick(now);
+  updateCamera(dt, now); netTick(now); saverFrame(now, moved);   // (2026-11-26) 절전: 가만히 있으면 더 아낀다
   if (S.mode !== 'intro' && ++miniTick % miniEvery() === 0) drawMini();
 }
 
@@ -139,7 +147,7 @@ let ready = false;
 
 async function boot(){
   // 이름은 바로 보이고, '다시 뽑기'도 불러오는 동안 된다 (옷은 캐릭터를 만든 뒤 바뀐다)
-  nameMe();
+  nameMe(); initLinks();   // (2026-11-26) 의견 보내기 · 후원 링크 (config.js LINKS)
   $('reroll').onclick = () => rerollAnim(() => ready);   // 슬롯처럼 돌다 멈추는 연출 (ui/intro.js)
   await step(.36, '글꼴 준비 중');
   try { if (document.fonts && document.fonts.load) await Promise.race([Promise.all(FONTS_TO_LOAD.map(f => document.fonts.load(f, '겨울동화'))), new Promise(r => setTimeout(r, 1800))]); } catch (e) {}

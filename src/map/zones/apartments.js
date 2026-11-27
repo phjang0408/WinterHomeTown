@@ -16,14 +16,14 @@ import { canvasTex, flat, G } from '../../core/gfx.js';
 import { quadY, mulberry } from '../../props/kit.js';
 import { SHOP_LAYOUT } from '../../props/shops.js';
 import { UNIT as U, FONT_D } from '../../config.js';
-import { SLIDE, PHONES } from '../layout.js';
+import { SLIDE, PHONES, PLAY } from '../layout.js';
 
 const PI = Math.PI, A = .045, PV = .15;                        // A: 아스팔트 높이, PV: 보도 높이 (2026-11-16: 길보다 한 단 높게)
 const BW = 2.5 * U, BD = 5 * U;                                // 주차 칸 2.5m × 5m
 // 길: 북쪽 도로, 서쪽 통로, 남쪽 도로 (x0, z0, x1, z1). R1·R2는 꺾이는 곳의 바깥·안쪽 반지름.
 const NR = [50, 131, 195, 139], WD = [50, 131, 58, 206], SR = [50, 198, 195, 206], R1 = 4.5, R2 = 1.5, CW = .35;
 const PK = {x:44.5, n:125.1, nb:137, sb:200, s:211.9}, RP = 2.5, RF = 1.5;     // (2026-11-18) 103 · 105동 앞 넓힌 길: 서쪽 끝 x, 북서 길 북 · 남 끝, 남서 길 북 · 남 끝
-const PLAY = [66, 144, 118, 193], CROSS_Z = [175, 181], LOW = {road:null, bays:[]};       // 놀이터·공터, 104동 ↔ 놀이터 ↔ 상가 보행로
+const CROSS_Z = [175, 181], LOW = {road:null, bays:[]};       // 놀이터·공터, 104동 ↔ 놀이터 ↔ 상가 보행로
 const PAINT = [0xe9ebec, 0xe9ebec, 0xd9dcde, 0xa3aab0, 0x8a9198, 0x2a2d31, 0x35393e, 0x2f4a6e, 0x6b2b2a, 0xc9c2b2, 0x46553f];
 const FIRE = [[75, 135, PI / 2], [138, 135, PI / 2], [54, 158, 0], [88, 202, PI / 2]];       // 소방차 전용구역 (6m × 12m)
 

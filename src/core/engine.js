@@ -43,10 +43,12 @@ export function onFrame(fn, order = 50){ tasks.push({fn, order}); tasks.sort((a,
 // (2026-11-25) 후처리(core/post.js 필름 효과)가 화면 그리기를 맡을 수 있다. 없으면 바로 그린다.
 let renderHook = null;
 export function setRenderHook(fn){ renderHook = fn; }
+export const FRAME = {cap:0};   // (2026-11-26) 절전(core/saver.js): 초당 그리기 상한. 0이면 화면 주사율 그대로
 export function start(){
   let last = performance.now();
   function frame(now){
     requestAnimationFrame(frame);
+    if (FRAME.cap && now - last < 1000 / FRAME.cap - 3) return;   // 건너뛴 프레임은 계산도 그리기도 하지 않는다
     const dt = Math.min(.05, (now - last) / 1000); last = now; const t0 = performance.now();
     for (const t of tasks) t.fn(dt, now);
     if (renderHook) renderHook(scene, camera); else renderer.render(scene, camera);

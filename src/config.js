@@ -28,3 +28,12 @@ export const NET = {kind:'auto', url:'ws://localhost:8080'};
 
 export const reduceMotion = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 export const coarse = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+
+// (2026-11-26) 피드백 · 후원 링크 (메뉴 '정보' 탭, 시작 화면 맨 아래 한 줄 → ui/links.js). 여기만 채우면 된다.
+//   비워 두면 그 자리는 흐리게 '준비 중'으로 보인다.
+export const LINKS = {
+  insta: '',        // 인스타 아이디 (@ 없이, 예: 'kkoma_town')
+  instaDm: true,    // true: 누르면 바로 DM 창(ig.me/m/아이디), false: 프로필(instagram.com/아이디)
+  donate: '',       // 후원 송금 링크 (토스 · 카카오페이 등의 https 주소). 폰은 이 주소를 버튼으로 열고, 데스크톱은 QR로 그려 보여 준다
+  donateQr: '',     // QR 이미지를 직접 쓰려면 파일 경로 (예: 'assets/donate-qr.png'). 비우면 donate 주소로 QR을 그린다
+};

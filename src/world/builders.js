@@ -16,7 +16,7 @@ export function building(x0, z0, x1, z1, h, o){
     if (i === 2) { mats.push(roof); continue; }
     if (i === 3) { mats.push(side); continue; }
     const fw = i < 2 ? z1 - z0 : x1 - x0;
-    mats.push(new THREE.MeshLambertMaterial({map:facadeTex(fw, h, o, i === fi ? o.label : null)}));
+    mats.push(new THREE.MeshLambertMaterial({map:facadeTex(fw, h, o, i === fi && o.sign !== false ? o.label : null)}));   // (2026-11-27) sign:false면 벽에 글씨를 쓰지 않는다 (지도 이름만)
   }
   const m = box(x0, z0, x1, z1, h, mats); W.blockers.push(m);
   box(x0 - .2, z0 - .2, x1 + .2, z1 + .2, .3, roof, h);

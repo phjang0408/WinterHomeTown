@@ -17,6 +17,7 @@ export const camFree = () => freeMove() || !!(current() && current().ctl);
 export function initInput({onEnter, onWave, onEscape, onMap}){
   window.addEventListener('keydown', e => {
     if (e.target && e.target.tagName === 'BUTTON' && (e.code === 'Enter' || e.code === 'Space')) return;
+    if (e.target && e.target.tagName === 'INPUT') return;   // (2026-11-26) 설정 막대를 방향키로 움직일 때 시점 · 이동이 같이 되지 않게
     if (S.mode === 'intro') { if (e.code === 'Enter') onEnter(); return; }
     if (KEYMAP[e.code]) { S.keys[KEYMAP[e.code]] = true; e.preventDefault(); }
     else if (e.code === 'KeyE' || e.code === 'Space' || e.code === 'Enter') { if (!e.repeat && !hud.modalOpen()) doAction(); if (e.code === 'Space') e.preventDefault(); }
@@ -47,7 +48,7 @@ export function initInput({onEnter, onWave, onEscape, onMap}){
     const p = ptrs.get(e.pointerId); if (!p) return;
     const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
     if (ptrs.size === 2 && pinch) { const a = [...ptrs.values()], d = Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); S.cam.dist = clamp(S.cam.dist * pinch / d, 3, 18); pinch = d; return; }
-    if (camFree()) { const k = e.pointerType === 'touch' ? .008 : .006; S.cam.yaw = wrapA(S.cam.yaw - dx * k); S.cam.pitch = clamp(S.cam.pitch + dy * k * .8, PITCH_MIN, 1.2); }
+    if (camFree()) { const k = (e.pointerType === 'touch' ? .008 : .006) * S.sens; S.cam.yaw = wrapA(S.cam.yaw - dx * k); S.cam.pitch = clamp(S.cam.pitch + dy * k * .8, PITCH_MIN, 1.2); }
   });
   const end = e => { if (S.joy && e.pointerId === S.joy.id) { S.joy = null; joyEl.hidden = true; return null; }
     const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = 0; if (!ptrs.size) canvas.classList.remove('drag'); return p; };
@@ -61,5 +62,5 @@ export function initInput({onEnter, onWave, onEscape, onMap}){
   canvas.addEventListener('wheel', e => { S.cam.dist = clamp(S.cam.dist * (e.deltaY > 0 ? 1.1 : .9), 3, 18); e.preventDefault(); }, {passive:false});
 }
 // 방향키 ←→ 로 시점 돌리기
-export function turnCamera(dt){ if (!camFree()) return; const K = S.keys; S.cam.yaw = wrapA(S.cam.yaw + ((K.camL ? 1 : 0) - (K.camR ? 1 : 0)) * 1.9 * dt);
+export function turnCamera(dt){ if (!camFree()) return; const K = S.keys; S.cam.yaw = wrapA(S.cam.yaw + ((K.camL ? 1 : 0) - (K.camR ? 1 : 0)) * 1.9 * S.sens * dt);
   if (K.camU || K.camD) S.cam.pitch = clamp(S.cam.pitch + ((K.camD ? 1 : 0) - (K.camU ? 1 : 0)) * 1.1 * dt, PITCH_MIN, 1.2); }   // ↑ = 위를 본다(피치 감소), ↓ = 내려다본다

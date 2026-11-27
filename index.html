@@ -211,6 +211,29 @@ button:focus-visible{outline:2px solid var(--accent)}
 #intro h1{-webkit-text-stroke:1.2px #f6f2ea;paint-order:stroke fill}
 @media (max-width:640px), (orientation:portrait) and (max-width:900px){ #intro h1{-webkit-text-stroke-width:1px} }
 #reroll.busy{opacity:.55;pointer-events:none}
+/* ── 2026-11-26 4단계 설정: 음량 · 시점 감도 막대 ── */
+#menu .rng{display:flex;align-items:center;gap:10px}
+#menu .rng input{width:min(170px,40vw);height:32px;margin:0;accent-color:var(--accent);cursor:pointer}
+#menu .rng b{min-width:3.2em;text-align:right;color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums}
+#menu{word-break:keep-all}
+/* ── 2026-11-26 정보 탭 · 시작 화면 링크 (ui/links.js). 폰(touch-links)은 QR 대신 후원 버튼 ── */
+#menu .info{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--ui-line)}
+#menu .info:last-child{border-bottom:0}
+#menu .info .txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+#menu .info small{color:var(--ui-dim);font-size:12.5px}
+#menu .info .btn{flex:none;padding:9px 14px;font-size:14px;text-decoration:none;white-space:nowrap}
+.qr{width:150px;height:150px;flex:none;display:grid;place-items:center;background:#fff}
+.qr canvas,.qr img{width:100%;height:100%;display:block;image-rendering:pixelated}
+.qr.off{background:transparent;border:1px dashed var(--ui-line);color:var(--ui-dim);font-size:13px}
+.touch-links .qr,.touch-links .qr-pop,.touch-links .qr-tip{display:none!important}
+body:not(.touch-links) .qr-alt{display:none}
+a.off{opacity:.45;pointer-events:none;cursor:default}
+a.off[data-soon]::after{content:" · " attr(data-soon)}
+#intro .links{display:flex;align-items:center;gap:8px;margin:8px 0 0;font-size:12.5px;color:var(--ui-dim)}
+#intro .links a{color:var(--ui-ink);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+#intro .qr-pop:not([hidden]){display:flex;align-items:center;gap:12px;margin-top:10px}
+#intro .qr-pop .qr{width:112px;height:112px}
+#intro .qr-pop small{color:var(--ui-dim);font-size:12px}   /* 설명 글이 '있 / 으면'처럼 낱말 중간에서 꺾이지 않게 */
 @media (max-width:640px), (orientation:portrait) and (max-width:900px){ #intro .tag{margin:6px 0 6px} #intro .keys{margin-bottom:12px} }
 @media (max-height:500px) and (orientation:landscape){ #intro .keys{margin:8px 0 0} #intro .keys small{display:none} }
 </style>
@@ -251,6 +274,7 @@ button:focus-visible{outline:2px solid var(--accent)}
     <button role="tab" data-tab="server" aria-selected="true">서버</button>
     <button role="tab" data-tab="settings" aria-selected="false">설정</button>
     <button role="tab" data-tab="keys" aria-selected="false">조작법</button>
+    <button role="tab" data-tab="info" aria-selected="false">정보</button>
     <button id="menu-close" class="x" aria-label="메뉴 닫기">닫기</button>
   </div>
   <div class="pane" data-pane="server">
@@ -259,9 +283,24 @@ button:focus-visible{outline:2px solid var(--accent)}
     <table class="roster"><thead><tr id="roster-head"><th>이름</th></tr></thead><tbody id="roster-body"></tbody></table>
   </div>
   <div class="pane" data-pane="settings" hidden>
-    <div class="set"><span>소리</span><div class="seg" data-key="sound"><button data-v="on">켬</button><button data-v="off">끔</button></div></div>
+    <!-- (2026-11-26) 4단계: 음량 · 시점 감도 막대, 절전 -->
+    <div class="set"><label for="set-bgm">배경음</label><div class="rng"><input type="range" id="set-bgm" min="0" max="100" step="10"><b id="set-bgm-v"></b></div></div>
+    <div class="set"><label for="set-vol">효과음</label><div class="rng"><input type="range" id="set-vol" min="0" max="100" step="10"><b id="set-vol-v"></b></div></div>
+    <div class="set"><label for="set-sens">시점 감도</label><div class="rng"><input type="range" id="set-sens" min="50" max="200" step="10"><b id="set-sens-v"></b></div></div>
     <div class="set"><span>화질</span><div class="seg" data-key="quality"><button data-v="auto">자동</button><button data-v="high">높음</button><button data-v="medium">보통</button><button data-v="low">낮음</button></div></div>
-    <p class="note" id="q-note"></p>
+    <div class="set"><span>절전</span><div class="seg" data-key="saver"><button data-v="on">켬</button><button data-v="off">끔</button></div></div>
+  </div>
+  <!-- (2026-11-26) 정보: 의견 보내기(인스타) · 후원(폰은 버튼, 데스크톱은 QR). 주소는 config.js LINKS (ui/links.js) -->
+  <div class="pane" data-pane="info" hidden>
+    <div class="info">
+      <div class="txt"><b>의견 보내기</b><small>버그나 바라는 점을 인스타 DM으로 보내 주세요</small></div>
+      <a class="btn" data-link="insta">인스타그램</a>
+    </div>
+    <div class="info">
+      <div class="txt"><b>후원하기</b><small>재밌게 놀았다면 군고구마 하나 사 주세요</small><small class="qr-tip">폰 카메라로 찍어 주세요</small></div>
+      <a class="btn qr-alt" data-link="donate">후원하기</a>
+      <div class="qr" data-qr></div>
+    </div>
   </div>
   <div class="pane" data-pane="keys" hidden>
     <div class="seg dev" data-key="dev"><button data-v="pc">데스크톱</button><button data-v="touch">모바일</button></div>
@@ -314,6 +353,9 @@ button:focus-visible{outline:2px solid var(--accent)}
   <button class="btn" id="enter" disabled role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="enter-label">불러오는 중</span><kbd>Enter</kbd></button>
   <p class="hint" id="intro-hint" aria-live="polite">파일 받는 중</p>
   <p class="online" id="intro-online" hidden></p>
+  <!-- (2026-11-26) 의견 보내기 · 후원 (데스크톱은 후원을 누르면 QR, 폰은 송금 링크). 비어 있으면 흐리게 -->
+  <p class="links"><a data-link="insta" data-keep="1">의견 보내기</a><span aria-hidden="true">·</span><a id="intro-donate" data-link="donate" data-keep="1">후원</a></p>
+  <div class="qr-pop" id="intro-qr" hidden><div class="qr" data-qr></div><small>폰 카메라로 찍어 주세요</small></div>
 </section>
 
 <script>
@@ -321,7 +363,7 @@ button:focus-visible{outline:2px solid var(--accent)}
   //   20초 넘게 진행이 없거나 파일을 못 받으면 단추가 '새로고침'으로 바뀐다.
   (function(){
     var intro = document.getElementById('intro'), b = document.getElementById('enter'), lab = document.getElementById('enter-label'), hint = document.getElementById('intro-hint');
-    var last = Date.now(), shown = 0, cap = .34, done = false, failed = false, hard = false, EXPECT = 90;   // EXPECT: 받는 .js 파일 수 (src 89 + three 1)
+    var last = Date.now(), shown = 0, cap = .34, done = false, failed = false, hard = false, EXPECT = 93;   // EXPECT: 받는 .js 파일 수 (src 92 + three 1)
     var touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
     var L = window.__wtLoad = {
       set: function(p, text){ if (done || hard) return; last = Date.now(); if (failed) {   // 멈춤(20초)은 다시 진행되면 풀리고, 파일 · 짓기 실패(hard)는 그대로 둔다
