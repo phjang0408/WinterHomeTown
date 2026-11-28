@@ -124,6 +124,7 @@ server-cf/          멀티플레이 서버 (Cloudflare Workers + Durable Objects
 server/             멀티플레이 서버 Node판 (로컬 · 다른 호스팅) + shared.js(둘이 같이 쓰는 규칙 · 통계)
 tools/              배포판 빌드 · 헤드리스 검수 도구
 dist/               배포판 (빌드 결과 index.html · game.js, 이 폴더만 올린다)
+icons/              아이콘(탭 · 홈 화면) · 링크 미리보기 그림 · 앱 정보(manifest), 빌드할 때 dist/로 옮긴다
 wrangler.jsonc      화면(dist/)을 Cloudflare에 올리는 설정
 .github/workflows/  main에 push하면 화면 · 서버를 Cloudflare에 자동 배포 (GitHub Actions)
 dev/                개발용 페이지 · 음악 후보

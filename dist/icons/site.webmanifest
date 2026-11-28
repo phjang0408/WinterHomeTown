@@ -1,0 +1,16 @@
+{
+  "name": "꼬마야 꼬마야",
+  "short_name": "꼬마야",
+  "description": "눈 오는 겨울방학, 우리 동네로 놀러 가자",
+  "start_url": "../",
+  "scope": "../",
+  "display": "fullscreen",
+  "background_color": "#dde7ee",
+  "theme_color": "#6fa9dc",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

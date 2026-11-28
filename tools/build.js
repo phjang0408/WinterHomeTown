@@ -37,6 +37,7 @@ if (!fs.existsSync(THREE_LOCAL)) { console.error('three가 없어요: tools 폴�
     req.onerror = start; } catch (e) { start(); }
 </script>`);
   fs.writeFileSync(path.join(OUT, 'index.html'), html);
+  fs.cpSync(path.join(ROOT, 'icons'), path.join(OUT, 'icons'), {recursive:true});   // (2026-11-28) 아이콘 · 링크 미리보기 그림 · 앱 정보(manifest)를 그대로 옮긴다
   const kb = f => (fs.statSync(path.join(OUT, f)).size / 1024).toFixed(0) + 'KB';
   const gz = (require('zlib').gzipSync(js).length / 1024).toFixed(0) + 'KB';
   const srcN = Object.keys(r.metafile.inputs).filter(k => k.startsWith('src/') || k.includes('/src/')).length;
