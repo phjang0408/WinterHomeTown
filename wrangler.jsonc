@@ -1,0 +1,9 @@
+// 게임 화면 배포 설정 (2026-11-28): Worker 'kkoma'가 dist/ 폴더(배포판)를 그대로 내보낸다. 정적 파일만이라 무료 · 요청 수 무제한
+//   손으로 올리기: 저장소 폴더에서 npx --prefix server-cf wrangler deploy   (server-cf/ 안에서 하면 서버가 올라간다)
+//   자동으로 올리기: main에 push하면 GitHub Actions(.github/workflows/deploy-screen.yml)가 이 파일로 올린다
+//   서버(kkoma-server) 설정은 server-cf/wrangler.jsonc
+{
+  "name": "kkoma",
+  "compatibility_date": "2025-10-01",
+  "assets": { "directory": "./dist" }
+}

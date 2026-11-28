@@ -51,7 +51,7 @@ import { placeChar, emote, SIT } from './entities/character.js';
 import { initFootprints, trackPrints, agePrints } from './entities/footprints.js';
 import { applyPeers, updateRemotes } from './entities/remotes.js';
 import { setupVehicles, updateVehicles } from './entities/vehicles.js';
-import { connect, netTick, net } from './net/index.js';
+import { connect, netTick, net, hasChannels } from './net/index.js';
 import { statsFrame, statHello, statReady, statEnter } from './net/stats.js';   // (2026-11-27) 익명 운영 통계
 import { hud } from './ui/hud.js';
 import { drawMiniBase, drawMini, miniEvery, toggleBigMap, bigOpen } from './ui/minimap.js';
@@ -70,6 +70,9 @@ function updateCount(){
   $('net-dot').classList.toggle('on', !!net.online);
   $('srv-addr').textContent = net.kind === 'room' ? '아티팩트 공유 방' : net.kind === 'websocket' ? NET.url + (net.ch ? ' · ' + net.ch + '채널' : '') : '찾는 중…';
   if (menuOpen() && menuTab() === 'server') fillRoster();   // (2026-11-24) 접속자 · 점수표는 메뉴의 서버 탭에
+  // (2026-11-28) 위쪽 채널 단추: 지금 채널(옮기는 중이면 가는 채널). 누르면 메뉴 › 서버
+  const ch = net.ch || net.want, cb = $('ch-btn'); cb.hidden = !hasChannels() || !ch;
+  if (ch) { $('ch-name').textContent = ch + '채널'; $('ch-dot').classList.toggle('on', !!net.online); }
   // (2026-11-26) 시작 화면: 지금 동네에 몇 명 있는지 (연결됐을 때만)
   const on = $('intro-online'); on.hidden = !net.online || S.mode !== 'intro';
   const others = Math.max(S.remotes.size, chanCount(net.ch) - 1);   // 채널 단추 숫자와 맞춘다 (아직 시작 화면에 있는 사람도 센다)
@@ -108,7 +111,7 @@ function bindUi(){
   $('enter').onclick = enter;
   GESTURE.forEach(ev => addEventListener(ev, introMusic, true));
   initMenu({onOpen:t => { if (t === 'server') { updateCount(); fillRoster(); refreshChannels(); } }});
-  initChannels(() => (S.mode === 'intro' && !$('intro').hidden) || (menuOpen() && menuTab() === 'server'));   // 보이는 동안만 채널 인원을 다시 받는다   // (2026-11-24) 메뉴: 서버 · 설정 · 조작법 (ui/menu.js)
+  $('ch-btn').onclick = () => openMenu('server');   // (2026-11-28) 들어간 뒤 채널 바꾸기: 위쪽 'N채널' 단추 → 메뉴 › 서버의 채널 칸
   $('res-close').onclick = () => { $('result').hidden = true; };
   $('res-again').onclick = () => { $('result').hidden = true; if (S.mode === 'walk' && hud.again) hud.again(); };
   $('game-quit').onclick = stopActivity; hud.onTopQuit = stopActivity; $('slam').onclick = () => current() && current().onAction && current().onAction();
@@ -152,7 +155,9 @@ let ready = false;
 
 async function boot(){
   // 이름은 바로 보이고, '다시 뽑기'도 불러오는 동안 된다 (옷은 캐릭터를 만든 뒤 바뀐다)
-  nameMe(); initLinks();   // (2026-11-26) 의견 보내기 · 후원 링크 (config.js LINKS)
+  nameMe(); initLinks();   // (2026-11-26) 메뉴 › 정보의 의견 보내기 · 후원 링크 (config.js LINKS). (2026-11-28) 시작 화면에서는 뺐다
+  // (2026-11-28) 채널 칸은 불러오는 동안 먼저 띄운다 (예전: 다 불러온 뒤 연결돼야 떴다). 미리 누르면 그 채널로 들어간다. 보이는 동안만 인원을 다시 받는다
+  initChannels(() => (S.mode === 'intro' && !$('intro').hidden) || (menuOpen() && menuTab() === 'server')); refreshChannels();
   $('reroll').onclick = () => rerollAnim(() => ready);   // 슬롯처럼 돌다 멈추는 연출 (ui/intro.js)
   await step(.36, '글꼴 준비 중');
   try { if (document.fonts && document.fonts.load) await Promise.race([Promise.all(FONTS_TO_LOAD.map(f => document.fonts.load(f, '겨울동화'))), new Promise(r => setTimeout(r, 1800))]); } catch (e) {}
@@ -189,7 +194,9 @@ async function boot(){
   if (location.search.includes('debug')) window.__town = {S, me, W, findAction, renderer, scene, camera, usedProps, propNames};   // 개발용: 콘솔에서 상태를 들여다본다
   // 첫 화면이 두 번 그려진 뒤 하늘 바탕(veil)을 걷고 단추를 연다
   await breathe(); await breathe();
-  ready = true; window.__townReady = true; LOAD.set(1, ''); LOAD.ready(); after(2500, texCacheDone); statReady(); statHello(performance.now() / 1000);   // (2026-11-27) 배포판: 만든 텍스처를 브라우저에 보관 (core/texkit.js) $('veil').classList.add('gone'); after(1100, () => { $('veil').hidden = true; });
+  ready = true; window.__townReady = true; LOAD.set(1, ''); LOAD.ready(); $('veil').classList.add('gone'); after(1100, () => { $('veil').hidden = true; });
+  // (2026-11-28) 위 veil 걷기가 11-27에 아래 주석 뒤로 밀려 꺼져 있었다 → 시작 화면에 동네 · 캐릭터 대신 하늘만 보였다. 줄을 나눠 되살림
+  after(2500, texCacheDone); statReady(); statHello(performance.now() / 1000);   // (2026-11-27) 배포판: 만든 텍스처를 브라우저에 보관 (core/texkit.js)
   after(500, () => emote(me.char, 1));   // 반갑게 손 흔들기
   connect({onPeers:list => { applyPeers(list); updateCount(); }, onStatus:updateCount,
     // (2026-11-27) 채널이 정해지거나 바뀌면 단추 · 글을 고친다. 고른 채널이 가득이면 서버가 다른 채널로 보낸다

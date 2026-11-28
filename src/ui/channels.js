@@ -11,7 +11,7 @@ export function initChannels(shown){
   visible = shown;
   document.querySelectorAll('[data-chans]').forEach(box => box.addEventListener('click', e => {
     const b = e.target.closest('button[data-ch]'); if (!b || b.disabled) return;
-    const ch = +b.dataset.ch; if (ch === net.ch) return;
+    const ch = +b.dataset.ch; if (ch === (net.ch || net.want)) return;
     sfx(620, 760, .1); setChannel(ch); draw();
   }));
   timer = setInterval(() => { if (visible() && !document.hidden) refresh(); }, 10000);
@@ -33,7 +33,7 @@ export function draw(){
     box.textContent = '';
     last.list.forEach(({ch, n}) => {
       // 내 채널 인원은 서버 숫자보다 화면의 실제 인원이 빠르다 (옮긴 직후 등)
-      const here = ch === net.ch, full = n >= last.cap && !here, b = document.createElement('button');
+      const here = ch === (net.ch || net.want), full = n >= last.cap && !here, b = document.createElement('button');
       b.dataset.ch = ch; b.type = 'button'; b.disabled = full;
       b.setAttribute('aria-pressed', String(here));
       b.setAttribute('aria-label', `${ch}채널 ${n}명${here ? ' (지금 여기)' : full ? ' (가득)' : ''}`);

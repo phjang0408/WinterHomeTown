@@ -1,0 +1,32 @@
+# 게임 화면(Worker kkoma) 자동 배포 (2026-11-28)
+#   main에 push했을 때 dist/ (배포판) 또는 wrangler.jsonc가 바뀌었으면 Cloudflare에 올린다. 설정은 저장소 맨 위 wrangler.jsonc
+#   dist/는 빌드해서 커밋한다 (cd tools && npm run build) — 빌드를 안 하면 dist/가 그대로라 이 작업도 돌지 않는다
+#   필요한 GitHub 비밀값 (Settings › Secrets and variables › Actions): CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+name: 화면 배포 (kkoma)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dist/**'
+      - 'wrangler.jsonc'
+      - '.github/workflows/deploy-screen.yml'
+  workflow_dispatch:   # Actions 탭의 'Run workflow'로 손으로도 돌린다
+
+concurrency:
+  group: deploy-screen   # 한 번에 하나씩 (앞의 배포가 끝나면 다음)
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy

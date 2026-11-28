@@ -104,29 +104,6 @@
 - **무료 서버**: Cloudflare Workers 위에서 채널마다 Durable Object가 하나씩 돌며, 0.1초마다 모두의 위치를 나눠요. 게임 화면도 같은 곳에 정적 파일로 올렸고, 둘 다 무료 플랜이에요.
 - **익명 통계**: 서버가 접속 수 · 놀이 횟수 · 화면 속도만 모아요. 운영용 `/stats` 표는 열쇠로 잠가 두고, 이름 · IP · 위치는 모으지 않아요.
 
-<br>
-
-## 직접 해 보기
-
-```bash
-# 개발판 (빌드 없이 바로)
-run-local.bat              # Windows, 또는 ./run-local.sh → http://localhost:8000/
-
-# 멀티플레이 서버 (선택, 채널 5개 × 40명)
-cd server-cf && npm install && npm run dev   # Cloudflare판 → ws://localhost:8080
-cd server && npm install && npm start      # 또는 Node판 (같은 주소)
-
-# 배포판 만들기
-cd tools && npm install && npm run build   # → dist/
-
-# Cloudflare에 올리기 (처음 한 번: cd server-cf && npx wrangler login)
-cd server-cf && npm run deploy             # 서버 → kkoma-server.….workers.dev
-npx --prefix server-cf wrangler deploy --assets dist --name kkoma --compatibility-date 2025-10-01   # 화면 (저장소 폴더에서)
-```
-
-- `index.html?debug`: 콘솔의 `window.__town`, P로 성능 창
-- `gallery.html`: 소품 갤러리
-
 <details>
 <summary><b>폴더 구조</b></summary>
 
@@ -147,6 +124,8 @@ server-cf/          멀티플레이 서버 (Cloudflare Workers + Durable Objects
 server/             멀티플레이 서버 Node판 (로컬 · 다른 호스팅) + shared.js(둘이 같이 쓰는 규칙 · 통계)
 tools/              배포판 빌드 · 헤드리스 검수 도구
 dist/               배포판 (빌드 결과 index.html · game.js, 이 폴더만 올린다)
+wrangler.jsonc      화면(dist/)을 Cloudflare에 올리는 설정
+.github/workflows/  main에 push하면 화면 · 서버를 Cloudflare에 자동 배포 (GitHub Actions)
 dev/                개발용 페이지 · 음악 후보
 docs/images/        README 스크린샷
 ```

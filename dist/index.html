@@ -103,6 +103,11 @@ button:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 .card,.pill,.sheet{background:var(--ui-bg);color:var(--ui-ink);border:1px solid var(--ui-line);border-radius:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 .pill{padding:7px 12px;font-size:13px;letter-spacing:.02em}
 #me-chip{border-left:3px solid var(--accent)} #me-chip i{border-radius:0} #me-chip b{font-family:var(--body);font-weight:600;font-size:14px} #me-chip small{color:var(--ui-dim)}
+/* (2026-11-28) 위쪽 채널 단추: 'N채널 바꾸기'. 점은 연결되면 초록 */
+#ch-btn:not([hidden]){display:flex;align-items:center;gap:7px;min-height:34px;cursor:pointer}
+#ch-btn i{width:8px;height:8px;background:#7d8589} #ch-btn i.on{background:#5fc27e}
+#ch-btn b{font-family:var(--body);font-weight:600;font-size:14px;font-variant-numeric:tabular-nums} #ch-btn small{color:var(--ui-dim)}
+@media (max-width:640px){ #ch-btn small{display:none} #top{max-width:calc(100% - 116px)} }   /* 폰: 오른쪽 위 미니맵(86px) 자리를 비워 두고, 모자라면 채널 단추가 다음 줄로 */
 #roster-btn b{font-family:var(--body);font-weight:700;color:var(--accent)}
 #mini{border:1px solid var(--ui-line)}
 #dock button{background:var(--ui-bg);color:var(--ui-ink);border:1px solid var(--ui-line);border-radius:0;font-size:13px}
@@ -229,7 +234,7 @@ button:focus-visible{outline:2px solid var(--accent)}
 #menu .rng input{width:min(170px,40vw);height:32px;margin:0;accent-color:var(--accent);cursor:pointer}
 #menu .rng b{min-width:3.2em;text-align:right;color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums}
 #menu{word-break:keep-all}
-/* ── 2026-11-26 정보 탭 · 시작 화면 링크 (ui/links.js). 폰(touch-links)은 QR 대신 후원 버튼 ── */
+/* ── 2026-11-26 정보 탭 링크 (ui/links.js, 2026-11-28 시작 화면 줄은 뺌). 폰(touch-links)은 QR 대신 후원 버튼 ── */
 #menu .info{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--ui-line)}
 #menu .info:last-child{border-bottom:0}
 #menu .info .txt{display:flex;flex-direction:column;gap:3px;min-width:0}
@@ -242,11 +247,6 @@ button:focus-visible{outline:2px solid var(--accent)}
 body:not(.touch-links) .qr-alt{display:none}
 a.off{opacity:.45;pointer-events:none;cursor:default}
 a.off[data-soon]::after{content:" · " attr(data-soon)}
-#intro .links{display:flex;align-items:center;gap:8px;margin:8px 0 0;font-size:12.5px;color:var(--ui-dim)}
-#intro .links a{color:var(--ui-ink);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-#intro .qr-pop:not([hidden]){display:flex;align-items:center;gap:12px;margin-top:10px}
-#intro .qr-pop .qr{width:112px;height:112px}
-#intro .qr-pop small{color:var(--ui-dim);font-size:12px}   /* 설명 글이 '있 / 으면'처럼 낱말 중간에서 꺾이지 않게 */
 @media (max-width:640px), (orientation:portrait) and (max-width:900px){ #intro .tag{margin:6px 0 6px} #intro .keys{margin-bottom:12px} }
 @media (max-height:500px) and (orientation:landscape){ #intro .keys{margin:8px 0 0} #intro .keys small{display:none} }
 </style>
@@ -258,6 +258,7 @@ a.off[data-soon]::after{content:" · " attr(data-soon)}
 <div id="top" hidden>
   <button id="menu-btn" class="pill" aria-expanded="false" aria-controls="menu"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>메뉴<kbd>Esc</kbd></button>
   <div id="me-chip" class="pill"><i id="me-dot"></i><b id="me-name"></b><small>나</small></div>
+  <button id="ch-btn" class="pill" title="채널 바꾸기 (메뉴 › 서버)" hidden><i id="ch-dot"></i><b id="ch-name"></b><small>바꾸기</small></button>   <!-- (2026-11-28) 들어간 뒤 채널 바꾸기 -->
 </div>
 <canvas id="mini" width="360" height="360" title="동네 지도 크게 보기 (M)" hidden></canvas>
 <section id="bigmap" class="card" role="dialog" aria-label="동네 지도" hidden>
@@ -418,9 +419,7 @@ a.off[data-soon]::after{content:" · " attr(data-soon)}
   <p class="hint" id="intro-hint" aria-live="polite">파일 받는 중</p>
   <p class="online" id="intro-online" hidden></p>
   <div class="chans-wrap" data-chans-wrap hidden><div class="chans" data-chans aria-label="채널 고르기"></div></div>   <!-- (2026-11-27) 채널 고르기 (ui/channels.js) -->
-  <!-- (2026-11-26) 의견 보내기 · 후원 (데스크톱은 후원을 누르면 QR, 폰은 송금 링크). 비어 있으면 흐리게 -->
-  <p class="links"><a data-link="insta" data-keep="1">의견 보내기</a><span aria-hidden="true">·</span><a id="intro-donate" data-link="donate" data-keep="1">후원</a></p>
-  <div class="qr-pop" id="intro-qr" hidden><div class="qr" data-qr></div></div>
+  <!-- (2026-11-28) 시작 화면의 의견 보내기 · 후원 줄은 뺐다 (사용자). 메뉴 › 정보에는 그대로 있다 -->
 </section>
 
 <script>
@@ -453,13 +452,13 @@ a.off[data-soon]::after{content:" · " attr(data-soon)}
     var tick = Date.now(); setInterval(function(){ var now = Date.now(); if (now - tick > 5000) last = now; tick = now; if (!done && now - last > 20000) L.fail(); }, 2000);
   })();
 </script>
-<link rel="modulepreload" href="game.js?v=923adcc8ac">
-<script>window.__BUILD__ = '923adcc8ac';</script>
+<link rel="modulepreload" href="game.js?v=5a7c71895f">
+<script>window.__BUILD__ = '5a7c71895f';</script>
 <script type="module">
   // 배포판: 보관해 둔 코드 텍스처를 먼저 꺼내고(있으면) game.js를 부른다. 1.5초 안에 못 꺼내면 그냥 시작
-  let go = false; const start = () => { if (go) return; go = true; import('./game.js?v=923adcc8ac').catch(() => window.__wtLoad.fail('파일을 받지 못했어요. 새로고침해 주세요.')); };
+  let go = false; const start = () => { if (go) return; go = true; import('./game.js?v=5a7c71895f').catch(() => window.__wtLoad.fail('파일을 받지 못했어요. 새로고침해 주세요.')); };
   setTimeout(start, 1500);
-  try { const q = (() => { try { return localStorage.getItem('wt.quality') || 'auto'; } catch (e) { return 'auto'; } })(), want = '923adcc8ac:' + q, req = indexedDB.open('kkoma-tex', 1);
+  try { const q = (() => { try { return localStorage.getItem('wt.quality') || 'auto'; } catch (e) { return 'auto'; } })(), want = '5a7c71895f:' + q, req = indexedDB.open('kkoma-tex', 1);
     req.onupgradeneeded = () => req.result.createObjectStore('t');
     req.onsuccess = () => { try { const g = req.result.transaction('t').objectStore('t').get('tex'); g.onsuccess = () => { const v = g.result; if (v && v.id === want) window.__texCache = v.list; start(); }; g.onerror = start; } catch (e) { start(); } };
     req.onerror = start; } catch (e) { start(); }

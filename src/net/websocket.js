@@ -2,8 +2,8 @@
 // (2026-11-27) 채널: 주소 뒤 ?ch=N 으로 고른 채널에 들어간다. 0이면 서버가 자리가 있는 앞 채널로 보낸다.
 //   한 번 들어가면 그 채널을 기억해서 끊겼다 다시 붙을 때도 같은 채널로 간다. 고른 채널이 가득이면 서버가 다른 채널로 보낸다.
 //   모든 채널이 가득이면 서버가 {t:'full'}을 보내고 끊는다 → 10초 뒤 다시 시도.
-export async function connectWebSocket(url, {onPeers, onStatus, onChannel}){
-  let ws = null, myId = null, pending = null, want = 0, cur = 0, wait = 3000;
+export async function connectWebSocket(url, {onPeers, onStatus, onChannel}, first = 0){   // first: 불러오는 중에 고른 채널 (0이면 서버가 고른다)
+  let ws = null, myId = null, pending = null, want = first | 0, cur = 0, wait = 3000;
   const open = () => {
     const s = ws = new WebSocket(url + (want ? (url.includes('?') ? '&' : '?') + 'ch=' + want : ''));
     s.onopen = () => { if (pending) s.send(JSON.stringify({t:'p', p:pending})); };

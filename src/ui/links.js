@@ -1,4 +1,4 @@
-// 피드백 · 후원 링크 (2026-11-26): 메뉴 '정보' 탭과 시작 화면 맨 아래 한 줄. 주소는 config.js LINKS 한 곳에서.
+// 피드백 · 후원 링크 (2026-11-26): 메뉴 '정보' 탭. 주소는 config.js LINKS 한 곳에서. (2026-11-28) 시작 화면 맨 아래 줄은 뺐다
 //   - 의견 보내기: 인스타 DM(또는 프로필)을 새 창으로 연다.
 //   - 후원: 폰은 송금 링크를 버튼으로 바로 연다(같은 폰으로 QR을 찍을 수 없으니). 데스크톱은 QR을 보여 주고 폰 카메라로 찍게 한다.
 //     QR은 LINKS.donateQr 이미지가 있으면 그것, 없으면 송금 주소를 qrcode-generator(MIT, jsdelivr)로 그린다 — 처음 보여 줄 때만 받는다.
@@ -18,9 +18,7 @@ export function initLinks(){
   document.querySelectorAll('[data-link=insta]').forEach(a => setLink(a, instaUrl()));
   document.querySelectorAll('[data-link=donate]').forEach(a => setLink(a, donateUrl()));
   document.body.classList.toggle('touch-links', coarse);   // 폰: QR 대신 후원 버튼 (CSS가 고른다)
-  // 시작 화면 '후원': 데스크톱은 QR 말풍선을 열고 닫는다, 폰은 링크 그대로
-  const t = document.getElementById('intro-donate'), pop = document.getElementById('intro-qr');
-  if (t && pop && !coarse) t.onclick = e => { e.preventDefault(); pop.hidden = !pop.hidden; if (!pop.hidden) drawQRs(pop); };
+  // (2026-11-28) 시작 화면의 의견 보내기 · 후원 줄(QR 말풍선)은 뺐다 (사용자). 이제 메뉴 › 정보에만 있다
 }
 
 // QR 그리기: 모듈 칸마다 검은 네모, 둘레 4칸 흰 여백 (찍히는 데 필요)

@@ -1,0 +1,33 @@
+# 멀티플레이 서버(Worker kkoma-server) 자동 배포 (2026-11-28)
+#   main에 push했을 때 server-cf/ 또는 server/shared.js(서버가 같이 쓰는 규칙)가 바뀌었으면 Cloudflare에 올린다. 설정은 server-cf/wrangler.jsonc
+#   STATS_KEY 같은 비밀값은 Cloudflare에 남아 있어서 다시 넣지 않아도 된다
+#   필요한 GitHub 비밀값 (Settings › Secrets and variables › Actions): CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
+name: 서버 배포 (kkoma-server)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server-cf/**'
+      - 'server/shared.js'
+      - '.github/workflows/deploy-server.yml'
+  workflow_dispatch:   # Actions 탭의 'Run workflow'로 손으로도 돌린다
+
+concurrency:
+  group: deploy-server   # 한 번에 하나씩 (앞의 배포가 끝나면 다음)
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          workingDirectory: server-cf
+          command: deploy
