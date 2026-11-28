@@ -154,9 +154,8 @@ button:focus-visible{outline:2px solid var(--accent)}
 #menu .note{margin:-2px 0 12px;color:var(--ui-dim);font-size:12px;line-height:1.5}
 #menu .keys th{text-align:left;font-weight:400;color:var(--ui-dim);padding:6px 0;width:42%;border-bottom:1px solid rgba(255,255,255,.08)}
 #menu .keys-fig svg{display:block;width:100%;max-width:440px;margin:4px auto 0;height:auto;color:var(--ui-ink);font-family:inherit}   /* (2026-11-27) 모바일 조작법 그림 */
-#menu .info-note{margin:10px 2px 0;font-size:11.5px;color:var(--ui-dim);line-height:1.5;word-break:keep-all}   /* (2026-11-27) 익명 통계 안내 */
 #menu .keys-fig .fig-p{max-width:250px} #menu .keys-fig .fig-l{display:none}
-@media (orientation:landscape){ #menu .keys-fig .fig-p{display:none} #menu .keys-fig .fig-l{display:block} }
+@media (orientation:landscape) and (max-height:500px){ #menu .keys-fig .fig-p{display:none} #menu .keys-fig .fig-l{display:block} }   /* (2026-11-27) 세로 그림이 기본(데스크톱에서 '모바일'을 골라도 세로), 눕힌 폰만 가로 그림 */
 #menu .keys-fig p{margin:8px 2px 0;font-size:12px;color:var(--ui-dim);line-height:1.5;word-break:keep-all}
 @media (orientation:landscape) and (max-height:500px){ #menu{max-height:calc(100% - 74px)} #menu .keys-fig svg{height:min(44vh,200px);width:auto;max-width:100%} #menu .keys-fig p{margin-top:4px} }   /* 가로 폰: 메뉴 높이 안에 그림이 다 들어오게 */
 #menu .keys td{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.08);font-family:var(--display);font-size:15px;letter-spacing:.02em}
@@ -194,6 +193,14 @@ button:focus-visible{outline:2px solid var(--accent)}
 #intro .hint{margin:10px 0 0;min-height:1.5em;font-size:12.5px;line-height:1.5;color:var(--ui-dim);text-wrap:balance}
 #intro .online{margin:2px 0 0;font-size:12.5px;color:var(--ui-ink)}
 #intro .online i{display:inline-block;width:7px;height:7px;margin-right:7px;vertical-align:1px;background:#7fd08a}
+/* (2026-11-27) 채널 고르기: 시작 화면 · 메뉴 서버 탭 (ui/channels.js) */
+.chans{display:grid;gap:4px;margin:8px 0 0}
+.chans button{display:flex;flex-direction:column;align-items:center;gap:1px;min-height:42px;padding:6px 0 5px;background:rgba(255,255,255,.06);border:1px solid var(--ui-line);color:var(--ui-ink);font-size:13px;line-height:1.15}
+.chans button b{font-weight:700} .chans button small{font-size:11px;color:var(--ui-dim);font-variant-numeric:tabular-nums}
+.chans button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)} .chans button[aria-pressed=true] small{color:inherit;opacity:.75}
+.chans button:disabled{opacity:.4;cursor:default}
+#menu .chans-head{margin:0 0 -2px;font-weight:600} #menu .chans-head small{font-weight:400;color:var(--ui-dim);font-size:12px;margin-left:6px}
+#menu .chans-wrap{margin:0 0 14px}
 @media (pointer:coarse){ #enter kbd{display:none} }
 @media (max-width:640px), (orientation:portrait) and (max-width:900px){
   #intro{left:12px;right:12px;width:auto;top:auto;bottom:max(12px,env(safe-area-inset-bottom));transform:none;padding:18px 16px 12px}
@@ -286,6 +293,7 @@ a.off[data-soon]::after{content:" · " attr(data-soon)}
   <div class="pane" data-pane="server">
     <p class="netline"><i id="net-dot"></i><span id="net">혼자 걷는 중</span></p>
     <dl class="kv"><dt>서버</dt><dd id="srv-addr">-</dd><dt>지금 동네</dt><dd><b id="count">1</b>명</dd></dl>
+    <div class="chans-wrap" data-chans-wrap hidden><p class="chans-head">채널 <small>한 채널에 40명까지 · 누르면 옮겨요</small></p><div class="chans" data-chans aria-label="채널 고르기"></div></div>
     <table class="roster"><thead><tr id="roster-head"><th>이름</th></tr></thead><tbody id="roster-body"></tbody></table>
   </div>
   <div class="pane" data-pane="settings" hidden>
@@ -307,11 +315,10 @@ a.off[data-soon]::after{content:" · " attr(data-soon)}
       <a class="btn" data-link="insta">인스타그램</a>
     </div>
     <div class="info">
-      <div class="txt"><b>후원하기</b><small>재밌게 놀았다면 군고구마 하나 사 주세요</small><small class="qr-tip">폰 카메라로 찍어 주세요 (토스)</small></div>
+      <div class="txt"><b>후원하기</b><small>재밌게 놀았다면 개발자에게<br>따뜻한 군고구마 사주세요 *_*</small></div>
       <a class="btn qr-alt" data-link="donate">토스로 후원</a>
       <div class="qr" data-qr></div>
     </div>
-    <p class="info-note">게임을 다듬으려고 익명 통계(접속 수 · 놀이 횟수 · 화면 속도)를 모아요. 이름 · 주소는 모으지 않아요.</p>
   </div>
   <div class="pane" data-pane="keys" hidden>
     <div class="seg dev" data-key="dev"><button data-v="pc">데스크톱</button><button data-v="touch">모바일</button></div>
@@ -410,9 +417,10 @@ a.off[data-soon]::after{content:" · " attr(data-soon)}
   <button class="btn" id="enter" disabled role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="enter-label">불러오는 중</span><kbd>Enter</kbd></button>
   <p class="hint" id="intro-hint" aria-live="polite">파일 받는 중</p>
   <p class="online" id="intro-online" hidden></p>
+  <div class="chans-wrap" data-chans-wrap hidden><div class="chans" data-chans aria-label="채널 고르기"></div></div>   <!-- (2026-11-27) 채널 고르기 (ui/channels.js) -->
   <!-- (2026-11-26) 의견 보내기 · 후원 (데스크톱은 후원을 누르면 QR, 폰은 송금 링크). 비어 있으면 흐리게 -->
   <p class="links"><a data-link="insta" data-keep="1">의견 보내기</a><span aria-hidden="true">·</span><a id="intro-donate" data-link="donate" data-keep="1">후원</a></p>
-  <div class="qr-pop" id="intro-qr" hidden><div class="qr" data-qr></div><small>폰 카메라로 찍어 주세요</small></div>
+  <div class="qr-pop" id="intro-qr" hidden><div class="qr" data-qr></div></div>
 </section>
 
 <script>
@@ -445,13 +453,13 @@ a.off[data-soon]::after{content:" · " attr(data-soon)}
     var tick = Date.now(); setInterval(function(){ var now = Date.now(); if (now - tick > 5000) last = now; tick = now; if (!done && now - last > 20000) L.fail(); }, 2000);
   })();
 </script>
-<link rel="modulepreload" href="game.js?v=229c27e58a">
-<script>window.__BUILD__ = '229c27e58a';</script>
+<link rel="modulepreload" href="game.js?v=923adcc8ac">
+<script>window.__BUILD__ = '923adcc8ac';</script>
 <script type="module">
   // 배포판: 보관해 둔 코드 텍스처를 먼저 꺼내고(있으면) game.js를 부른다. 1.5초 안에 못 꺼내면 그냥 시작
-  let go = false; const start = () => { if (go) return; go = true; import('./game.js?v=229c27e58a').catch(() => window.__wtLoad.fail('파일을 받지 못했어요. 새로고침해 주세요.')); };
+  let go = false; const start = () => { if (go) return; go = true; import('./game.js?v=923adcc8ac').catch(() => window.__wtLoad.fail('파일을 받지 못했어요. 새로고침해 주세요.')); };
   setTimeout(start, 1500);
-  try { const q = (() => { try { return localStorage.getItem('wt.quality') || 'auto'; } catch (e) { return 'auto'; } })(), want = '229c27e58a:' + q, req = indexedDB.open('kkoma-tex', 1);
+  try { const q = (() => { try { return localStorage.getItem('wt.quality') || 'auto'; } catch (e) { return 'auto'; } })(), want = '923adcc8ac:' + q, req = indexedDB.open('kkoma-tex', 1);
     req.onupgradeneeded = () => req.result.createObjectStore('t');
     req.onsuccess = () => { try { const g = req.result.transaction('t').objectStore('t').get('tex'); g.onsuccess = () => { const v = g.result; if (v && v.id === want) window.__texCache = v.list; start(); }; g.onerror = start; } catch (e) { start(); } };
     req.onerror = start; } catch (e) { start(); }

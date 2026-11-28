@@ -60,6 +60,7 @@ import { initSnow, updateSnow } from './world/snowfall.js';
 import { saverFrame } from './core/saver.js';
 import { startMusic, playIntroMusic } from './core/music.js';
 import { initLinks } from './ui/links.js';
+import { initChannels, refresh as refreshChannels, draw as drawChannels, chanCount } from './ui/channels.js';   // (2026-11-27) 채널 고르기
 
 const $ = id => document.getElementById(id);
 
@@ -67,11 +68,12 @@ function updateCount(){
   $('count').textContent = S.remotes.size + 1;
   $('net').textContent = net.online ? (S.remotes.size ? '동네 서버에 연결됨 · 함께 걷는 중' : '동네 서버에 연결됨') : '연결 안 됨 · 혼자 걷는 중';
   $('net-dot').classList.toggle('on', !!net.online);
-  $('srv-addr').textContent = net.kind === 'room' ? '아티팩트 공유 방' : net.kind === 'websocket' ? NET.url : '찾는 중…';
+  $('srv-addr').textContent = net.kind === 'room' ? '아티팩트 공유 방' : net.kind === 'websocket' ? NET.url + (net.ch ? ' · ' + net.ch + '채널' : '') : '찾는 중…';
   if (menuOpen() && menuTab() === 'server') fillRoster();   // (2026-11-24) 접속자 · 점수표는 메뉴의 서버 탭에
   // (2026-11-26) 시작 화면: 지금 동네에 몇 명 있는지 (연결됐을 때만)
   const on = $('intro-online'); on.hidden = !net.online || S.mode !== 'intro';
-  if (!on.hidden) on.innerHTML = '<i></i>' + (S.remotes.size ? '지금 ' + S.remotes.size + '명이 동네에서 놀고 있어요' : '지금 동네는 조용해요');
+  const others = Math.max(S.remotes.size, chanCount(net.ch) - 1);   // 채널 단추 숫자와 맞춘다 (아직 시작 화면에 있는 사람도 센다)
+  if (!on.hidden) on.innerHTML = '<i></i>' + (net.ch ? net.ch + '채널 · ' : '') + (others ? '지금 ' + others + '명이 놀고 있어요' : '지금 동네는 조용해요');
 }
 function fillRoster(){
   const scored = ACTS.filter(a => a.score).sort((a, b) => a.score.index - b.score.index);
@@ -105,7 +107,8 @@ function introMusic(){ if (S.mode === 'intro') playIntroMusic(); else GESTURE.fo
 function bindUi(){
   $('enter').onclick = enter;
   GESTURE.forEach(ev => addEventListener(ev, introMusic, true));
-  initMenu({onOpen:t => { if (t === 'server') { updateCount(); fillRoster(); } }});   // (2026-11-24) 메뉴: 서버 · 설정 · 조작법 (ui/menu.js)
+  initMenu({onOpen:t => { if (t === 'server') { updateCount(); fillRoster(); refreshChannels(); } }});
+  initChannels(() => (S.mode === 'intro' && !$('intro').hidden) || (menuOpen() && menuTab() === 'server'));   // 보이는 동안만 채널 인원을 다시 받는다   // (2026-11-24) 메뉴: 서버 · 설정 · 조작법 (ui/menu.js)
   $('res-close').onclick = () => { $('result').hidden = true; };
   $('res-again').onclick = () => { $('result').hidden = true; if (S.mode === 'walk' && hud.again) hud.again(); };
   $('game-quit').onclick = stopActivity; hud.onTopQuit = stopActivity; $('slam').onclick = () => current() && current().onAction && current().onAction();
@@ -188,6 +191,9 @@ async function boot(){
   await breathe(); await breathe();
   ready = true; window.__townReady = true; LOAD.set(1, ''); LOAD.ready(); after(2500, texCacheDone); statReady(); statHello(performance.now() / 1000);   // (2026-11-27) 배포판: 만든 텍스처를 브라우저에 보관 (core/texkit.js) $('veil').classList.add('gone'); after(1100, () => { $('veil').hidden = true; });
   after(500, () => emote(me.char, 1));   // 반갑게 손 흔들기
-  connect({onPeers:list => { applyPeers(list); updateCount(); }, onStatus:updateCount});
+  connect({onPeers:list => { applyPeers(list); updateCount(); }, onStatus:updateCount,
+    // (2026-11-27) 채널이 정해지거나 바뀌면 단추 · 글을 고친다. 고른 채널이 가득이면 서버가 다른 채널로 보낸다
+    onChannel:(ch, asked, full) => { updateCount(); drawChannels(); if (ch) refreshChannels();
+      if (S.mode !== 'intro') { if (ch && asked && asked !== ch) flash(asked + '채널이 가득 차서\n' + ch + '채널로 왔어요'); else if (full) flash('채널이 모두 가득 찼어요'); } }});
 }
 boot().catch(e => { console.error(e); LOAD.fail('동네를 짓다가 문제가 생겼어요. 새로고침해 주세요.'); });

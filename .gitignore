@@ -1,3 +1,13 @@
 node_modules/
 *.png
 .DS_Store
+
+
+
+# 작업기록
+deploy.md
+배포과정.md
+docs/next-steps.md
+docs/map-changes-log.md
+docs/graphics-roadmap.md
+docs/asset-pipeline-skill.md

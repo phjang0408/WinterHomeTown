@@ -24,7 +24,11 @@ export const ST = {WALK:0, BENCH:1, SWING:2, TARGET:3, TTAKJI:4, SNOW:5, SLED:6,
 
 // 멀티플레이 연결 방식: 'auto' · 'claude-room'(아티팩트 공유 기능) · 'websocket'(직접 띄운 서버)
 // (2026-11-25) 'auto': Claude 아티팩트 안이면 공유 방(room), 아니면 url의 WebSocket 서버. 예전 'websocket' 고정이라 아티팩트에서 앱 ↔ 웹이 안 붙었다
-export const NET = {kind:'auto', url:'ws://localhost:8080'};
+// (2026-11-27) 서버 주소 자동 전환: 내 컴퓨터(localhost · 같은 와이파이의 192.168.x 등)에서 열면 그 컴퓨터의 8080 포트(로컬 서버),
+//   배포 사이트에서 열면 SERVER_URL. 로컬 서버는 server-cf에서 npm run dev(Cloudflare판) 또는 server에서 npm start(Node판)
+export const SERVER_URL = 'wss://kkoma-server.kkoma-server-cf.workers.dev';   // (2026-11-28) 배포한 Cloudflare 서버 주소
+const LOCAL = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1|\[::1\]|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)$/.test(location.hostname);
+export const NET = {kind:'auto', url:LOCAL ? `ws://${location.hostname || 'localhost'}:8080` : SERVER_URL};
 
 export const reduceMotion = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 export const coarse = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);

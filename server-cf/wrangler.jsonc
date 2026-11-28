@@ -1,0 +1,18 @@
+// 꼬마야 꼬마야 멀티플레이 서버 (Cloudflare Workers + Durable Objects) 설정
+//   로컬: npm run dev  → ws://localhost:8080 (게임의 로컬 주소와 같다)
+//   배포: npm run deploy → https://kkoma-server.<계정>.workers.dev  (게임에서는 wss://…)
+{
+  "name": "kkoma-server",
+  "main": "src/index.js",
+  "compatibility_date": "2025-10-01",
+  "durable_objects": {
+    "bindings": [
+      { "name": "ROOM", "class_name": "Room" },
+      { "name": "HUB", "class_name": "Hub" }
+    ]
+  },
+  // 무료 플랜은 SQLite 저장소 방식만 된다
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room", "Hub"] }],
+  // 게임 화면 주소 (쉼표로 여러 개). 비우면 모두 허용 — 화면 주소가 정해지면 넣는다 (예: "https://kkoma.pages.dev")
+  "vars": { "ALLOWED_ORIGINS": "https://kkoma.kkoma-server-cf.workers.dev" }
+}
