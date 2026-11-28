@@ -14,7 +14,7 @@ export function initChannels(shown){
     const ch = +b.dataset.ch; if (ch === (net.ch || net.want)) return;
     sfx(620, 760, .1); setChannel(ch); draw();
   }));
-  timer = setInterval(() => { if (visible() && !document.hidden) refresh(); }, 10000);
+  timer = setInterval(() => { if (visible() && !document.hidden && !net.away) refresh(); }, 10000);   // (2026-11-28) 자리 비움 중에는 묻지 않는다
 }
 // 지금 바로 인원을 다시 받는다 (채널 칸이 새로 보일 때 · 채널이 바뀌었을 때)
 export async function refresh(){

@@ -2,23 +2,31 @@
 // (2026-11-27) 채널: 주소 뒤 ?ch=N 으로 고른 채널에 들어간다. 0이면 서버가 자리가 있는 앞 채널로 보낸다.
 //   한 번 들어가면 그 채널을 기억해서 끊겼다 다시 붙을 때도 같은 채널로 간다. 고른 채널이 가득이면 서버가 다른 채널로 보낸다.
 //   모든 채널이 가득이면 서버가 {t:'full'}을 보내고 끊는다 → 10초 뒤 다시 시도.
+// (2026-11-28) pause · resume: 자리 비움(net/index.js)일 때 연결을 닫아 두고, 돌아오면 같은 채널로 다시 붙는다.
+//   다시 붙을 때(끊겼다 붙기 · 자리 비움에서 돌아오기)는 주소에 re=1을 붙여 서버 통계가 새 접속으로 세지 않게 한다. 채널 옮기기는 새 접속으로 센다
 export async function connectWebSocket(url, {onPeers, onStatus, onChannel}, first = 0){   // first: 불러오는 중에 고른 채널 (0이면 서버가 고른다)
-  let ws = null, myId = null, pending = null, want = first | 0, cur = 0, wait = 3000;
-  const open = () => {
-    const s = ws = new WebSocket(url + (want ? (url.includes('?') ? '&' : '?') + 'ch=' + want : ''));
+  let ws = null, myId = null, pending = null, want = first | 0, cur = 0, wait = 3000, paused = false, met = false;
+  const open = fresh => {
+    if (paused) return;
+    const q = []; if (want) q.push('ch=' + want); if (met && fresh !== true) q.push('re=1');
+    const s = ws = new WebSocket(url + (q.length ? (url.includes('?') ? '&' : '?') + q.join('&') : ''));
     s.onopen = () => { if (pending) s.send(JSON.stringify({t:'p', p:pending})); };
     s.onclose = () => { if (s !== ws) return; cur = 0; onStatus(false); onPeers([]); onChannel(0); setTimeout(open, wait); wait = 3000; };
     s.onmessage = e => { let m; try { m = JSON.parse(e.data); } catch (err) { return; }
-      if (m.t === 'hello') { myId = m.id; cur = want = m.ch | 0; onStatus(true); onChannel(cur, m.asked | 0); }
+      if (m.t === 'hello') { myId = m.id; met = true; cur = want = m.ch | 0; onStatus(true); onChannel(cur, m.asked | 0); }
       else if (m.t === 'full') { want = 0; wait = 10000; onChannel(0, 0, true); }
       else if (m.t === 's' && Array.isArray(m.peers)) onPeers(m.peers.filter(p => p.peer !== myId).map(p => ({id:String(p.peer), presence:p.presence}))); };
   };
+  // 지금 연결을 조용히 닫는다 (다시 붙기 예약 없이)
+  const drop = () => { const old = ws; ws = null;
+    if (old) { old.onclose = old.onmessage = null; try { old.close(); } catch (e) {} }
+    cur = 0; onStatus(false); onPeers([]); onChannel(0); };
   open();
   return {send:p => { pending = p; if (ws && ws.readyState === 1) ws.send(JSON.stringify({t:'p', p})); },
     raw:o => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); },   // (2026-11-27) 익명 통계 (net/stats.js)
     channel:() => cur,
     // 다른 채널로 옮기기: 지금 연결을 닫고 바로 새 채널로 붙는다
-    setChannel:n => { if (n === cur) return; want = n; const old = ws; ws = null;
-      if (old) { old.onclose = old.onmessage = null; try { old.close(); } catch (e) {} }
-      cur = 0; onStatus(false); onPeers([]); onChannel(0); open(); }};
+    setChannel:n => { if (n === cur) return; want = n; if (paused) return; drop(); open(true); },
+    pause:() => { if (paused) return; paused = true; drop(); },
+    resume:() => { if (!paused) return; paused = false; open(); }};
 }

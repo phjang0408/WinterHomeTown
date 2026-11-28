@@ -56,11 +56,12 @@ let nextId = 1;
 
 wss.on('connection', (ws, req) => {
   roll();
-  const asked = parseCh(new URL(req.url, 'http://x').searchParams.get('ch')), ch = pick(counts(), asked);
+  const q = new URL(req.url, 'http://x').searchParams, asked = parseCh(q.get('ch')), ch = pick(counts(), asked);
   if (!ch) { ws.send(JSON.stringify({t:'full'})); ws.close(4001, 'full'); return; }
   const id = nextId++, room = chans[ch], c = peer(ws);
   room.set(id, c);
-  joined(today); today.peak = Math.max(today.peak, online());
+  if (q.get('re') !== '1') joined(today);   // (2026-11-28) re=1: 끊겼다 다시 붙기 · 자리 비움에서 돌아오기 → 새 접속으로 세지 않는다
+  today.peak = Math.max(today.peak, online());
   ws.send(JSON.stringify({t:'hello', id, ch, asked, cap:CAP}));
   ws.on('message', buf => { roll(); if (!onMessage(c, buf.toString(), today)) ws.close(1008, 'too fast'); });
   ws.on('close', () => { roll(); left(today, c); room.delete(id); });

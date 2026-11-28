@@ -36,10 +36,26 @@ if (!fs.existsSync(THREE_LOCAL)) { console.error('three가 없어요: tools 폴�
     req.onsuccess = () => { try { const g = req.result.transaction('t').objectStore('t').get('tex'); g.onsuccess = () => { const v = g.result; if (v && v.id === want) window.__texCache = v.list; start(); }; g.onerror = start; } catch (e) { start(); } };
     req.onerror = start; } catch (e) { start(); }
 </script>`);
+  // (2026-11-28) 배포판에서는 작업 메모(주석)를 지우고 줄인다. <style> · <script> 안은 esbuild가 주석을 빼고 줄이고, 나머지 HTML 주석은 지운다.
+  //   원본 index.html의 메모는 그대로 둔다 (페이지 소스 보기에 개발 메모가 보이지 않게)
+  const before = html.length;
+  html = await replaceAsync(html, /<style>([\s\S]*?)<\/style>/g, async (m, css) => `<style>${(await esbuild.transform(css, {loader:'css', minify:true})).code.trim()}</style>`);
+  html = await replaceAsync(html, /<script(\s[^>]*)?>([\s\S]*?)<\/script>/g, async (m, attrs = '', code) => !code.trim() ? m :
+    `<script${attrs}>${(await esbuild.transform(code, {loader:'js', minify:true, format:/type="module"/.test(attrs) ? 'esm' : undefined, target:'es2020'})).code.trim()}</script>`);
+  html = html.replace(/<!--[\s\S]*?-->/g, '').replace(/[ \t]+$/gm, '').replace(/\n{2,}/g, '\n');
+  if (/<!--|\/\*/.test(html.replace(/<script[\s\S]*?<\/script>/g, ''))) throw new Error('배포판 index.html에 주석이 남았어요: build.js의 주석 지우기를 확인하세요');
   fs.writeFileSync(path.join(OUT, 'index.html'), html);
+  console.log(`dist/index.html 주석 지우고 줄임: ${(before / 1024).toFixed(0)}KB → ${(html.length / 1024).toFixed(0)}KB`);
   fs.cpSync(path.join(ROOT, 'icons'), path.join(OUT, 'icons'), {recursive:true});   // (2026-11-28) 아이콘 · 링크 미리보기 그림 · 앱 정보(manifest)를 그대로 옮긴다
   const kb = f => (fs.statSync(path.join(OUT, f)).size / 1024).toFixed(0) + 'KB';
   const gz = (require('zlib').gzipSync(js).length / 1024).toFixed(0) + 'KB';
   const srcN = Object.keys(r.metafile.inputs).filter(k => k.startsWith('src/') || k.includes('/src/')).length;
   console.log(`dist/game.js ${kb('game.js')} (gzip ${gz}), 묶은 소스 ${srcN}개 + three, 빌드 번호 ${id}`);
 })().catch(e => { console.error(e.message || e); process.exit(1); });
+
+// 문자열에서 찾은 곳마다 비동기 함수로 바꾼다 (esbuild.transform이 Promise라서)
+async function replaceAsync(s, re, fn){
+  const out = []; let last = 0;
+  for (const m of s.matchAll(re)) { out.push(s.slice(last, m.index), await fn(...m)); last = m.index + m[0].length; }
+  out.push(s.slice(last)); return out.join('');
+}

@@ -27,7 +27,8 @@ export default {
       const asked = parseCh(u.searchParams.get('ch')), ch = await hubOf(env).pick(asked);
       if (!ch) return full();
       const room = env.ROOM.get(env.ROOM.idFromName('ch' + ch));
-      return room.fetch(new Request(`https://room/?ch=${ch}&asked=${asked}`, req));
+      const re = u.searchParams.get('re') === '1' ? 1 : 0;   // (2026-11-28) 다시 붙기 표시 (통계에서 새 접속으로 세지 않음)
+      return room.fetch(new Request(`https://room/?ch=${ch}&asked=${asked}&re=${re}`, req));
     }
     if (u.pathname === '/channels') return json(await hubOf(env).channels(), cors(origin, allow));
     if (u.pathname === '/stats' || u.pathname === '/stats.json') {
@@ -53,7 +54,7 @@ export class Room extends DurableObject {
     if (this.peers.size >= CAP) return full();   // 허브 숫자가 늦게 반영돼 한꺼번에 몰린 경우
     const [client, ws] = Object.values(new WebSocketPair()); ws.accept();
     const id = this.next++, c = peer(ws);
-    this.peers.set(id, c); joined(this.delta);
+    this.peers.set(id, c); if (u.searchParams.get('re') !== '1') joined(this.delta);   // (2026-11-28) re=1(다시 붙기)은 '들어온 수'에 세지 않는다
     ws.send(JSON.stringify({t:'hello', id, ch:this.ch, asked:parseCh(u.searchParams.get('asked')), cap:CAP}));
     ws.addEventListener('message', ev => { if (!onMessage(c, ev.data, this.delta)) try { ws.close(1008, 'too fast'); } catch {} });
     const bye = () => this.leave(id);

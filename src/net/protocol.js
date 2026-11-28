@@ -22,7 +22,7 @@ export function decode(p){
     ball:num(p.ball, 0, 1.5, 0), sw:snowman(p.sw), mg:[int(mg[0], 0, 999, 0), num(mg[1], 0, 7, 0)], kt:[int(kt[0], 0, 60, 0)], sa:[int(sa[0], 0, 100, 0), int(sa[1], 0, 999, 0), int(sa[2], 0, 999, 0)], it:[int(it[0], 0, 9, 0), int(it[1], 0, 3, 0), int(it[2], 0, 1, 0)], tk:[int(tk[0], 0, 9, 9), int(tk[1], 0, 1, 0), int(tk[2], 0, 9, 0), int(tk[3], 0, 9, 0), int(tk[4], 0, 2, 0), int(tk[5], 0, 1, 0)],
     sc:[int(sc[0], 0, 100, 0), int(sc[1], 0, 7, 0), int(sc[2], 0, 100, 0)],
     ar:ar.length ? ar : [0], kr:int(p.kr, 0, 9, 0),
-    sn:int(p.sn, 0, 999, 0), sb:twin(p.sb)};   // (2026-11-25) 미끄럼틀 눈 뿌린 횟수, 나눠바 상태   // (2026-11-22) 오락기 구경용 화면 상태(activities/arcade.js), 가방 키링 번호
+    sn:int(p.sn, 0, 999, 0), sb:twin(p.sb), tm:int(p.tm, 0, 1048575, -1)};   // (2026-11-28) tm: 보낸 시각 (net/index.js, 없으면 -1 = 예전 판)   // (2026-11-25) 미끄럼틀 눈 뿌린 횟수, 나눠바 상태   // (2026-11-22) 오락기 구경용 화면 상태(activities/arcade.js), 가방 키링 번호
 }
 
 // 함께 만드는 눈사람 상태: [시작 시각, 완성 시각(없으면 0), 사람 번호, 보탠 개수, 사람 번호, 보탠 개수, ...] (최대 16명, 한 사람 99개)

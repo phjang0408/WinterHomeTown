@@ -51,7 +51,7 @@ import { placeChar, emote, SIT } from './entities/character.js';
 import { initFootprints, trackPrints, agePrints } from './entities/footprints.js';
 import { applyPeers, updateRemotes } from './entities/remotes.js';
 import { setupVehicles, updateVehicles } from './entities/vehicles.js';
-import { connect, netTick, net, hasChannels } from './net/index.js';
+import { connect, netTick, net, hasChannels, initAway } from './net/index.js';
 import { statsFrame, statHello, statReady, statEnter } from './net/stats.js';   // (2026-11-27) 익명 운영 통계
 import { hud } from './ui/hud.js';
 import { drawMiniBase, drawMini, miniEvery, toggleBigMap, bigOpen } from './ui/minimap.js';
@@ -66,7 +66,7 @@ const $ = id => document.getElementById(id);
 
 function updateCount(){
   $('count').textContent = S.remotes.size + 1;
-  $('net').textContent = net.online ? (S.remotes.size ? '동네 서버에 연결됨 · 함께 걷는 중' : '동네 서버에 연결됨') : '연결 안 됨 · 혼자 걷는 중';
+  $('net').textContent = net.online ? (S.remotes.size ? '동네 서버에 연결됨 · 함께 걷는 중' : '동네 서버에 연결됨') : net.away ? '자리 비움 · 누르면 다시 연결돼요' : '연결 안 됨 · 혼자 걷는 중';   // (2026-11-28) 자리 비움
   $('net-dot').classList.toggle('on', !!net.online);
   $('srv-addr').textContent = net.kind === 'room' ? '아티팩트 공유 방' : net.kind === 'websocket' ? NET.url + (net.ch ? ' · ' + net.ch + '채널' : '') : '찾는 중…';
   if (menuOpen() && menuTab() === 'server') fillRoster();   // (2026-11-24) 접속자 · 점수표는 메뉴의 서버 탭에
@@ -198,6 +198,8 @@ async function boot(){
   // (2026-11-28) 위 veil 걷기가 11-27에 아래 주석 뒤로 밀려 꺼져 있었다 → 시작 화면에 동네 · 캐릭터 대신 하늘만 보였다. 줄을 나눠 되살림
   after(2500, texCacheDone); statReady(); statHello(performance.now() / 1000);   // (2026-11-27) 배포판: 만든 텍스처를 브라우저에 보관 (core/texkit.js)
   after(500, () => emote(me.char, 1));   // 반갑게 손 흔들기
+  // (2026-11-28) 자리 비움 (net/index.js): 오래 안 보면 서버 연결을 잠시 닫고, 누르면 다시 붙는다. 보이는 채로 오래 쉬었을 때만 알려 준다
+  initAway((away, why) => { updateCount(); if (away && why === 'idle' && S.mode !== 'intro') flash('오래 쉬어서 연결을 잠시 끊었어요\n누르면 다시 연결돼요'); });
   connect({onPeers:list => { applyPeers(list); updateCount(); }, onStatus:updateCount,
     // (2026-11-27) 채널이 정해지거나 바뀌면 단추 · 글을 고친다. 고른 채널이 가득이면 서버가 다른 채널로 보낸다
     onChannel:(ch, asked, full) => { updateCount(); drawChannels(); if (ch) refreshChannels();
